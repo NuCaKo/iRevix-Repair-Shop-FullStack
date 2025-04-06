@@ -1,4 +1,4 @@
-INSERT INTO repairs (customer, device, model, issue, status, priority, date) VALUES
+INSERT INTO repair_order (customer, device, model, issue, status, priority, date) VALUES
                                                                                  ('Travis Pearson', 'MacBook Air', 'M1 2020', 'Screen broken', 'PENDING', 'High', '2023-07-15'),
                                                                                  ('Ahmet Yılmaz', 'iPhone', '13 Pro', 'Battery drain', 'IN REPAIR', 'Medium', '2023-07-14'),
                                                                                  ('Ayşe Kaya', 'iPad', 'Pro 12.9 2021', 'Not charging', 'AWAITING PARTS', 'High', '2023-07-10'),
