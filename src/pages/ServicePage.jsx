@@ -119,7 +119,7 @@ const ServicePanel = () => {
     const awaitingParts = repairs.filter(r => r.status === "WAITING_FOR_PARTS").length;
 
     const pendingRepairs = repairs.filter(repair => {
-        return repair.status === "RECEIVED" &&
+        return repair.status === "PENDING" &&
             (searchTerm === "" ||
                 repair.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 repair.device?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -130,7 +130,7 @@ const ServicePanel = () => {
     const activeTasks = repairs.filter(repair =>
         repair.status === "IN REPAIR" ||
         repair.status === "DIAGNOSING" ||
-        repair.status === "WAITING_FOR_PARTS"
+        repair.status === "AWAITING PARTS"
     );
 
 
@@ -166,7 +166,7 @@ const ServicePanel = () => {
         try {
             // Update repair status to IN_REPAIR
             await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
-                status: "IN_REPAIR"
+                status: "IN REPAIR"
             });
 
             // If you need to assign technician as well
@@ -192,7 +192,7 @@ const ServicePanel = () => {
         try {
             // You might want a specific status for rejected repairs
             await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
-                status: "RECEIVED"
+                status: "PENDING"
             });
 
             // Refresh data

@@ -1,9 +1,8 @@
--- Sample repairs
 INSERT INTO repairs (customer, device, model, issue, status, priority, date) VALUES
-                                                                                 ('Travis Pearson', 'MacBook Air', 'M1 2020', 'Screen broken', 'Pending', 'High', '2023-07-15'),
-                                                                                 ('Ahmet Yılmaz', 'iPhone', '13 Pro', 'Battery drain', 'In Progress', 'Medium', '2023-07-14'),
-                                                                                 ('Ayşe Kaya', 'iPad', 'Pro 12.9 2021', 'Not charging', 'Awaiting Parts', 'High', '2023-07-10'),
-                                                                                 ('Mehmet Demir', 'Apple Watch', 'Series 7', 'Screen cracked', 'Completed', 'Low', '2023-07-05');
+                                                                                 ('Travis Pearson', 'MacBook Air', 'M1 2020', 'Screen broken', 'PENDING', 'High', '2023-07-15'),
+                                                                                 ('Ahmet Yılmaz', 'iPhone', '13 Pro', 'Battery drain', 'IN REPAIR', 'Medium', '2023-07-14'),
+                                                                                 ('Ayşe Kaya', 'iPad', 'Pro 12.9 2021', 'Not charging', 'AWAITING PARTS', 'High', '2023-07-10'),
+                                                                                 ('Mehmet Demir', 'Apple Watch', 'Series 7', 'Screen cracked', 'COMPLETED', 'Low', '2023-07-05');
 
 -- Sample inventory
 INSERT INTO inventory (name, category, brand, quantity, price, location, status) VALUES
