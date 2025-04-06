@@ -1,0 +1,79 @@
+// mockDatabase.json
+{
+  "tamirler": [
+    {
+      "id": 1,
+      "musteriAdi": "Ahmet Yılmaz",
+      "musteriTelefon": "0555-123-4567",
+      "urunAdi": "Samsung Galaxy S21",
+      "urunSeriNo": "SG21-123456",
+      "sorun": "Ekran kırık",
+      "durumu": "Tamamlandı",
+      "baslangicTarihi": "2025-02-25",
+      "tamamlanmaTarihi": "2025-03-01",
+      "ucret": 1200,
+      "notlar": "Ekran değişimi yapıldı",
+      "fotograflar": ["urun1-1.jpg", "urun1-2.jpg"],
+      "tamirFotograflari": ["tamir1-1.jpg", "tamir1-2.jpg"]
+    },
+    {
+      "id": 2,
+      "musteriAdi": "Mehmet Demir",
+      "musteriTelefon": "0532-987-6543",
+      "urunAdi": "iPhone 13",
+      "urunSeriNo": "IP13-654321",
+      "sorun": "Batarya sorunu",
+      "durumu": "Devam Ediyor",
+      "baslangicTarihi": "2025-03-03",
+      "tamamlanmaTarihi": null,
+      "ucret": 800,
+      "notlar": "Batarya değişimi yapılacak",
+      "fotograflar": ["urun2-1.jpg", "urun2-2.jpg"],
+      "tamirFotograflari": []
+    },
+    {
+      "id": 3,
+      "musteriAdi": "Zeynep Kaya",
+      "musteriTelefon": "0542-345-6789",
+      "urunAdi": "Lenovo ThinkPad",
+      "urunSeriNo": "LTP-987654",
+      "sorun": "Klavye çalışmıyor",
+      "durumu": "Beklemede",
+      "baslangicTarihi": "2025-03-05",
+      "tamamlanmaTarihi": null,
+      "ucret": 500,
+      "notlar": "Parça bekleniyor",
+      "fotograflar": ["urun3-1.jpg"],
+      "tamirFotograflari": []
+    }
+  ],
+  "stok": [
+    {
+      "id": 1,
+      "parcaAdi": "Samsung Galaxy S21 Ekran",
+      "adet": 5,
+      "fiyat": 800
+    },
+    {
+      "id": 2,
+      "parcaAdi": "iPhone 13 Batarya",
+      "adet": 2,
+      "fiyat": 600
+    },
+    {
+      "id": 3,
+      "parcaAdi": "ThinkPad Klavye",
+      "adet": 0,
+      "fiyat": 450
+    }
+  ],
+  "parcaTalepleri": [
+    {
+      "id": 1,
+      "parcaAdi": "ThinkPad Klavye",
+      "adet": 3,
+      "talepTarihi": "2025-03-04",
+      "durumu": "Beklemede"
+    }
+  ]
+}

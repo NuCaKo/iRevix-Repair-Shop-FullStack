@@ -1,0 +1,605 @@
+.placeholder-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+}
+
+.placeholder-icon {
+    font-size: 30px;
+    color: #777;
+}
+
+.part-number {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}.checkout-all-container {
+     margin: 20px 0;
+     background-color: #f8f9fa;
+     border: 1px solid #e0e0e0;
+     border-radius: 8px;
+     padding: 20px;
+     text-align: center;
+ }
+
+.checkout-all-btn {
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.checkout-all-btn:hover {
+    background-color: #0b5ed7;
+}/* CartPage.css */
+
+.cart-page-container {
+    max-width: 1200px;
+    margin: 80px auto 40px;
+    padding: 0 20px;
+}
+
+.cart-page-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 15px;
+}
+
+.cart-page-header h1 {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.cart-page-header p {
+    color: #777;
+    font-size: 16px;
+}
+
+.cart-content {
+    display: flex;
+    gap: 30px;
+}
+
+.cart-items {
+    flex: 1;
+}
+
+.cart-section {
+    margin-bottom: 30px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.section-header h2 {
+    font-size: 18px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.buy-now-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: white;
+}
+
+.parts-btn {
+    background-color: #007bff;
+    padding: 8px 16px;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.parts-btn:hover {
+    background-color: #0069d9;
+}
+
+.services-btn {
+    background-color: #28a745;
+    padding: 8px 16px;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.services-btn:hover {
+    background-color: #218838;
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: relative;
+}
+
+.cart-item-image {
+    width: 80px;
+    height: 80px;
+    overflow: hidden;
+    border-radius: 5px;
+    margin-right: 15px;
+}
+
+.cart-item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cart-item-details {
+    flex: 1;
+}
+
+.cart-item-details h3 {
+    font-size: 16px;
+    margin: 0 0 5px;
+    color: #333;
+}
+
+.item-type {
+    font-size: 14px;
+    color: #28a745;
+    margin: 0 0 5px;
+    text-transform: capitalize;
+}
+
+.item-price {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+.cart-item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 20px;
+}
+
+.quantity-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.quantity-control button {
+    background: none;
+    border: none;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    background-color: #f5f5f5;
+    transition: background-color 0.2s;
+}
+
+.quantity-control button:hover {
+    background-color: #e0e0e0;
+}
+
+.quantity-control button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.quantity-control span {
+    width: 40px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.remove-item-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 14px;
+    transition: color 0.2s;
+}
+
+.remove-item-btn:hover {
+    color: #a71d2a;
+}
+
+.cart-item-subtotal {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    min-width: 100px;
+    text-align: right;
+}
+
+.cart-summary {
+    width: 350px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 25px;
+    position: sticky;
+    top: 80px;
+    height: fit-content;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border: 1px solid #e0e0e0;
+}
+
+.cart-summary h2 {
+    font-size: 20px;
+    margin: 0 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: #555;
+}
+
+.discount {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.coupon-section {
+    display: flex;
+    margin: 20px 0;
+    gap: 8px;
+}
+
+.coupon-section input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.coupon-section button {
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.coupon-section button:hover {
+    background-color: #222;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.checkout-btn {
+    width: 100%;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 0;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.checkout-btn:hover {
+    background-color: #218838;
+}
+
+.continue-shopping-link {
+    display: inline-block;
+    margin-top: 15px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+    text-align: center;
+    width: 100%;
+}
+
+.continue-shopping-link:hover {
+    color: #28a745;
+}
+
+.empty-cart {
+    text-align: center;
+    padding: 60px 0;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.empty-cart h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.empty-cart p {
+    color: #777;
+    margin-bottom: 25px;
+}
+
+.continue-shopping-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.continue-shopping-btn:hover {
+    background-color: #218838;
+}
+
+.btn-icon {
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .cart-content {
+        flex-direction: column;
+    }
+
+    .cart-summary {
+        width: 100%;
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .cart-page-container {
+        margin-top: 70px;
+    }
+
+    .cart-item {
+        flex-wrap: wrap;
+        padding: 15px;
+    }
+
+    .cart-item-image {
+        width: 70px;
+        height: 70px;
+    }
+
+    .cart-item-details {
+        width: calc(100% - 100px);
+    }
+
+    .cart-item-actions {
+        flex-direction: row;
+        width: 100%;
+        margin: 15px 0 0 0;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .quantity-control {
+        margin-bottom: 0;
+    }
+
+    .cart-item-subtotal {
+        width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .cart-page-header h1 {
+        font-size: 24px;
+    }
+
+    .cart-page-container {
+        padding: 0 10px;
+    }
+}
+.empty-cart-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s;
+    margin-bottom: 20px;
+}
+
+.empty-cart-btn:hover {
+    background-color: #bd2130;
+}
+
+.empty-cart-btn svg {
+    margin-right: 8px;
+}
+
+.checkout-all-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 15px;
+}
+/* Add these styles to your CartPage.css file */
+
+.login-prompt-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    padding: 2rem;
+}
+
+.login-prompt {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+}
+
+.login-icon {
+    color: #0275d8;
+    margin-bottom: 1.5rem;
+}
+
+.login-prompt h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.login-prompt p {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.login-action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.login-button, .signup-button {
+    padding: 0.40rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.login-button {
+    background-color: #0275d8;
+    color: white;
+    border: none;
+}
+
+.login-button:hover {
+    background-color: #025aa5;
+    transform: translateY(-2px);
+}
+
+.signup-button {
+    background-color: white;
+    color: #0275d8;
+    border: 1px solid #0275d8;
+}
+
+.signup-button:hover {
+    background-color: #f0f7ff;
+    transform: translateY(-2px);
+}
+
+.continue-shopping {
+    margin-top: 1rem;
+}
+
+.continue-shopping-link {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.95rem;
+    display: inline-block;
+    transition: color 0.2s ease;
+}
+
+.continue-shopping-link:hover {
+    color: #0275d8;
+}
+
+/* Icon spacing */
+.login-button svg {
+    margin-right: 0.5rem;
+}
+/* Add this to your CartPage.css file */
+
+.back-to-shopping {
+    display: block;
+    margin-top: 15px;
+    color: #666;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+}
+
+.back-to-shopping:hover {
+    color: #0275d8;
+}

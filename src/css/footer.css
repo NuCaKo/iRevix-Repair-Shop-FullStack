@@ -1,0 +1,225 @@
+/* src/css/footer.css - Optimized */
+.footer {
+    background-color: #222;
+    color: #fff;
+    padding: 4vw 0 0.5vw;
+    margin-top: auto;
+    width: 100%;
+}
+
+.footer-container {
+    display: grid;
+    grid-template-columns: minmax(25%, 2fr) repeat(auto-fit, minmax(200px, 1fr));
+    gap: calc(1vw + 10px);
+    width: 95%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2%;
+}
+
+/* General footer section styles */
+.footer-section h3 {
+    color: #fff;
+    font-size: clamp(16px, 1.2vw, 22px);
+    margin-bottom: clamp(15px, 1.5vw, 25px);
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.footer-section h3::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 50px;
+    height: 2px;
+    background-color: #005eff;
+}
+
+.footer-section p {
+    line-height: 1.6;
+    color: #ccc;
+    margin-bottom: 20px;
+    font-size: clamp(14px, 1vw, 16px);
+}
+
+/* First section with logo specific layout */
+.footer-section:first-child {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+        "logo title"
+        "logo desc"
+        "social social";
+    align-items: start;
+    gap: 15px;
+    grid-column: span 1;
+    padding-right: 2%;
+}
+
+.footer-logo {
+    grid-area: logo;
+    margin-right: 20px;
+    margin-top: 20px;
+}
+
+.footer-logo img {
+    max-height: clamp(60px, 8vw, 120px);
+    width: auto;
+    display: block;
+}
+
+.footer-section:first-child h3 {
+    grid-area: title;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.footer-section:first-child p {
+    grid-area: desc;
+    margin-top: 0;
+    max-width: clamp(250px, 30vw, 450px);
+}
+
+.footer-section:first-child .social-icons {
+    grid-area: social;
+    margin-top: 15px;
+}
+
+/* Lists in footer */
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-section ul li {
+    margin-bottom: 10px;
+}
+
+.footer-section ul li a {
+    color: #ccc;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    display: inline-block;
+}
+
+.footer-section ul li a:hover {
+    color: #005eff;
+}
+
+/* Social icons */
+.social-icons {
+    display: flex;
+    gap: 15px;
+}
+
+.social-icons a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(32px, 3vw, 40px);
+    height: clamp(32px, 3vw, 40px);
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.social-icons a:hover {
+    background-color: #005eff;
+    transform: translateY(-3px);
+}
+
+/* Contact section */
+address p {
+    margin-bottom: 8px;
+    color: #ccc;
+}
+
+/* Footer bottom section */
+.footer-bottom {
+    text-align: center;
+    padding-top: 7px;
+    margin-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 14px;
+    color: #888;
+}
+
+/* Responsive styles - Tablets */
+@media (max-width: 992px) {
+    .footer-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 25px;
+    }
+}
+
+/* Responsive styles - Small tablets */
+@media (max-width: 768px) {
+    .footer {
+        padding: 30px 0 15px;
+    }
+
+    .footer-container {
+        gap: 20px;
+    }
+
+    .footer-section h3 {
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+
+    .social-icons {
+        gap: 10px;
+    }
+
+    /* First section responsive layout */
+    .footer-section:first-child {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "logo"
+            "title"
+            "desc"
+            "social";
+        text-align: center;
+    }
+
+    .footer-logo {
+        margin-right: 0;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .footer-section:first-child h3::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+
+/* Responsive styles - Mobile */
+@media (max-width: 480px) {
+    .footer-container {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .footer-section h3::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .social-icons {
+        justify-content: center;
+    }
+
+    .footer-section ul li a {
+        padding: 8px 0;
+        display: block;
+    }
+
+    .footer-bottom {
+        font-size: 12px;
+    }
+}

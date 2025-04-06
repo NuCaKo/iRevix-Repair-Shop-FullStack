@@ -1,0 +1,254 @@
+{
+  "repairs": [
+    { "id": 1, "customer": "Travis Pearson", "device": "MacBook Air", "model": "M1 2020", "issue": "Screen broken", "status": "Pending", "priority": "High", "date": "2023-07-15" },
+    { "id": 2, "customer": "Liam Neal", "device": "iPhone", "model": "14 Pro", "issue": "Battery problem", "status": "In Progress", "priority": "Medium", "date": "2023-07-14" },
+    { "id": 3, "customer": "Enrique Rose", "device": "AirPods", "model": "Pro Gen-2", "issue": "Battery Problem", "status": "Completed", "priority": "Low", "date": "2023-07-10" },
+    { "id": 4, "customer": "Tyrone Scott", "device": "iPad", "model": "Gen-9", "issue": "Screen Broken", "status": "Awaiting Parts", "priority": "High", "date": "2023-07-13" },
+    { "id": 5, "customer": "Steven Mendoza", "device": "iPhone", "model": "13", "issue": "Broken camera", "status": "Pending", "priority": "Medium", "date": "2023-07-15" },
+    { "id": 6, "customer": "Emma Thompson", "device": "MacBook Pro", "model": "M2 2022", "issue": "Keyboard not working", "status": "In Progress", "priority": "High", "date": "2023-07-16" },
+    { "id": 7, "customer": "Michael Johnson", "device": "Apple Watch", "model": "Series 8", "issue": "Screen cracked", "status": "Pending", "priority": "Medium", "date": "2023-07-16" },
+    { "id": 8, "customer": "Sarah Wilson", "device": "iPhone", "model": "12 Mini", "issue": "Water damage", "status": "In Progress", "priority": "High", "date": "2023-07-15" },
+    { "id": 9, "customer": "David Miller", "device": "iPad", "model": "Pro M1", "issue": "Not charging", "status": "Completed", "priority": "Medium", "date": "2023-07-12" },
+    { "id": 10, "customer": "Jennifer Brown", "device": "AirPods", "model": "Max", "issue": "Audio distortion", "status": "Awaiting Parts", "priority": "Low", "date": "2023-07-14" },
+    { "id": 11, "customer": "Robert Davis", "device": "MacBook Air", "model": "M2 2022", "issue": "Overheating", "status": "Pending", "priority": "High", "date": "2023-07-17" },
+    { "id": 12, "customer": "Jessica Garcia", "device": "iPhone", "model": "SE 2022", "issue": "Microphone not working", "status": "Completed", "priority": "Low", "date": "2023-07-11" }
+
+  ],
+  "inventory": [
+    { "id": 101, "name": "MacBook LCD Screen 13.3 inch", "brand": "Apple", "stock": 5, "status": "In Stock", "location": "A3-12", "category": "macbook", "quantity": 5, "price": 289.99, "compatibleDevices": ["MacBook Air 2018-2020", "MacBook Pro 2016-2019"] },
+    { "id": 110, "name": "MacBook Pro Keyboard", "brand": "Apple", "stock": 6, "status": "In Stock", "location": "B4-01", "category": "macbook", "quantity": 6, "price": 129.99, "compatibleDevices": ["MacBook Pro 16-inch (2019-2021)"] },
+    { "id": 104, "name": "SSD 512GB", "brand": "Apple", "stock": 8, "status": "In Stock", "location": "C4-10", "category": "macbook", "quantity": 8, "price": 199.99, "compatibleDevices": ["MacBook Pro", "MacBook Air", "Mac Mini"] },
+
+
+    { "id": 102, "name": "iPhone 13 Battery", "brand": "Apple", "stock": 2, "status": "Low Stock", "location": "B2-05", "category": "iphone", "quantity": 2, "price": 69.99, "compatibleDevices": ["iPhone 13", "iPhone 13 Pro"] },
+    { "id": 109, "name": "iPhone 12 Logic Board", "brand": "Apple", "stock": 1, "status": "Low Stock", "location": "A2-06", "category": "iphone", "quantity": 1, "price": 349.99, "compatibleDevices": ["iPhone 12", "iPhone 12 Pro"] },
+    { "id": 103, "name": "iPhone 14 Pro Display Assembly", "brand": "Apple", "stock": 0, "status": "Out of Stock", "location": "A1-07", "category": "iphone", "quantity": 0, "price": 329.99, "compatibleDevices": ["iPhone 14 Pro"] },
+
+
+
+
+    { "id": 106, "name": "iPad Pro 11-inch Screen", "brand": "Apple", "stock": 3, "status": "Low Stock", "location": "B3-09", "category": "ipad", "quantity": 3, "price": 249.99, "compatibleDevices": ["iPad Pro 11-inch (1st-3rd gen)"] },
+
+    { "id": 107, "name": "Apple Watch Series 7 Screen", "brand": "Apple", "stock": 2, "status": "Low Stock", "location": "C1-05", "category": "watch", "quantity": 2, "price": 179.99, "compatibleDevices": ["Apple Watch Series 7 41mm"] },
+
+    { "id": 108, "name": "AirPods Pro Case", "brand": "Apple", "stock": 4, "status": "In Stock", "location": "D2-08", "category": "airpods", "quantity": 4, "price": 89.99, "compatibleDevices": ["AirPods Pro (1st & 2nd Gen)"] },
+    { "id": 111, "name": "AirPods Max Ear Cushions", "brand": "Apple", "stock": 3, "status": "Low Stock", "location": "C3-02", "category": "airpods", "quantity": 3, "price": 49.99, "compatibleDevices": ["AirPods Max"] },
+
+    { "id": 105, "name": "Thermal Paste", "brand": "Arctic", "stock": 15, "status": "In Stock", "location": "D1-03", "category": "general", "quantity": 15, "price": 9.99, "compatibleDevices": ["All Devices"] }
+
+
+  ],
+  "appointments": [
+    { "id": 201, "customer": "Mauro Icardi", "device": "MacBook Air", "issue": "Keyboard replacement", "date": "2023-07-16", "time": "10:00 AM", "phone": "555-1234" },
+    { "id": 203, "customer": "Fernando Muslera", "device": "iPad Pro", "issue": "Screen replacement", "date": "2023-07-16", "time": "11:15 AM", "phone": "555-9012" },
+    { "id": 202, "customer": "Victor Osimhen", "device": "Apple Watch", "issue": "Screen broken", "date": "2023-07-16", "time": "2:30 PM", "phone": "555-5678" },
+    { "id": 204, "customer": "Jessica Wilson", "device": "iPhone 13", "issue": "Battery replacement", "date": "2023-07-17", "time": "3:00 PM", "phone": "555-3456" },
+   { "id": 210, "customer": "Jennifer Garcia", "device": "Apple Watch Ultra", "issue": "Button not working", "date": "2023-07-20", "time": "11:00 AM", "phone": "555-8901" }
+  ],
+  "knowledgeBase": [
+    {
+      "id": 1,
+      "title": "iPhone Screen Replacement Guide",
+      "category": "iphone",
+      "content": "A step-by-step guide for iPhone screen replacement. This process will take approximately 30-45 minutes and requires intermediate technical skills.",
+      "steps": [
+        "Prepare necessary tools: Pentalobe screwdriver, Phillips screwdriver, plastic separator",
+        "Remove the screws at the bottom edge of the phone",
+        "Carefully lift the screen and pay attention to the connection cables",
+        "Transfer the camera and sensor assembly from the old screen to the new one",
+        "Connect the new screen and test it",
+        "Secure the screen in place and insert the screws"
+      ],
+      "tips": [
+        "Always take precautions against static electricity",
+        "Use a magnetic surface to avoid losing screws",
+        "Reduce the phone's battery level to below 25% before the procedure"
+      ],
+      "popular": true,
+      "date": "2023-05-12"
+    },
+    {
+      "id": 2,
+      "title": "MacBook Battery Replacement",
+      "category": "macbook",
+      "content": "Battery replacement procedure for MacBook Pro and Air models. This process can take 20-60 minutes depending on the model.",
+      "steps": [
+        "Completely shut down the device and unplug the charging cable",
+        "Remove the screws from the bottom cover and carefully lift it off",
+        "Disconnect the battery connector from the motherboard",
+        "Remove the screws securing the battery",
+        "Carefully remove the battery from the adhesive",
+        "Place the new battery and complete the assembly in reverse order"
+      ],
+      "tips": [
+        "You can use isopropyl alcohol when removing the battery",
+        "Remember that screw lengths may vary",
+        "Be careful not to let metal tools touch the motherboard during the process"
+      ],
+      "popular": true,
+      "date": "2023-06-15"
+    },
+    {
+      "id": 3,
+      "title": "iPad Touchscreen Repair",
+      "category": "ipad",
+      "content": "Detailed guide for replacing the touchscreen panel on iPad models.",
+      "steps": [
+        "Heat the edges of the screen with a hair dryer or heat gun",
+        "Begin lifting the screen with a vacuum suction cup",
+        "Carefully separate the screen using plastic cards",
+        "Remove the Home button and camera connections",
+        "Install the new touchscreen panel and make the connections"
+      ],
+      "tips": [
+        "Work slowly and patiently to avoid damaging the display",
+        "Keep track of all screws and small components",
+        "Test the touchscreen before sealing the device"
+      ],
+      "popular": false,
+      "date": "2023-04-08"
+    },
+    {
+      "id": 4,
+      "title": "Apple Watch Screen Crack Repair",
+      "category": "watch",
+      "content": "Comprehensive guide to repair cracks in Apple Watch screens.",
+      "steps": [
+        "Turn off the watch completely",
+        "Heat the screen edges with a heat gun",
+        "Lift the screen using a special vacuum tool",
+        "Carefully remove the connection cables",
+        "Install the new screen and test it"
+      ],
+      "tips": [
+        "The Apple Watch display is extremely delicate",
+        "Consider using a special repair kit designed for watches",
+        "Keep your workspace clean and well-lit"
+      ],
+      "popular": false,
+      "date": "2023-02-22"
+    },
+    {
+      "id": 5,
+      "title": "AirPods Sound Issues Troubleshooting",
+      "category": "airpods",
+      "content": "Detailed guide about AirPods sound issues and solutions.",
+      "steps": [
+        "Clean and charge the AirPods",
+        "Reset the Bluetooth connection",
+        "Check the speaker grilles",
+        "Reset to factory settings",
+        "Replace the earbud driver if necessary"
+      ],
+      "tips": [
+        "Use a dry brush rather than alcohol-based solutions for cleaning",
+        "Do not expose AirPods to water or moisture"
+      ],
+      "popular": true,
+      "date": "2023-07-01"
+    },
+    {
+      "id": 6,
+      "title": "Pre-Repair Safety Precautions",
+      "category": "general",
+      "content": "Safety precautions and preparations to take before beginning repair procedures.",
+      "steps": [
+        "Keep your work area clean and organized",
+        "Use an anti-static wrist strap",
+        "Store screws and small parts in an organized manner",
+        "Completely shut down the device and remove the battery if possible",
+        "Prepare the correct tool set"
+      ],
+      "tips": [
+        "Always refer to the technical diagram when performing procedures",
+        "Do more research in difficult situations",
+        "Clean and maintain your tools regularly"
+      ],
+      "popular": false,
+      "date": "2023-01-15"
+    },
+    {
+      "id": 7,
+      "title": "iPhone Battery Replacement",
+      "category": "iphone",
+      "content": "Comprehensive guide for the battery replacement procedure on iPhone models.",
+      "steps": [
+        "Remove the screws from the bottom edge of the phone",
+        "Carefully lift the screen and disconnect the connector cables",
+        "Disconnect the battery connector from the motherboard",
+        "Remove the battery from the adhesive",
+        "Install the new battery and make all connections"
+      ],
+      "tips": [
+        "You can use isopropyl alcohol to remove the battery",
+        "Fully charge the new battery before installation",
+        "Keep the phone charging for a few hours after the procedure"
+      ],
+      "popular": true,
+      "date": "2023-03-18"
+    },
+    {
+      "id": 8,
+      "title": "MacBook Pro Display Replacement",
+      "category": "macbook",
+      "content": "Complete guide for replacing the display assembly on MacBook Pro models.",
+      "steps": [
+        "Power off the MacBook and disconnect all cables",
+        "Use a Torx screwdriver to remove the bottom case screws",
+        "Disconnect the display cable from the logic board",
+        "Remove the display hinges and carefully lift off the entire display assembly",
+        "Install the new display assembly and reconnect all cables",
+        "Test the display before closing the case completely"
+      ],
+      "tips": [
+        "Always handle the new display by its edges only",
+        "Calibrate the display after installation",
+        "Be extremely careful with the thin display cables"
+      ],
+      "popular": true,
+      "date": "2023-05-22"
+    },
+    {
+      "id": 9,
+      "title": "Apple Watch Battery Replacement",
+      "category": "watch",
+      "content": "Step-by-step instructions for replacing the battery in various Apple Watch models.",
+      "steps": [
+        "Apply heat around the edges of the screen to soften the adhesive",
+        "Use a thin opening tool to separate the screen",
+        "Disconnect the display and battery connections",
+        "Remove the old battery and clean the battery compartment",
+        "Install the new battery and reconnect all components",
+        "Apply new adhesive and seal the watch carefully"
+      ],
+      "tips": [
+        "Work slowly and methodically to avoid damaging components",
+        "Use only the correct replacement battery for your watch model",
+        "Be extremely careful when handling the Force Touch sensor"
+      ],
+      "popular": false,
+      "date": "2023-04-30"
+    },
+    {
+      "id": 10,
+      "title": "iPad Charging Port Repair",
+      "category": "ipad",
+      "content": "Detailed instructions for repairing or replacing a faulty charging port on iPad devices.",
+      "steps": [
+        "Heat the perimeter of the iPad screen to loosen adhesive",
+        "Use suction cups and opening picks to separate the screen",
+        "Disconnect the screen cables and set the screen aside",
+        "Locate the charging port assembly and remove any screws securing it",
+        "Desolder the old charging port and clean the contact area",
+        "Solder the new charging port in place and reassemble the device"
+      ],
+      "tips": [
+        "Practice soldering on scrap boards before attempting the repair",
+        "Use flux and the appropriate soldering temperature",
+        "Test the charging port before completing reassembly"
+      ],
+      "popular": true,
+      "date": "2023-06-18"
+    }
+  ]
+}
