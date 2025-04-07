@@ -1,48 +1,105 @@
-INSERT INTO repair_order (customer, device, model, issue, status, priority, date) VALUES
-                                                                                 ('Travis Pearson', 'MacBook Air', 'M1 2020', 'Screen broken', 'PENDING', 'High', '2023-07-15'),
-                                                                                 ('Ahmet Yılmaz', 'iPhone', '13 Pro', 'Battery drain', 'IN REPAIR', 'Medium', '2023-07-14'),
-                                                                                 ('Ayşe Kaya', 'iPad', 'Pro 12.9 2021', 'Not charging', 'AWAITING PARTS', 'High', '2023-07-10'),
-                                                                                 ('Mehmet Demir', 'Apple Watch', 'Series 7', 'Screen cracked', 'COMPLETED', 'Low', '2023-07-05');
+-- Insert technicians
+INSERT INTO technician (name, email, specialization, active) VALUES
+('Ahmet Yılmaz', 'ahmet@example.com', 'iPhone Repair', true),
+('Ayşe Demir', 'ayse@example.com', 'MacBook Repair', true),
+('Mehmet Kaya', 'mehmet@example.com', 'iPad Repair', true),
+('Zeynep Şahin', 'zeynep@example.com', 'Apple Watch Repair', true);
 
--- Sample inventory
-INSERT INTO inventory (name, category, brand, quantity, price, location, status) VALUES
-                                                                                     ('MacBook LCD Screen 13.3 inch', 'macbook', 'Apple', 5, 289.99, 'A3-12', 'In Stock'),
-                                                                                     ('iPhone 13 Battery', 'iphone', 'Apple', 2, 89.99, 'B2-05', 'Low Stock'),
-                                                                                     ('iPad Pro Charging Port', 'ipad', 'Apple', 0, 45.50, 'C1-08', 'Out of Stock'),
-                                                                                     ('Apple Watch Screen Glass', 'watch', 'Apple', 10, 75.25, 'D4-01', 'In Stock');
+-- Insert repair orders
+INSERT INTO repair_order (customer, device, model, issue, status, priority, date, technician_id) VALUES
+('Travis Pearson', 'MacBook Air', 'M1 2020', 'Screen broken', 'PENDING', 'High', '2023-07-15', 2),
+('Ahmet Yılmaz', 'iPhone', '13 Pro', 'Battery drain', 'IN_REPAIR', 'Medium', '2023-07-14', 1),
+('Ayşe Kaya', 'iPad', 'Pro 12.9 2021', 'Not charging', 'WAITING_FOR_PARTS', 'High', '2023-07-10', 3),
+('Mehmet Demir', 'Apple Watch', 'Series 7', 'Screen cracked', 'COMPLETED', 'Low', '2023-07-05', 4),
+('Zeynep Öztürk', 'iPhone', '12 Mini', 'Speaker not working', 'RECEIVED', 'Medium', '2023-07-18', null),
+('Ali Can', 'MacBook Pro', '16 2021', 'Keyboard issues', 'DIAGNOSING', 'High', '2023-07-17', 2),
+('Fatma Yıldız', 'AirPods', 'Pro', 'Left pod not charging', 'IN_REPAIR', 'Low', '2023-07-16', 1);
 
--- Sample part compatibility
-INSERT INTO part_compatibility (part_id, device_name) VALUES
-                                                          (1, 'MacBook Air 2018-2020'),
-                                                          (1, 'MacBook Pro 2016-2019'),
-                                                          (2, 'iPhone 13'),
-                                                          (2, 'iPhone 13 Pro'),
-                                                          (3, 'iPad Pro 11 2021'),
-                                                          (3, 'iPad Pro 12.9 2021'),
-                                                          (4, 'Apple Watch Series 7');
+-- Insert appointments
+INSERT INTO appointment (customer, device, issue, date, time, phone) VALUES
+('Kemal Aydın', 'iPhone 14 Pro', 'Screen replacement', '2023-07-25', '10:00', '555-123-4567'),
+('Seda Demir', 'MacBook Air', 'Battery replacement', '2023-07-25', '11:30', '555-234-5678'),
+('Emre Yılmaz', 'iPad Pro', 'Not turning on', '2023-07-25', '14:00', '555-345-6789'),
+('Deniz Kaya', 'Apple Watch', 'Battery drain', '2023-07-26', '09:30', '555-456-7890'),
+('Cem Özdemir', 'iPhone 13', 'Camera not working', '2023-07-26', '15:30', '555-567-8901'),
+('Elif Şahin', 'MacBook Pro', 'Fan noise', '2023-07-27', '13:00', '555-678-9012');
 
--- Sample appointments
-INSERT INTO appointments (customer, device, issue, date, time, phone) VALUES
-                                                                          ('Mauro Icardi', 'MacBook Air', 'Keyboard replacement', '2023-07-16', '10:00:00', '555-1234'),
-                                                                          ('Fatma Şahin', 'iPhone', 'Screen replacement', '2023-07-16', '14:30:00', '555-5678'),
-                                                                          ('Ali Yıldız', 'iPad', 'Software issues', '2023-07-17', '09:15:00', '555-9012');
+-- Insert inventory items
+INSERT INTO inventory (name, category, quantity, price, location, reorder_level) VALUES
+('iPhone 13 Pro Screen', 'iphone', 5, 1200.00, 'Shelf A1', 3),
+('MacBook M1 Battery', 'macbook', 2, 950.00, 'Shelf B2', 2),
+('iPad Pro 12.9 Digitizer', 'ipad', 3, 850.00, 'Shelf C1', 2),
+('Apple Watch S7 Screen', 'watch', 1, 500.00, 'Shelf D1', 2),
+('iPhone 12 Battery', 'iphone', 8, 250.00, 'Shelf A2', 4),
+('MacBook Pro 16 Keyboard', 'macbook', 0, 1100.00, 'Shelf B3', 1),
+('AirPods Pro Case', 'airpods', 4, 350.00, 'Shelf E1', 3),
+('Lightning Cable', 'accessories', 15, 50.00, 'Drawer F1', 5),
+('USB-C Charging Port', 'macbook', 3, 180.00, 'Shelf B1', 2),
+('iPhone Camera Module', 'iphone', 2, 450.00, 'Shelf A3', 2);
 
--- Sample knowledge base article
-INSERT INTO knowledge_base (title, category, content, popular, date) VALUES
-                                                                         ('iPhone Screen Replacement Guide', 'iphone', 'A step-by-step guide for iPhone screen replacement. This process will take approximately 30-45 minutes and requires intermediate technical skills.', TRUE, '2023-05-12'),
-                                                                         ('MacBook Battery Replacement', 'macbook', 'How to safely replace a MacBook battery without damaging components.', TRUE, '2023-06-05');
+-- Insert knowledge base articles
+INSERT INTO knowledge_base_article (title, content, category, date, popular) VALUES
+('iPhone 13 Battery Replacement Guide', 'Complete step-by-step guide for replacing the battery in iPhone 13 models.', 'iphone', '2023-05-10', true),
+('MacBook M1 Display Assembly Repair', 'How to safely replace the display assembly in M1 MacBooks.', 'macbook', '2023-04-22', true),
+('iPad Charging Port Diagnosis', 'Diagnose and fix common charging issues in iPad models.', 'ipad', '2023-06-15', false),
+('Apple Watch Screen Replacement', 'Guide for replacing broken screens on Apple Watch Series 6 and 7.', 'watch', '2023-03-30', true),
+('AirPods Pro Charging Case Repair', 'How to fix charging issues with AirPods Pro cases.', 'airpods', '2023-05-25', false),
+('Common iPhone Water Damage Solutions', 'Steps to diagnose and repair water-damaged iPhones.', 'iphone', '2023-02-18', true);
 
--- Sample steps for knowledge base articles
-INSERT INTO kb_steps (kb_id, step_order, step_text) VALUES
-                                                        (1, 1, 'Prepare necessary tools: Pentalobe screwdriver, Phillips screwdriver, plastic separator'),
-                                                        (1, 2, 'Remove the screws at the bottom edge of the phone'),
-                                                        (1, 3, 'Carefully lift the screen and pay attention to the connection cables'),
-                                                        (1, 4, 'Transfer the camera and sensor assembly from the old screen to the new one'),
-                                                        (1, 5, 'Connect the new screen and test it'),
-                                                        (1, 6, 'Secure the screen in place and insert the screws');
 
--- Sample tips for knowledge base articles
-INSERT INTO kb_tips (kb_id, tip_order, tip_text) VALUES
-                                                     (1, 1, 'Always take precautions against static electricity'),
-                                                     (1, 2, 'Use a magnetic surface to avoid losing screws'),
-                                                     (1, 3, 'Reduce the phone''s battery level to below 25% before the procedure');
+kullanlmyor şuan
+-- Insert compatible devices for inventory items
+INSERT INTO compatible_device (inventory_id, device_model) VALUES
+(1, 'iPhone 13 Pro'),
+(1, 'iPhone 13 Pro Max'),
+(2, 'MacBook Air M1 2020'),
+(2, 'MacBook Pro M1 2020'),
+(3, 'iPad Pro 12.9 2021'),
+(3, 'iPad Pro 12.9 2022'),
+(4, 'Apple Watch Series 7 41mm'),
+(4, 'Apple Watch Series 7 45mm'),
+(5, 'iPhone 12'),
+(5, 'iPhone 12 Mini'),
+(6, 'MacBook Pro 16 2021'),
+(7, 'AirPods Pro'),
+(9, 'MacBook Pro 13 2020'),
+(9, 'MacBook Air M1 2020'),
+(10, 'iPhone 12'),
+(10, 'iPhone 13');
+
+
+
+-- Insert steps for knowledge base articles
+INSERT INTO kb_step (kb_id, step_order, content, image_path) VALUES
+(1, 1, 'Power off the iPhone and remove the bottom screws.', 'images/kb/iphone-battery-1.jpg'),
+(1, 2, 'Use a suction cup to gently lift the screen.', 'images/kb/iphone-battery-2.jpg'),
+(1, 3, 'Disconnect the battery connector first.', 'images/kb/iphone-battery-3.jpg'),
+(1, 4, 'Remove the battery adhesive strips carefully.', 'images/kb/iphone-battery-4.jpg'),
+(2, 1, 'Remove the bottom case screws and separate the case.', 'images/kb/macbook-display-1.jpg'),
+(2, 2, 'Disconnect all display cables from the logic board.', 'images/kb/macbook-display-2.jpg'),
+(2, 3, 'Remove the display hinge screws.', 'images/kb/macbook-display-3.jpg'),
+(4, 1, 'Power off the watch and heat the perimeter of the screen.', 'images/kb/watch-screen-1.jpg'),
+(4, 2, 'Carefully insert a blade to separate the screen.', 'images/kb/watch-screen-2.jpg'),
+(4, 3, 'Disconnect the display cable and remove the screen.', 'images/kb/watch-screen-3.jpg');
+
+-- Insert tips for knowledge base articles
+INSERT INTO kb_tip (kb_id, content) VALUES
+(1, 'Always use a battery with the same specifications as the original.'),
+(1, 'Calibrate the new battery by fully charging and then draining it.'),
+(2, 'Use a dust-free environment when replacing the display.'),
+(2, 'Mark each screw location as they vary in size and length.'),
+(3, 'Check for lint and debris in the charging port first.'),
+(4, 'Apply heat slowly and evenly to prevent damage to internal components.'),
+(5, 'Reset the AirPods by holding the button on the case for 15 seconds.');
+
+-- Insert service reports for completed repairs
+INSERT INTO service_report (repair_id, technician, parts_used, work_performed, recommendations, cost, completion_date) VALUES
+(4, 'Zeynep Şahin', 'Apple Watch Series 7 Screen', 'Screen replacement and digitizer calibration', 'Consider screen protector to prevent future damage', 650.00, '2023-07-08 14:30:00');
+
+-- Insert repair notes
+INSERT INTO repair_note (repair_id, content, technician_id) VALUES
+(2, 'Initial diagnosis complete. Battery health at 65%. Replacement required.', 1),
+(2, 'New battery installed. Device testing in progress.', 1),
+(3, 'Charging IC appears damaged. Waiting for replacement part.', 3),
+(4, 'Screen replaced successfully. Calibration complete.', 4),
+(6, 'Multiple keys not responding. Possible liquid damage.', 2);

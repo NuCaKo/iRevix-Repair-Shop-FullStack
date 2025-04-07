@@ -59,7 +59,7 @@ const ServicePanel = () => {
         model: '',
         issue: '',
         priority: 'Medium',
-        status: 'RECEIVED', // Using backend status format
+        status: 'PENDING', // Using backend status format
         date: new Date().toISOString().split('T')[0]
     });
 
@@ -113,7 +113,7 @@ const ServicePanel = () => {
 
 
     // Calculate derived values based on repairs state
-    const pendingRepairsCount = repairs.filter(r => r.status === "RECEIVED").length;
+    const pendingRepairsCount = repairs.filter(r => r.status === "PENDING").length;
     const inProgressRepairs = repairs.filter(r => r.status === "IN REPAIR" || r.status === "DIAGNOSING").length;
     const completedRepairs = repairs.filter(r => r.status === "COMPLETED").length;
     const awaitingParts = repairs.filter(r => r.status === "WAITING_FOR_PARTS").length;
@@ -128,9 +128,9 @@ const ServicePanel = () => {
     });
 
     const activeTasks = repairs.filter(repair =>
-        repair.status === "IN REPAIR" ||
+        repair.status === "IN_REPAIR" ||
         repair.status === "DIAGNOSING" ||
-        repair.status === "AWAITING PARTS"
+        repair.status === "WAITING_FOR_PARTS"
     );
 
 
@@ -153,7 +153,7 @@ const ServicePanel = () => {
                 model: '',
                 issue: '',
                 priority: 'Medium',
-                status: 'RECEIVED',
+                status: 'PENDING',
                 date: new Date().toISOString().split('T')[0]
             });
         } catch (error) {
@@ -166,7 +166,7 @@ const ServicePanel = () => {
         try {
             // Update repair status to IN_REPAIR
             await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
-                status: "IN REPAIR"
+                status: "IN_REPAIR"
             });
 
             // If you need to assign technician as well
