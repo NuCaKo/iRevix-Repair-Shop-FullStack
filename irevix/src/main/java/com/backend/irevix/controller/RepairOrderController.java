@@ -1,7 +1,9 @@
 package com.backend.irevix.controller;
 
 import com.backend.irevix.model.RepairImage;
+import com.backend.irevix.model.RepairNote;
 import com.backend.irevix.model.RepairOrder;
+import com.backend.irevix.service.RepairNoteService;
 import com.backend.irevix.service.RepairOrderService;
 import com.backend.irevix.service.RepairImageService; // Bu importu ekleyin
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +24,15 @@ public class RepairOrderController {
 
     private final RepairOrderService repairOrderService;
     private final RepairImageService repairImageService;  // RepairImageService'yi burada tanımlıyoruz.
+    private final RepairNoteService repairNoteService;
 
     @Autowired
-    public RepairOrderController(RepairOrderService repairOrderService, RepairImageService repairImageService) {
+    public RepairOrderController(RepairOrderService repairOrderService,
+                                 RepairImageService repairImageService,
+                                 RepairNoteService repairNoteService) {
         this.repairOrderService = repairOrderService;
-        this.repairImageService = repairImageService;  // Constructor üzerinden inject ediliyor
+        this.repairImageService = repairImageService;
+        this.repairNoteService = repairNoteService;
     }
 
     @GetMapping
@@ -129,6 +135,33 @@ public class RepairOrderController {
         }
     }
 
+    // RepairOrderController.java
+    @PostMapping("/{id}/notes")
+    public ResponseEntity<?> addRepairNote(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> noteBody) {
+
+        String content = noteBody.get("content");
+        String timestampString = noteBody.get("timestamp");
+
+        // Gelen timestamp varsa parse et, yoksa şu anki zamanı kullan
+        java.time.LocalDateTime timestamp = java.time.LocalDateTime.now();
+        if (timestampString != null) {
+            try {
+                timestamp = java.time.LocalDateTime.parse(timestampString);
+            } catch (Exception e) {
+                // Hata log'u alınabilir, ama default now kullanılacak
+            }
+        }
+
+        RepairNote note = new RepairNote();
+        note.setRepairOrderId(id);
+        note.setContent(content);
+        note.setTimestamp(timestamp);
+
+        RepairNote savedNote = repairNoteService.saveRepairNote(note);
+        return ResponseEntity.ok(savedNote);
+    }
 
 
 }

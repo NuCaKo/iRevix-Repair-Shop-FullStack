@@ -612,8 +612,8 @@ const ServicePanel = () => {
                                             <div className="notes-list">
                                                 {selectedRepair.notes.map((note) => (
                                                     <div key={note.id} className="note-item">
-                                                        <div className="note-time">{note.timestamp}</div>
-                                                        <div className="note-text">{note.text}</div>
+                                                        <div className="note-time">{new Date(note.timestamp).toLocaleString()}</div>
+                                                        <div className="note-text">{note.content}</div>
                                                     </div>
                                                 ))}
                                             </div>

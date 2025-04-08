@@ -17,6 +17,7 @@ public class RepairOrder {
     private String date;
 
 
+    
     // Getter ve Setter metodları
 
     @Column(name = "technician")
