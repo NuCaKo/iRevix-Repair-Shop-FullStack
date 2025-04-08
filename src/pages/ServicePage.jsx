@@ -860,7 +860,7 @@ const ServicePanel = () => {
                                                             .map((image) => (
                                                                 <div key={image.id} className="image-item">
                                                                     <img
-                                                                        src={image.imageUrl}
+                                                                        src={`http://localhost:8080${image.imageUrl}`}
                                                                         alt="Device"
                                                                         onClick={() => setEnlargedImage(image)}
                                                                         style={{cursor: 'pointer'}}
