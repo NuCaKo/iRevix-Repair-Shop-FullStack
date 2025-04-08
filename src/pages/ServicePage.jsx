@@ -309,6 +309,8 @@ const ServicePanel = () => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
+            const updated = await axios.get(`${API_BASE_URL}/repair-orders/${repairId}`);
+            setSelectedRepair(updated.data);
 
             console.log("Image uploaded successfully:", response.data);
             fetchAllData(); // Görselleri tekrar çekmek
@@ -423,6 +425,12 @@ const ServicePanel = () => {
             console.log("📷 selectedRepair images:", selectedRepair.images);
         }
     }, [selectedRepair]);
+
+    useEffect(() => {
+        if (enlargedImage) {
+            console.log("📸 Modal image:", enlargedImage);
+        }
+    }, [enlargedImage]);
 
     const renderContent = () => {
         switch(activeTab) {
@@ -564,7 +572,6 @@ const ServicePanel = () => {
 
                                     {/* Images section */}
                                     <div className="repair-images-section">
-                                        <h4>Repair Images</h4>
                                         <div className="image-tabs">
                                             <button
                                                 className={imageTab === 'before' ? 'active-tab' : ''}
@@ -578,6 +585,12 @@ const ServicePanel = () => {
                                             >
                                                 During Repair
                                             </button>
+                                            <button
+                                                className="service-report-btn"
+                                                onClick={() => setShowReportForm(true)}
+                                            >
+                                                Service Report
+                                            </button>
                                         </div>
 
                                         <div className="images-container">
@@ -589,13 +602,15 @@ const ServicePanel = () => {
                                                         .map((image) => (
                                                             <div key={image.id} className="image-item">
                                                                 <img
-                                                                    src={image.imageUrl}
-                                                                    alt={image.description}
+
+                                                                    src={`http://localhost:8080${image.imageUrl}`}
+                                                                    alt="Device"
                                                                     onClick={() => setEnlargedImage(image)}
+                                                                    style={{ cursor: 'pointer' }}
                                                                 />
                                                                 <div className="image-info">
-                                                                    <p>{image.description}</p>
-                                                                    <p>{image.date}</p>
+                                                                    <span>{image.description}</span>
+                                                                    <span>{image.date}</span>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -604,6 +619,58 @@ const ServicePanel = () => {
                                                 <div className="no-images">
                                                     No {imageTab} repair images available.
                                                 </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="image-upload">
+                                        <label
+                                            htmlFor={`image-upload-${imageTab}-${selectedRepair.id}`}
+                                            className="upload-btn"
+                                        >
+                                            <FaCamera /> Add {imageTab === 'before' ? 'Before' : 'During'} Repair Image
+                                            <input
+                                                id={`image-upload-${imageTab}-${selectedRepair.id}`}
+                                                type="file"
+                                                accept="image/*"
+                                                style={{ display: 'none' }}
+                                                onChange={(e) => handleImageUpload(selectedRepair.id, e, imageTab)}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    {/* Enlarged Image Modal */}
+                                    {enlargedImage && (
+                                        <div
+                                            className="image-modal-overlay"
+                                            onClick={() => setEnlargedImage(null)}
+                                        >
+                                            <div className="image-modal-container">
+                                                <img src={`http://localhost:8080${enlargedImage.imageUrl}`} alt="Enlarged view" />
+                                                <div className="image-modal-info">
+                                                    <p>{enlargedImage.description}</p>
+                                                    <p>{enlargedImage.date}</p>
+                                                </div>
+                                                <button
+                                                    className="close-modal-btn"
+                                                    onClick={() => setEnlargedImage(null)}
+                                                >
+                                                    Close
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+
+                                    {/* Detailed problem description section */}
+                                    <div className="repair-detail-section">
+                                        <h4>Problem Details</h4>
+                                        <div className="problem-description">
+                                            <p>{selectedRepair.issue}</p>
+                                            {selectedRepair.detailedDescription && (
+                                                <p className="detailed-description">
+                                                    {selectedRepair.detailedDescription}
+                                                </p>
                                             )}
                                         </div>
                                     </div>
@@ -642,10 +709,11 @@ const ServicePanel = () => {
                                     <div
                                         className="image-modal-overlay"
                                         onClick={() => setEnlargedImage(null)}
+
                                     >
                                         <div className="image-modal-container" style={{ maxWidth: '80%', maxHeight: '80vh' }}>
                                             <img
-                                                src={enlargedImage.imageUrl}
+                                                src={`http://localhost:8080${enlargedImage.imageUrl}`}
                                                 alt="Enlarged view"
                                                 style={{
                                                     maxWidth: '100%',
@@ -860,7 +928,7 @@ const ServicePanel = () => {
                                                             .map((image) => (
                                                                 <div key={image.id} className="image-item">
                                                                     <img
-                                                                        src={image.imageUrl}
+                                                                        src={`http://localhost:8080${image.imageUrl}`}
                                                                         alt="Device"
                                                                         onClick={() => setEnlargedImage(image)}
                                                                         style={{cursor: 'pointer'}}
