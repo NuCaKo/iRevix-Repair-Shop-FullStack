@@ -83,7 +83,6 @@ const ServicePanel = () => {
         try {
             console.log("Fetching data from API...");
 
-            // Fetch repair orders
             const repairsResponse = await axios.get(`${API_BASE_URL}/repair-orders`);
             setRepairs(repairsResponse.data || []);
 
@@ -97,7 +96,25 @@ const ServicePanel = () => {
 
             // Fetch appointments
             const appointmentsResponse = await axios.get(`${API_BASE_URL}/appointments`);
-            setAppointments(appointmentsResponse.data || []);
+            const transformedAppointments = (appointmentsResponse.data || []).map(apt => {
+                const dateTime = new Date(apt.appointmentDateTime);
+                return {
+                    id: apt.id,
+                    time: dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    customer: apt.customerName || apt.customer || '—',
+                    device: apt.deviceType || apt.device || '—',
+                    model: apt.deviceModel || apt.model || '—',
+                    issue: apt.issueDescription || apt.issue || '—',
+                    date: dateTime,
+                    status: apt.status,
+                    appointmentDateTime: apt.appointmentDateTime
+                };
+            });
+
+            console.log("✅ Transformed Appointments:", JSON.stringify(transformedAppointments, null, 2));
+
+
+            setAppointments(transformedAppointments);
 
             // Fetch knowledge base articles
             const kbResponse = await axios.get(`${API_BASE_URL}/knowledge-base`);
@@ -110,6 +127,7 @@ const ServicePanel = () => {
             setLoading(false);
         }
     };
+
 
 
     // Calculate derived values based on repairs state
@@ -164,29 +182,39 @@ const ServicePanel = () => {
 
     const assignRepair = async (repair) => {
         try {
-            // Update repair status to IN_REPAIR
-            await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
+            console.log("🛠 Assigning repair:", repair);
+
+            // Step 1: Status güncellemesi
+            const statusResponse = await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
                 status: "IN_REPAIR"
             });
+            console.log("✅ Status updated:", statusResponse.status);
 
-            // If you need to assign technician as well
+            // Step 2: Teknisyen atama
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            console.log("👤 Current User from localStorage:", currentUser);
+
             if (currentUser && currentUser.id) {
-                await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/technician/${currentUser.id}`);
+                const techResponse = await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/technician/${currentUser.id}`);
+                console.log("✅ Technician assigned:", techResponse.status);
+            } else {
+                console.warn("⚠️ No valid currentUser found in localStorage.");
             }
 
-            // Refresh data
-            fetchAllData();
+            // Step 3: Verileri yenile
+            await fetchAllData();
 
-            // Update UI immediately
+            // Step 4: UI güncelle
             const updatedRepair = { ...repair, status: "IN_REPAIR" };
             setSelectedRepair(updatedRepair);
             setActiveTab('tasks');
+
         } catch (error) {
-            console.error("Error assigning repair:", error);
+            console.error("❌ Error assigning repair:", error);
             alert("Failed to assign repair. Please try again.");
         }
     };
+
 
     const rejectRepair = async (repair) => {
         try {
@@ -263,25 +291,33 @@ const ServicePanel = () => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Dosya boyutunu kontrol edelim (örneğin 20MB = 20 * 1024 * 1024)
+        const maxSize = 20 * 1024 * 1024;
+        if (file.size > maxSize) {
+            alert("Dosya boyutu çok büyük! Lütfen 20MB'den küçük bir dosya seçin.");
+            return;
+        }
+
+        // Devam eden upload işlemi...
         try {
             const formData = new FormData();
             formData.append('image', file);
             formData.append('type', imageType);
 
-            await axios.post(`${API_BASE_URL}/repair-orders/${repairId}/images`, formData, {
+            const response = await axios.post(`${API_BASE_URL}/repair-orders/${repairId}/images`, formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                    'Content-Type': 'multipart/form-data',
+                },
             });
 
-            // Refresh data
-            fetchAllData();
-
+            console.log("Image uploaded successfully:", response.data);
+            fetchAllData(); // Görselleri tekrar çekmek
         } catch (error) {
-            console.error("Error uploading image:", error);
+            console.error("Error uploading image:", error.response ? error.response.data : error.message);
             alert("Failed to upload image. Please try again.");
         }
     };
+
 
     // PDF generation
 
@@ -374,9 +410,14 @@ const ServicePanel = () => {
         return "var(--primary)";
     };
     const todayAppointments = appointments.filter(apt => {
-        const aptDate = new Date(apt.date);
-        return aptDate.toDateString() === currentDate.toDateString();
+        const aptDate = new Date(apt.appointmentDateTime);
+        return aptDate.toISOString().slice(0, 10) === currentDate.toISOString().slice(0, 10);
     });
+
+    //console.log("💡 Today Appointments:", todayAppointments);
+    //console.log("📅 Current Date:", currentDate.toISOString().slice(0, 10));
+    //console.log("🗓️ All Appointment Dates:", appointments.map(a => a.appointmentDateTime));
+
 
 
     const renderContent = () => {
@@ -443,17 +484,26 @@ const ServicePanel = () => {
                             <div className="today-appointments">
                                 <h3>Today's Appointments</h3>
                                 <div className="appointment-list">
-                                    {appointments.slice(0, 3).map(app => (
-                                        <div key={app.id} className="appointment-card">
-                                            <div className="appointment-time">{app.time}</div>
-                                            <div className="appointment-details">
-                                                <strong>{app.customer}</strong>
-                                                <p>{app.device} - {app.issue}</p>
+                                    {todayAppointments.length > 0 ? (
+                                        todayAppointments.slice(0, 3).map(app => (
+                                            <div key={app.id} className="appointment-card">
+                                                <div className="appointment-time">
+                                                    {app.time}
+                                                </div>
+                                                <div className="appointment-details">
+                                                    <span className="name">{app.customer}</span>
+                                                    <span className="device">{app.device} {app.model && `- ${app.model}`}</span>
+                                                    <span className="issue">{app.issue}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))
+                                    ) : (
+                                        <p>No appointments scheduled for today</p>
+                                    )}
                                 </div>
                             </div>
+
+                            );
                         </div>
                     </div>
                 );
@@ -535,7 +585,7 @@ const ServicePanel = () => {
                                                         .map((image) => (
                                                             <div key={image.id} className="image-item">
                                                                 <img
-                                                                    src={image.src}
+                                                                    src={image.imageUrl}  // image.src yerine image.imageUrl kullanıyoruz
                                                                     alt={image.description}
                                                                     onClick={() => setEnlargedImage(image)}
                                                                 />
@@ -552,8 +602,8 @@ const ServicePanel = () => {
                                                 </div>
                                             )}
                                         </div>
-
                                     </div>
+
 
                                     {/* Display repair notes if available */}
                                     {selectedRepair.notes && selectedRepair.notes.length > 0 && (

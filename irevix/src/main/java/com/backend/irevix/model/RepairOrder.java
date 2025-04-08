@@ -1,9 +1,6 @@
 package com.backend.irevix.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class RepairOrder {
@@ -19,7 +16,20 @@ public class RepairOrder {
     private String priority;
     private String date;
 
+
     // Getter ve Setter metodları
+
+    @Column(name = "technician")
+    private Long technicianId;
+
+    public Long getTechnicianId() {
+        return technicianId;
+    }
+
+    public void setTechnicianId(Long technicianId) {
+        this.technicianId = technicianId;
+    }
+
 
     public Long getId() {
         return id;

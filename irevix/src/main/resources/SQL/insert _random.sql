@@ -8,21 +8,19 @@ INSERT INTO technician (name, email, specialization, active) VALUES
 -- Insert repair orders
 INSERT INTO repair_order (customer, device, model, issue, status, priority, date, technician_id) VALUES
 ('Travis Pearson', 'MacBook Air', 'M1 2020', 'Screen broken', 'PENDING', 'High', '2023-07-15', 2),
-('Ahmet Yılmaz', 'iPhone', '13 Pro', 'Battery drain', 'IN_REPAIR', 'Medium', '2023-07-14', 1),
+('Ahmet Yılmaz', 'iPhone', '13 Pro', 'Battery drain', 'COMPLETED', 'Medium', '2023-07-14', 1),
 ('Ayşe Kaya', 'iPad', 'Pro 12.9 2021', 'Not charging', 'WAITING_FOR_PARTS', 'High', '2023-07-10', 3),
 ('Mehmet Demir', 'Apple Watch', 'Series 7', 'Screen cracked', 'COMPLETED', 'Low', '2023-07-05', 4),
 ('Zeynep Öztürk', 'iPhone', '12 Mini', 'Speaker not working', 'RECEIVED', 'Medium', '2023-07-18', null),
 ('Ali Can', 'MacBook Pro', '16 2021', 'Keyboard issues', 'DIAGNOSING', 'High', '2023-07-17', 2),
 ('Fatma Yıldız', 'AirPods', 'Pro', 'Left pod not charging', 'IN_REPAIR', 'Low', '2023-07-16', 1);
 
--- Insert appointments
-INSERT INTO appointment (customer, device, issue, date, time, phone) VALUES
-('Kemal Aydın', 'iPhone 14 Pro', 'Screen replacement', '2023-07-25', '10:00', '555-123-4567'),
-('Seda Demir', 'MacBook Air', 'Battery replacement', '2023-07-25', '11:30', '555-234-5678'),
-('Emre Yılmaz', 'iPad Pro', 'Not turning on', '2023-07-25', '14:00', '555-345-6789'),
-('Deniz Kaya', 'Apple Watch', 'Battery drain', '2023-07-26', '09:30', '555-456-7890'),
-('Cem Özdemir', 'iPhone 13', 'Camera not working', '2023-07-26', '15:30', '555-567-8901'),
-('Elif Şahin', 'MacBook Pro', 'Fan noise', '2023-07-27', '13:00', '555-678-9012');
+
+INSERT INTO appointments (customer_name, customer_phone, customer_email, device_type, device_model, issue_description, appointment_date_time, status) VALUES
+('Kemal Aydın', '555-123-4567', 'kemal@example.com', 'iPhone', '14 Pro', 'Screen replacement', '2025-04-08 10:00:00', 'PENDING'),
+('Seda Demir', '555-234-5678', 'seda@example.com', 'MacBook', 'Air', 'Battery replacement', '2023-07-25 11:30:00', 'PENDING'),
+('Emre Yılmaz', '555-345-6789', 'emre@example.com', 'iPad', 'Pro', 'Not turning on', '2023-07-25 14:00:00', 'PENDING');
+
 
 -- Insert inventory items
 INSERT INTO inventory (name, category, quantity, price, location, reorder_level) VALUES
@@ -46,6 +44,22 @@ INSERT INTO knowledge_base_article (title, content, category, date, popular) VAL
 ('AirPods Pro Charging Case Repair', 'How to fix charging issues with AirPods Pro cases.', 'airpods', '2023-05-25', false),
 ('Common iPhone Water Damage Solutions', 'Steps to diagnose and repair water-damaged iPhones.', 'iphone', '2023-02-18', true);
 
+INSERT INTO image (image_url, description, repair_order_id) VALUES
+('https://storage.googleapis.com/repair-images/iphone13-screen-before-1.jpg', 'iPhone 13 screen damage before repair', 1),
+('https://storage.googleapis.com/repair-images/iphone13-screen-during-1.jpg', 'iPhone 13 during screen replacement', 1),
+('https://storage.googleapis.com/repair-images/iphone13-screen-during-2.jpg', 'iPhone 13 screen connector detail', 1),
+('https://storage.googleapis.com/repair-images/macbook-battery-before-1.jpg', 'MacBook Pro swollen battery', 2),
+('https://storage.googleapis.com/repair-images/macbook-battery-during-1.jpg', 'MacBook Pro battery connector removal', 2),
+('https://storage.googleapis.com/repair-images/macbook-battery-during-2.jpg', 'MacBook Pro new battery installation', 2),
+('https://storage.googleapis.com/repair-images/ipad-charging-before-1.jpg', 'iPad Air charging port damage', 3),
+('https://storage.googleapis.com/repair-images/ipad-charging-during-1.jpg', 'iPad Air during charging port repair', 3),
+('https://storage.googleapis.com/repair-images/apple-watch-before-1.jpg', 'Apple Watch screen damage', 4),
+('https://storage.googleapis.com/repair-images/apple-watch-during-1.jpg', 'Apple Watch screen removal process', 4),
+('https://storage.googleapis.com/repair-images/apple-watch-during-2.jpg', 'Apple Watch new screen installation', 4),
+('https://storage.googleapis.com/repair-images/airpods-case-before-1.jpg', 'AirPods Pro case not charging', 5),
+('https://storage.googleapis.com/repair-images/airpods-case-during-1.jpg', 'AirPods Pro case internal components', 5),
+('https://storage.googleapis.com/repair-images/iphone-water-before-1.jpg', 'iPhone water damage assessment', 6),
+('https://storage.googleapis.com/repair-images/iphone-water-during-1.jpg', 'iPhone water damage component cleaning', 6);
 
 kullanlmyor şuan
 -- Insert compatible devices for inventory items
