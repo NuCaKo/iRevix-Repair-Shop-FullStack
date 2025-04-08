@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import supportService from '../services/SupportService';
+import axios from 'axios';
+import {
+    getRepairs,
+    getSupportRequests,
+    getTrafficData,
+    getRevenueData,
+    getNotifications,
+    markAllNotificationsAsRead,
+    markNotificationAsRead,
+    updateRepair,
+    updateSupportRequest,
+    getDevicesAndModels,
+    getInventoryParts,
+    updateInventoryItem,
+    deleteInventoryItem,
+    fetchLowStockItems,
+    createNotification,
+    restockInventoryItem
+} from '../services/api';
 import {
     BrowserRouter as Router,
     Routes,
@@ -31,6 +50,7 @@ import {
     faBatteryFull,
     faCamera,
     faVolumeUp,
+    faRedo,
     faCheck,
     faHeadset, faClock
 } from '@fortawesome/free-solid-svg-icons';
@@ -40,8 +60,9 @@ import '../css/adminPanel.css';
 function AdminPanel() {
     const navigate = useNavigate();
     const [revenuePeriod, setRevenuePeriod] = useState('7days');
-    const [activeTab, setActiveTab] = useState('dashboard');
     const [notifications, setNotifications] = useState([]);
+    const [notificationFilter, setNotificationFilter] = useState('all');
+    const [filteredInventoryItems, setFilteredInventoryItems] = useState([]);
     const [websiteTraffic, setWebsiteTraffic] = useState([]);
     const [repairOrders, setRepairOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +86,13 @@ function AdminPanel() {
     const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
     const [restockItem, setRestockItem] = useState(null);
     const [restockQuantity, setRestockQuantity] = useState(1);
-
+    const [revenueData, setRevenueData] = useState(null);
+    const [dashboardStats, setDashboardStats] = useState(null);
+    const [devices, setDevices] = useState([]);
+    const [deviceModels, setDeviceModels] = useState({});
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [notifiedLowStockItems, setNotifiedLowStockItems] = useState([]);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
     // User login check
     useEffect(() => {
         const storedUser = localStorage.getItem('currentUser');
@@ -84,103 +111,6 @@ function AdminPanel() {
         }
     }, [navigate]);
 
-    // Device and models data
-    const devices = [
-        { id: 'iphone', name: 'iPhone', icon: faMobileAlt },
-        { id: 'ipad', name: 'iPad', icon: faTabletScreenButton },
-        { id: 'macbook', name: 'MacBook', icon: faLaptop },
-        { id: 'airpods', name: 'AirPods', icon: faHeadphones },
-        { id: 'applewatch', name: 'Apple Watch', icon: faClock }
-    ];
-
-    const deviceModels = {
-        iphone: ['iPhone 13 Pro', 'iPhone 13', 'iPhone 12 Pro', 'iPhone 12', 'iPhone 11 Pro', 'iPhone 11', 'iPhone XS', 'iPhone X'],
-        ipad: ['iPad Pro 12.9"', 'iPad Pro 11"', 'iPad Air', 'iPad Mini', 'iPad'],
-        macbook: ['MacBook Pro 16"', 'MacBook Pro 14"', 'MacBook Pro 13"', 'MacBook Air'],
-        airpods: ['AirPods Pro', 'AirPods 3rd Gen', 'AirPods 2nd Gen', 'AirPods Max'],
-        applewatch: ['Apple Watch Series 7', 'Apple Watch Series 6', 'Apple Watch SE', 'Apple Watch Series 5']
-    };
-
-    // Function to generate different traffic data for different time periods
-    const getTrafficDataForPeriod = (period) => {
-        switch (period) {
-            case '7days':
-                return [
-                    { date: '2025-02-23', visitors: 245, pageViews: 876, conversions: 12 },
-                    { date: '2025-02-24', visitors: 312, pageViews: 1024, conversions: 18 },
-                    { date: '2025-02-25', visitors: 290, pageViews: 956, conversions: 15 },
-                    { date: '2025-02-26', visitors: 345, pageViews: 1122, conversions: 22 },
-                    { date: '2025-02-27', visitors: 367, pageViews: 1245, conversions: 25 },
-                    { date: '2025-02-28', visitors: 398, pageViews: 1345, conversions: 28 },
-                    { date: '2025-03-01', visitors: 425, pageViews: 1456, conversions: 32 },
-                ];
-            case '30days':
-                return [
-                    { date: '2025-01-30', visitors: 190, pageViews: 645, conversions: 9 },
-                    { date: '2025-02-02', visitors: 210, pageViews: 720, conversions: 11 },
-                    { date: '2025-02-05', visitors: 230, pageViews: 790, conversions: 13 },
-                    { date: '2025-02-08', visitors: 255, pageViews: 880, conversions: 15 },
-                    { date: '2025-02-11', visitors: 275, pageViews: 940, conversions: 16 },
-                    { date: '2025-02-14', visitors: 290, pageViews: 1000, conversions: 18 },
-                    { date: '2025-02-17', visitors: 310, pageViews: 1080, conversions: 20 },
-                    { date: '2025-02-20', visitors: 330, pageViews: 1150, conversions: 22 },
-                    { date: '2025-02-23', visitors: 350, pageViews: 1200, conversions: 24 },
-                    { date: '2025-02-26', visitors: 375, pageViews: 1300, conversions: 26 },
-                    { date: '2025-03-01', visitors: 425, pageViews: 1456, conversions: 32 },
-                ];
-            case '90days':
-                return [
-                    { date: '2024-12-01', visitors: 150, pageViews: 520, conversions: 7 },
-                    { date: '2024-12-10', visitors: 165, pageViews: 570, conversions: 8 },
-                    { date: '2024-12-20', visitors: 175, pageViews: 610, conversions: 9 },
-                    { date: '2024-12-30', visitors: 190, pageViews: 650, conversions: 10 },
-                    { date: '2025-01-10', visitors: 205, pageViews: 710, conversions: 12 },
-                    { date: '2025-01-20', visitors: 225, pageViews: 780, conversions: 14 },
-                    { date: '2025-01-30', visitors: 250, pageViews: 850, conversions: 16 },
-                    { date: '2025-02-10', visitors: 280, pageViews: 950, conversions: 19 },
-                    { date: '2025-02-20', visitors: 330, pageViews: 1100, conversions: 23 },
-                    { date: '2025-03-01', visitors: 425, pageViews: 1456, conversions: 32 },
-                ];
-            default:
-                return getTrafficDataForPeriod('7days');
-        }
-    };
-
-    // Function to calculate traffic summary data
-    const getTrafficSummary = (data, period) => {
-        // Calculate total visitors and page views
-        const totalVisitors = data.reduce((sum, day) => sum + day.visitors, 0);
-        const totalPageViews = data.reduce((sum, day) => sum + day.pageViews, 0);
-        const totalConversions = data.reduce((sum, day) => sum + day.conversions, 0);
-
-        // Calculate average time for each period
-        const avgSessionDuration = period === '7days' ? '3m 42s' :
-            period === '30days' ? '4m 15s' : '3m 58s';
-
-        // Calculate percentage changes based on period
-        const visitorChange = period === '7days' ? '+12.5%' :
-            period === '30days' ? '+18.2%' : '+24.7%';
-
-        const pageViewChange = period === '7days' ? '+8.2%' :
-            period === '30days' ? '+15.4%' : '+21.3%';
-
-        const conversionChange = period === '7days' ? '+1.2%' :
-            period === '30days' ? '+2.5%' : '+3.1%';
-
-        const durationChange = period === '7days' ? '-0.8%' :
-            period === '30days' ? '+1.5%' : '+0.6%';
-
-        return {
-            visitors: totalVisitors,
-            pageViews: totalPageViews,
-            conversionRate: ((totalConversions / totalVisitors) * 100).toFixed(1),
-            avgSessionDuration,
-            visitorChange,
-            pageViewChange,
-            conversionChange,
-            durationChange
-        };
-    };
 
     // Order handlers
     const handleViewOrder = (order) => {
@@ -194,14 +124,194 @@ function AdminPanel() {
         setIsEditModalOpen(true);
     };
 
-    const handleSaveOrder = () => {
-        // Update the order in the orders list
-        const updatedOrders = repairOrders.map(order =>
-            order.id === editOrderData.id ? editOrderData : order
-        );
-        setRepairOrders(updatedOrders);
-        setIsEditModalOpen(false);
+    const handleSaveOrder = async () => {
+        try {
+            // Store the original order to compare status change
+            const originalOrder = repairOrders.find(order =>
+                (order._id === editOrderData._id || order.id === editOrderData.id)
+            );
+
+            // Call API to update the order
+            const orderId = editOrderData.id;
+
+            // Only send fields that can be updated - problem and status
+            const updateData = {
+                problem: editOrderData.problem,
+                status: editOrderData.status
+            };
+
+            // Call the API
+            const updatedOrder = await updateRepair(orderId, updateData);
+
+            // Update local state
+            const updatedOrders = repairOrders.map(order =>
+                order.id === orderId ? updatedOrder : order
+            );
+
+            setRepairOrders(updatedOrders);
+            setIsEditModalOpen(false);
+
+            // If status has changed, create a notification
+            // If status has changed, create a notification
+            if (originalOrder && originalOrder.status !== updatedOrder.status) {
+                await createNotification({
+                    type: 'order',
+                    message: `Repair order for ${updatedOrder.customer}'s ${updatedOrder.device} status changed from "${originalOrder.status}" to "${updatedOrder.status}".`,
+                    time: 'just now'
+                });
+                window.dispatchEvent(new Event('notification-update'));
+
+
+                // Update the notifications in state
+                const notificationsData = await getNotifications();
+                setNotifications(notificationsData);
+                const unreadCount = notificationsData.filter(n => !n.isRead).length;
+                setUnreadNotifications(unreadCount);
+            }
+
+            // Show success message
+            alert(`Repair order for ${updatedOrder.customer}'s ${updatedOrder.device} has been updated.`);
+        } catch (error) {
+            console.error('Error updating order:', error);
+            alert('Failed to update order. Please try again.');
+        }
     };
+
+    const checkLowStockItems = async () => {
+        try {
+            const lowStockItems = await fetchLowStockItems();
+            let newNotifications = false;
+
+            // Create a deep copy of the current notified items array
+            const updatedNotifiedItems = [...notifiedLowStockItems];
+
+            // Check each low stock item
+            for (const item of lowStockItems) {
+                // Create a unique identifier for this item
+                const itemKey = `${item.id}-${item.stockLevel}`;
+
+                // Check if we've already notified about this item at this stock level
+                if (!notifiedLowStockItems.includes(itemKey)) {
+                    // This is a new low stock item or its stock level has changed
+                    if (item.stockLevel <= item.reorderPoint * 0.5) {
+                        await createNotification({
+                            type: 'alert',
+                            message: `CRITICAL: ${item.name} for ${item.deviceType} ${item.modelType} is critically low (${item.stockLevel} units remaining).`,
+                            time: 'just now'
+                        });
+// Add this line
+                        window.dispatchEvent(new Event('notification-update'));
+                        newNotifications = true;
+                    } else if (item.stockLevel <= item.reorderPoint) {
+                        await createNotification({
+                            type: 'alert',
+                            message: `CRITICAL: ${item.name} for ${item.deviceType} ${item.modelType} is critically low (${item.stockLevel} units remaining).`,
+                            time: 'just now'
+                        });
+// Add this line
+                        window.dispatchEvent(new Event('notification-update'));
+                        newNotifications = true;
+                    }
+
+                    // Add this item to the notified items list with timestamp
+                    updatedNotifiedItems.push(itemKey);
+                    trackLowStockItem(itemKey);
+                }
+            }
+
+            // Update the list of notified items
+            if (updatedNotifiedItems.length !== notifiedLowStockItems.length) {
+                setNotifiedLowStockItems(updatedNotifiedItems);
+                localStorage.setItem('notifiedLowStockItems', JSON.stringify(updatedNotifiedItems));
+            }
+
+            // Update the notifications in state only if we created new notifications
+            // Update the notifications in state only if we created new notifications
+            if (newNotifications) {
+                const notificationsData = await getNotifications();
+                setNotifications(notificationsData);
+
+                // Add these lines to update the unread counter
+                const unreadCount = notificationsData.filter(n => !n.isRead).length;
+                setUnreadNotifications(unreadCount);
+            }
+
+            // Periodically clean up old notification tracking
+            cleanupNotificationTracking();
+        } catch (error) {
+            console.error('Error checking low stock items:', error);
+        }
+    };
+    useEffect(() => {
+        if (activeTab === 'inventory' && !isLoading) {
+            checkLowStockItems();
+        }
+    }, [activeTab, isLoading]);
+    const trackLowStockItem = (itemKey) => {
+        // Get the current timestamp tracking
+        const trackedKeys = JSON.parse(localStorage.getItem('notifiedLowStockItemsTimestamp') || '{}');
+
+        // Add/update this item's timestamp
+        trackedKeys[itemKey] = Date.now();
+
+        // Save back to localStorage
+        localStorage.setItem('notifiedLowStockItemsTimestamp', JSON.stringify(trackedKeys));
+    };
+    const cleanupNotificationTracking = () => {
+        try {
+            // Get items that are no longer in low stock but are in our tracking list
+            const keysToKeep = [];
+
+            // For each inventory item that's in low stock, keep its tracking key
+            inventoryItems.forEach(item => {
+                if (item.stockLevel <= item.reorderPoint) {
+                    const itemKey = `${item.id}-${item.stockLevel}`;
+                    keysToKeep.push(itemKey);
+                }
+            });
+
+            // Filter the notification list to only include items that are still in low stock
+            // or items that were added in the last 24 hours
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const trackedKeys = JSON.parse(localStorage.getItem('notifiedLowStockItemsTimestamp') || '{}');
+            const currentTrackedKeys = {};
+
+            // Keep only keys that are current low stock items or recent notifications
+            const prunedNotifiedItems = notifiedLowStockItems.filter(key => {
+                // Always keep current low stock items
+                if (keysToKeep.includes(key)) {
+                    currentTrackedKeys[key] = Date.now();
+                    return true;
+                }
+
+                // Check if this notification is recent (less than 24 hours old)
+                const timestamp = trackedKeys[key] || 0;
+                if (timestamp > yesterday.getTime()) {
+                    currentTrackedKeys[key] = timestamp;
+                    return true;
+                }
+
+                // Otherwise remove it from tracking
+                return false;
+            });
+
+            // Update the notified items list if it changed
+            if (prunedNotifiedItems.length !== notifiedLowStockItems.length) {
+                setNotifiedLowStockItems(prunedNotifiedItems);
+                localStorage.setItem('notifiedLowStockItems', JSON.stringify(prunedNotifiedItems));
+                localStorage.setItem('notifiedLowStockItemsTimestamp', JSON.stringify(currentTrackedKeys));
+            }
+        } catch (error) {
+            console.error('Error cleaning up notification tracking:', error);
+        }
+    };
+    useEffect(() => {
+        if (!isLoading) {
+            cleanupNotificationTracking();
+        }
+    }, [isLoading]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -210,8 +320,83 @@ function AdminPanel() {
             [name]: value
         });
     };
+    const handleLowStockToggle = () => {
+        console.log("Toggle low stock, current value:", showLowStockOnly);
+        setShowLowStockOnly(!showLowStockOnly);
 
-    const exportInventoryReport = () => {
+        // Check for low stock items and create notifications if needed
+        checkLowStockItems();
+    };
+    const markSingleNotificationAsRead = async (notification) => {
+        try {
+            const notificationId = notification.id || notification._id;
+            console.log('Marking notification as read:', notificationId);
+
+            // Optimistically update the local state first
+            const updatedNotifications = notifications.map(notif =>
+                notif.id === notificationId || notif._id === notificationId
+                    ? { ...notif, isRead: true }
+                    : notif
+            );
+
+            setNotifications(updatedNotifications);
+
+            // Update unread notifications count
+            const unreadCount = updatedNotifications.filter(n => !n.isRead).length;
+            console.log('Updated unread notifications count after marking one as read:', unreadCount);
+            setUnreadNotifications(unreadCount);
+
+            // Call API to mark as read
+            await markNotificationAsRead(notificationId);
+
+            // Refresh notifications to ensure consistency
+            const freshNotifications = await getNotifications();
+            setNotifications(freshNotifications);
+
+            // Update unread notifications count
+            const freshUnreadCount = freshNotifications.filter(n => !n.isRead).length;
+            console.log('Fresh unread notifications count after API call:', freshUnreadCount);
+            setUnreadNotifications(freshUnreadCount);
+
+            // Dispatch notification update event
+            window.dispatchEvent(new Event('notification-update'));
+
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            // Revert the optimistic update if API call fails
+            const originalNotifications = await getNotifications();
+            setNotifications(originalNotifications);
+            const originalUnreadCount = originalNotifications.filter(n => !n.isRead).length;
+            setUnreadNotifications(originalUnreadCount);
+        }
+    };
+    const getFilteredNotifications = () => {
+        if (notificationFilter === 'all') {
+            // Sort notifications, with unread notifications first
+            return notifications.sort((a, b) => {
+                // Prioritize unread notifications
+                if (a.isRead === false && b.isRead === true) return -1;
+                if (a.isRead === true && b.isRead === false) return 1;
+
+                // Then sort by date
+                return new Date(b.date) - new Date(a.date);
+            });
+        }
+
+        // Filter by type and sort
+        return notifications
+            .filter(notification => notification.type === notificationFilter)
+            .sort((a, b) => {
+                // Prioritize unread notifications
+                if (a.isRead === false && b.isRead === true) return -1;
+                if (a.isRead === true && b.isRead === false) return 1;
+
+                // Then sort by date
+                return new Date(b.date) - new Date(a.date);
+            });
+    };
+
+    const exportInventoryReport = async () => {
         try {
             let reportItems = [];
             let reportTitle = "iRevix Full Inventory Report";
@@ -221,19 +406,28 @@ function AdminPanel() {
                 reportItems = inventoryItems;
                 reportTitle = `iRevix Inventory Report - Selected Models (${selectedModels.length} models)`;
             } else {
-                // Generate inventory for all devices and models
+                // Fetch all inventory items
+                const allItems = [];
+
+                // Loop through all devices and models
                 for (const device of devices) {
                     for (const model of deviceModels[device.id]) {
-                        const deviceItems = generateReplacementParts(device.id, model);
-                        // Add device and model info to items
-                        const itemsWithInfo = deviceItems.map(item => ({
-                            ...item,
-                            deviceType: device.name,
-                            modelType: model
-                        }));
-                        reportItems = [...reportItems, ...itemsWithInfo];
+                        try {
+                            const deviceItems = await fetchReplacementParts(device.id, model);
+                            // Add device and model info to items
+                            const itemsWithInfo = deviceItems.map(item => ({
+                                ...item,
+                                deviceType: device.name,
+                                modelType: model
+                            }));
+                            allItems.push(...itemsWithInfo);
+                        } catch (error) {
+                            console.error(`Error fetching parts for ${device.name} ${model}:`, error);
+                        }
                     }
                 }
+
+                reportItems = allItems;
             }
 
             // Create CSV content
@@ -279,214 +473,289 @@ function AdminPanel() {
             alert("There was an error exporting the inventory report. Please try again.");
         }
     };
-
-    // Mock data for testing
     useEffect(() => {
-        // Simulate data loading
-        setTimeout(() => {
-            setNotifications([
-                { id: 1, type: 'order', message: 'New repair order #1234 received', time: '10 minutes ago', isRead: false },
-                { id: 2, type: 'system', message: 'System update completed successfully', time: '1 hour ago', isRead: true },
-                { id: 3, type: 'user', message: 'New user registration: john@example.com', time: '3 hours ago', isRead: false },
-                { id: 4, type: 'order', message: 'Order #1230 status changed to "Completed"', time: '5 hours ago', isRead: true },
-                { id: 5, type: 'alert', message: 'Low inventory alert: iPhone 12 screens', time: '1 day ago', isRead: true },
-            ]);
-
-            setWebsiteTraffic(getTrafficDataForPeriod('7days'));
-
-            setRepairOrders([
-                { id: 'RPR1234', customer: 'John Smith', device: 'iPhone 12', problem: 'Screen Replacement', status: 'In Progress', date: '2025-03-01' },
-                { id: 'RPR1235', customer: 'Emma Johnson', device: 'MacBook Pro', problem: 'Battery Issue', status: 'Pending', date: '2025-03-01' },
-                { id: 'RPR1236', customer: 'Michael Brown', device: 'Apple Watch', problem: 'Not Turning On', status: 'Completed', date: '2025-02-28' },
-                { id: 'RPR1237', customer: 'Sarah Davis', device: 'iPad Pro', problem: 'Charging Port', status: 'Awaiting Parts', date: '2025-02-28' },
-                { id: 'RPR1238', customer: 'David Wilson', device: 'AirPods Pro', problem: 'Sound Issue', status: 'Completed', date: '2025-02-27' },
-            ]);
-
-            // Support requests mock data
-            const sampleSupportRequests = [
-                {
-                    id: 1,
-                    title: "Device not turning on",
-                    status: "Open",
-                    priority: "High",
-                    category: "Technical",
-                    date: "March 1, 2024",
-                    customer: "John Smith",
-                    email: "john.smith@example.com",
-                    isRead: false,
-                    description: "My phone won't turn on even after charging overnight. I've tried different chargers and outlets but nothing seems to work.",
-                    messages: [
-                        {
-                            id: 1,
-                            sender: "system",
-                            message: "Your request has been received. A support agent will contact you shortly.",
-                            date: "March 1, 2024 10:30 AM"
-                        }
-                    ]
-                },
-                {
-                    id: 2,
-                    title: "Question about my order #ORD-1234",
-                    status: "In Progress",
-                    priority: "Normal",
-                    category: "Order",
-                    date: "February 25, 2024",
-                    customer: "Emma Johnson",
-                    email: "emma.johnson@example.com",
-                    isRead: true,
-                    description: "I placed an order last week and I'm wondering when it will be delivered. The tracking information hasn't updated in 3 days.",
-                    messages: [
-                        {
-                            id: 1,
-                            sender: "system",
-                            message: "Your request has been received. A support agent will contact you shortly.",
-                            date: "February 25, 2024 3:45 PM"
-                        },
-                        {
-                            id: 2,
-                            sender: "agent",
-                            agentName: "John Smith",
-                            message: "Thank you for your patience. I've checked your order and it appears there was a slight delay in shipping. Your package is now on its way and should arrive within 2 business days.",
-                            date: "February 26, 2024 11:15 AM"
-                        }
-                    ]
-                },
-                {
-                    id: 3,
-                    title: "Request for refund",
-                    status: "Closed",
-                    priority: "Normal",
-                    category: "Billing",
-                    date: "February 10, 2024",
-                    customer: "Michael Brown",
-                    email: "michael.brown@example.com",
-                    isRead: true,
-                    description: "I would like to request a refund for my purchase as the item arrived damaged.",
-                    messages: [
-                        {
-                            id: 1,
-                            sender: "system",
-                            message: "Your request has been received. A support agent will contact you shortly.",
-                            date: "February 10, 2024 9:20 AM"
-                        },
-                        {
-                            id: 2,
-                            sender: "agent",
-                            agentName: "Sarah Johnson",
-                            message: "I'm sorry to hear about the damaged item. We'll process your refund right away. Could you please provide a photo of the damaged item?",
-                            date: "February 10, 2024 10:45 AM"
-                        },
-                        {
-                            id: 3,
-                            sender: "customer",
-                            message: "I've attached photos of the damaged product.",
-                            date: "February 10, 2024 11:30 AM"
-                        },
-                        {
-                            id: 4,
-                            sender: "agent",
-                            agentName: "Sarah Johnson",
-                            message: "Thank you for the photos. I've processed your refund and you should receive it within 3-5 business days.",
-                            date: "February 11, 2024 9:15 AM"
-                        }
-                    ]
-                }
-            ];
-
-            setSupportRequests(sampleSupportRequests);
-            setUnreadSupportRequests(sampleSupportRequests.filter(req => !req.isRead).length);
-
-            setIsLoading(false);
-        }, 1000);
+        const savedNotifiedItems = localStorage.getItem('notifiedLowStockItems');
+        if (savedNotifiedItems) {
+            setNotifiedLowStockItems(JSON.parse(savedNotifiedItems));
+        }
     }, []);
 
-    // Inventory parts data
-    const commonParts = {
-        iphone: [
-            { icon: faScrewdriver, category: 'Screen Assembly', prefix: 'iPhone' },
-            { icon: faBatteryFull, category: 'Battery', prefix: 'iPhone' },
-            { icon: faVolumeUp, category: 'Speaker Assembly', prefix: 'iPhone' },
-            { icon: faCamera, category: 'Camera Module', prefix: 'iPhone' },
-            { icon: faMicrochip, category: 'Logic Board', prefix: 'iPhone' }
-        ],
-        ipad: [
-            { icon: faScrewdriver, category: 'Screen Assembly', prefix: 'iPad' },
-            { icon: faBatteryFull, category: 'Battery', prefix: 'iPad' },
-            { icon: faVolumeUp, category: 'Speaker Assembly', prefix: 'iPad' },
-            { icon: faCamera, category: 'Camera Module', prefix: 'iPad' },
-            { icon: faMicrochip, category: 'Logic Board', prefix: 'iPad' }
-        ],
-        macbook: [
-            { icon: faScrewdriver, category: 'Display Assembly', prefix: 'MacBook' },
-            { icon: faBatteryFull, category: 'Battery', prefix: 'MacBook' },
-            { icon: faMicrochip, category: 'Logic Board', prefix: 'MacBook' },
-            { icon: faVolumeUp, category: 'Speaker Assembly', prefix: 'MacBook' },
-            { icon: faLaptop, category: 'Keyboard', prefix: 'MacBook' }
-        ],
-        airpods: [
-            { icon: faBatteryFull, category: 'Battery', prefix: 'AirPods' },
-            { icon: faVolumeUp, category: 'Speaker Driver', prefix: 'AirPods' },
-            { icon: faMicrochip, category: 'Charging Case', prefix: 'AirPods' }
-        ],
-        applewatch: [
-            { icon: faScrewdriver, category: 'Screen Assembly', prefix: 'Apple Watch' },
-            { icon: faBatteryFull, category: 'Battery', prefix: 'Apple Watch' },
-            { icon: faMicrochip, category: 'Logic Board', prefix: 'Apple Watch' },
-            { icon: faHeart, category: 'Heart Rate Sensor', prefix: 'Apple Watch' }
-        ]
-    };
+    // Load initial data from API
+    useEffect(() => {
+        const fetchAllData = async () => {
+            try {
+                // Fetch notifications
+                const notificationsData = await getNotifications();
+                setNotifications(notificationsData);
 
-    // Function to generate replacement parts based on device and model
-    const generateReplacementParts = (device, model) => {
-        if (!device || !model || !commonParts[device]) return [];
+                // Count unread notifications separately
+                const unreadNotificationCount = notificationsData.filter(n => !n.isRead).length;
+                setUnreadNotifications(unreadNotificationCount);
+                console.log('Initial unread notifications count:', unreadNotificationCount);
 
-        // Generate price based on device, model, and part type
-        const getPriceForPart = (device, model, category) => {
-            // Base prices by device type
-            const basePrices = {
-                iphone: { 'Screen Assembly': 149, 'Battery': 69, 'Speaker Assembly': 39, 'Camera Module': 89, 'Logic Board': 199 },
-                ipad: { 'Screen Assembly': 199, 'Battery': 89, 'Speaker Assembly': 49, 'Camera Module': 79, 'Logic Board': 249 },
-                macbook: { 'Display Assembly': 349, 'Battery': 129, 'Logic Board': 399, 'Speaker Assembly': 69, 'Keyboard': 149 },
-                airpods: { 'Battery': 49, 'Speaker Driver': 39, 'Charging Case': 69 },
-                applewatch: { 'Screen Assembly': 119, 'Battery': 49, 'Logic Board': 149, 'Heart Rate Sensor': 59 }
-            };
+                // Fetch support requests
+                const supportData = await getSupportRequests();
+                setSupportRequests(supportData);
 
-            // Premium models have higher prices
-            const isPremium = model.toLowerCase().includes('pro') || model.toLowerCase().includes('max');
-            const modelIndex = deviceModels[device].indexOf(model);
-            const isNewerModel = modelIndex < deviceModels[device].length / 2;
+                // Only count unread support requests for the support badge
+                const unreadSupportCount = supportData.filter(req => !req.isRead).length;
+                setUnreadSupportRequests(unreadSupportCount);
+                console.log('Initial unread support requests count:', unreadSupportCount);
 
-            let basePrice = basePrices[device][category] || 99;
+                // Other data fetching...
+                const trafficData = await getTrafficData(trafficPeriod);
+                setWebsiteTraffic(trafficData);
 
-            // Adjust price based on model
-            if (isPremium) basePrice *= 1.3;
-            if (isNewerModel) basePrice *= 1.2;
+                const repairsData = await getRepairs();
+                setRepairOrders(repairsData);
 
-            return Math.round(basePrice * 100) / 100;
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                setIsLoading(false);
+            }
         };
 
-        // Create parts for the selected device and model
-        return commonParts[device].map((part, index) => {
-            const price = getPriceForPart(device, model, part.category);
-            const modelPrefix = model.replace(/"/g, ''); // Remove quotes from model name
+        fetchAllData();
+    }, []);
 
-            return {
-                id: `${device}-${index}-${Math.floor(Math.random() * 1000)}`,
-                name: `${part.category} for ${modelPrefix}`,
-                price: price,
-                icon: part.icon,
-                description: `Genuine replacement ${part.category.toLowerCase()} for your ${modelPrefix}. Compatible with ${modelPrefix} models.`,
-                compatibility: [model],
-                partNumber: `${part.prefix}-${part.category.replace(/\s/g, '')}-${Math.floor(Math.random() * 10000)}`,
-                stockLevel: Math.floor(Math.random() * 50) + 1, // Random stock level for demonstration
-                reorderPoint: 10, // Sample reorder point
-                supplier: 'iRevix Parts Co.', // Sample supplier
-                lastRestocked: '2025-02-15' // Sample restock date
-            };
-        });
+
+    useEffect(() => {
+        const fetchRevenueData = async () => {
+            try {
+                if (activeTab === 'revenue' || activeTab === 'dashboard') {
+                    console.log('===== REVENUE DEBUG START =====');
+                    console.log('Fetching revenue data for period:', revenuePeriod);
+                    setIsLoading(true);
+
+                    // Add a timestamp to avoid caching issues
+                    const timestamp = new Date().getTime();
+                    console.log('Making API call with timestamp:', timestamp);
+
+                    const data = await getRevenueData(revenuePeriod);
+                    console.log('Raw API Response:', data);
+                    console.log('Data type:', typeof data);
+                    console.log('Has dailyRevenue:', data.hasOwnProperty('dailyRevenue'));
+                    console.log('dailyRevenue type:', Array.isArray(data.dailyRevenue) ? 'array' : typeof data.dailyRevenue);
+                    console.log('dailyRevenue length:', data.dailyRevenue ? data.dailyRevenue.length : 'N/A');
+
+                    // Check all expected properties
+                    const expectedProps = ['dailyRevenue', 'deviceRevenue', 'repairsByType', 'today', 'thisWeek', 'thisMonth', 'lastMonth'];
+                    expectedProps.forEach(prop => {
+                        console.log(`Property ${prop} exists:`, data.hasOwnProperty(prop));
+                        console.log(`Property ${prop} value:`, data[prop]);
+                    });
+
+                    // Process data but always set it even if dailyRevenue is empty
+                    const processedData = {
+                        dailyRevenue: data.dailyRevenue || [],
+                        deviceRevenue: data.deviceRevenue || [],
+                        repairsByType: data.repairsByType || [],
+                        today: data.today || 0,
+                        thisWeek: data.thisWeek || 0,
+                        thisMonth: data.thisMonth || 0,
+                        lastMonth: data.lastMonth || 0,
+                        repairSalesRatio: data.repairSalesRatio || '0:0',
+                        periodLabel: data.periodLabel || revenuePeriod,
+                        todayChange: data.todayChange || '0%',
+                        weekChange: data.weekChange || '0%',
+                        monthChange: data.monthChange || '0%'
+                    };
+
+                    console.log('Processed data:', processedData);
+                    console.log('Setting revenueData state...');
+
+                    // Always set the data, even if empty
+                    setRevenueData(processedData);
+
+                    // Add slight delay to ensure state is updated before isLoading is set to false
+                    setTimeout(() => {
+                        console.log('Setting isLoading to false');
+                        setIsLoading(false);
+                        console.log('===== REVENUE DEBUG END =====');
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('===== REVENUE ERROR =====');
+                console.error('Error in revenue data fetch:', error);
+                console.error('Error name:', error.name);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                if (error.response) {
+                    console.error('Response status:', error.response.status);
+                    console.error('Response data:', error.response.data);
+                }
+
+                // Set a default data structure rather than null
+                const defaultData = {
+                    dailyRevenue: [],
+                    deviceRevenue: [],
+                    repairsByType: [],
+                    today: 0,
+                    thisWeek: 0,
+                    thisMonth: 0,
+                    lastMonth: 0,
+                    repairSalesRatio: '0:0',
+                    periodLabel: revenuePeriod,
+                    todayChange: '0%',
+                    weekChange: '0%',
+                    monthChange: '0%'
+                };
+
+                console.log('Setting default data due to error:', defaultData);
+                setRevenueData(defaultData);
+                console.log('Setting isLoading to false after error');
+                setIsLoading(false);
+                console.error('===== REVENUE ERROR END =====');
+            }
+        };
+
+        if (activeTab === 'revenue' || activeTab === 'dashboard') {
+            fetchRevenueData();
+        }
+    }, [revenuePeriod, activeTab]);
+    // In AdminPanel.jsx, update the useEffect for dashboard stats
+    useEffect(() => {
+        const fetchDashboardStats = async () => {
+            // Ensure we only fetch when on dashboard tab
+            if (activeTab === 'dashboard') {
+                try {
+                    // Create an object to hold all dashboard stats
+                    let stats = {
+                        todayVisitors: 0,
+                        newOrders: 0,
+                        repairsInProgress: 0,
+                        todayRevenue: 0
+                    };
+
+                    // Fetch traffic data for today's visitors
+                    const trafficData = await getTrafficData('7days');
+                    if (trafficData && trafficData.length > 0) {
+                        // Get the most recent day's data
+                        const todayData = trafficData[trafficData.length - 1];
+                        stats.todayVisitors = todayData.visitors;
+                    }
+
+                    // Fetch repair orders
+                    const repairsData = await getRepairs();
+                    if (repairsData) {
+                        // Get today's date in YYYY-MM-DD format
+                        const today = new Date().toISOString().split('T')[0];
+
+                        // Count new orders from today
+                        stats.newOrders = repairsData.filter(order =>
+                            order.date === today
+                        ).length;
+
+                        // Count repairs in progress
+                        stats.repairsInProgress = repairsData.filter(order =>
+                            order.status === 'In Progress'
+                        ).length;
+                    }
+
+                    // Fetch revenue data
+                    const revData = await getRevenueData('today');
+                    if (revData) {
+                        stats.todayRevenue = revData.today || 0;
+                    }
+
+                    // Update dashboard stats state
+                    setDashboardStats(stats);
+
+                } catch (error) {
+                    console.error('Error fetching dashboard stats:', error);
+                    // Optionally set some default or error state
+                    setDashboardStats(null);
+                }
+            }
+        };
+
+        // Always attempt to fetch stats when dashboard tab is active
+        fetchDashboardStats();
+    }, [activeTab]); // This will trigger on tab changes and initial render
+
+    useEffect(() => {
+        const fetchDevicesAndModels = async () => {
+            try {
+                // Fetch inventory items to extract device and model info
+                const response = await axios.get('/api/inventory');
+                const inventoryItems = response.data;
+
+                // Extract unique device types
+                const uniqueDeviceTypes = [...new Set(inventoryItems.map(item => item.deviceType))];
+
+                // Create device objects with appropriate icons
+                const deviceIconMapping = {
+                    'iPhone': faMobileAlt,
+                    'iPad': faTabletScreenButton,
+                    'MacBook': faLaptop,
+                    'AirPods': faHeadphones,
+                    'Apple Watch': faClock
+                    // Add any other device types you have
+                };
+
+                const extractedDevices = uniqueDeviceTypes
+                    .filter(deviceType => deviceType) // Filter out any undefined or null
+                    .map(deviceType => ({
+                        id: deviceType.toLowerCase().replace(/\s+/g, ''), // Convert "Apple Watch" to "applewatch"
+                        name: deviceType,
+                        icon: deviceIconMapping[deviceType] || faMobileAlt // Default to mobile if not found
+                    }));
+
+                setDevices(extractedDevices);
+
+                // Extract unique models for each device type
+                const modelMapping = {};
+
+                extractedDevices.forEach(device => {
+                    const deviceInventory = inventoryItems.filter(
+                        item => item.deviceType === device.name
+                    );
+
+                    const deviceModels = [...new Set(deviceInventory.map(item => item.modelType))]
+                        .filter(model => model); // Filter out any undefined or null
+
+                    modelMapping[device.id] = deviceModels;
+                });
+
+                setDeviceModels(modelMapping);
+
+            } catch (error) {
+                console.error('Error loading devices and models:', error);
+                // Fall back to hardcoded values if API fails
+                setDevices([
+                    { id: 'iphone', name: 'iPhone', icon: faMobileAlt },
+                    { id: 'ipad', name: 'iPad', icon: faTabletScreenButton },
+                    { id: 'macbook', name: 'MacBook', icon: faLaptop },
+                    { id: 'airpods', name: 'AirPods', icon: faHeadphones },
+                    { id: 'applewatch', name: 'Apple Watch', icon: faClock }
+                ]);
+                setDeviceModels({
+                    iphone: ['iPhone 13 Pro', 'iPhone 13', 'iPhone 12 Pro', 'iPhone 12', 'iPhone 11 Pro', 'iPhone 11', 'iPhone XS', 'iPhone X'],
+                    ipad: ['iPad Pro 12.9"', 'iPad Pro 11"', 'iPad Air', 'iPad Mini', 'iPad'],
+                    macbook: ['MacBook Pro 16"', 'MacBook Pro 14"', 'MacBook Pro 13"', 'MacBook Air'],
+                    airpods: ['AirPods Pro', 'AirPods 3rd Gen', 'AirPods 2nd Gen', 'AirPods Max'],
+                    applewatch: ['Apple Watch Series 7', 'Apple Watch Series 6', 'Apple Watch SE', 'Apple Watch Series 5']
+                });
+            }
+        };
+
+        fetchDevicesAndModels();
+    }, []);
+
+    const fetchReplacementParts = async (deviceId, model) => {
+        if (!deviceId || !model) return [];
+
+        try {
+            console.log(`Fetching parts for device: ${deviceId}, model: ${model}`);
+            const parts = await getInventoryParts(deviceId, model);
+            console.log(`Received ${parts.length} parts for ${deviceId} ${model}`);
+            return parts;
+        } catch (error) {
+            console.error(`Error fetching replacement parts for ${deviceId} ${model}:`, error);
+            return []; // Return empty array on error
+        }
     };
-
-    // Add these hooks for support request loading and polling
 
 // Load support requests when the component mounts and when activeTab changes to 'support'
     useEffect(() => {
@@ -517,34 +786,151 @@ function AdminPanel() {
             return () => clearInterval(interval);
         }
     }, [isLoading, activeTab]);
+    const forceRefreshNotifications = async () => {
+        try {
+            console.log('Force refreshing notifications...');
+            const notificationsData = await getNotifications();
+
+            // Update notifications state
+            setNotifications(notificationsData);
+
+            // Update unread count
+            const unreadCount = notificationsData.filter(n => !n.isRead).length;
+            console.log(`Force refresh - unread count: ${unreadCount}`);
+            setUnreadNotifications(unreadCount);
+
+            return unreadCount;
+        } catch (error) {
+            console.error('Error force refreshing notifications:', error);
+            return null;
+        }
+    };
+
+    const fetchFilteredItems = async () => {
+        try {
+            console.log("Fetching filtered items", {
+                showLowStockOnly,
+                selectedDevices,
+                selectedModels
+            });
+
+            let filteredItems = [];
+
+            // If low stock is enabled
+            if (showLowStockOnly) {
+                // Fetch low stock items
+                const lowStockItems = await fetchLowStockItems();
+
+                // Filter low stock items based on selected devices and models
+                filteredItems = lowStockItems.filter(item => {
+                    const deviceMatch = selectedDevices.length === 0 ||
+                        selectedDevices.some(deviceId =>
+                            item.deviceType.toLowerCase() === deviceId.toLowerCase()
+                        );
+
+                    const modelMatch = selectedModels.length === 0 ||
+                        selectedModels.includes(item.modelType);
+
+                    return deviceMatch && modelMatch;
+                });
+
+                console.log(`Found ${filteredItems.length} low stock items`);
+            }
+            // If not showing low stock only
+            else {
+                // If no devices are selected, show all items
+                if (selectedDevices.length === 0) {
+                    filteredItems = inventoryItems;
+                    console.log(`Found ${filteredItems.length} total inventory items`);
+                }
+                // If devices are selected but no models
+                else if (selectedDevices.length > 0 && selectedModels.length === 0) {
+                    filteredItems = inventoryItems.filter(item =>
+                        selectedDevices.some(deviceId =>
+                            item.deviceType.toLowerCase() === deviceId.toLowerCase()
+                        )
+                    );
+                    console.log(`Found ${filteredItems.length} items for selected devices`);
+                }
+                // If both devices and models are selected
+                else if (selectedDevices.length > 0 && selectedModels.length > 0) {
+                    filteredItems = inventoryItems.filter(item =>
+                        selectedDevices.some(deviceId =>
+                            item.deviceType.toLowerCase() === deviceId.toLowerCase()
+                        ) &&
+                        selectedModels.includes(item.modelType)
+                    );
+                    console.log(`Found ${filteredItems.length} items for selected devices and models`);
+                }
+            }
+
+            // Set the filtered items
+            setFilteredInventoryItems(filteredItems);
+        } catch (error) {
+            console.error('Error fetching filtered inventory items:', error);
+            setFilteredInventoryItems([]);
+            alert(`Failed to fetch inventory items: ${error.message}`);
+        }
+    };
+
+// Update the useEffect to trigger filtering whenever necessary
+    useEffect(() => {
+        fetchFilteredItems();
+    }, [showLowStockOnly, selectedDevices, selectedModels, inventoryItems]);
 
     // Update inventory items when devices and models are selected
     useEffect(() => {
-        if (selectedDevices.length > 0 && selectedModels.length > 0) {
-            let allParts = [];
-            // Generate parts for each selected device and model combination
-            selectedDevices.forEach(deviceId => {
-                const deviceModelsSelected = selectedModels.filter(model =>
-                    deviceModels[deviceId].includes(model)
-                );
+        const fetchInventoryItems = async () => {
+            try {
+                // If both devices and models are selected
+                if (selectedDevices.length > 0 && selectedModels.length > 0) {
+                    let allItems = [];
 
-                deviceModelsSelected.forEach(model => {
-                    const parts = generateReplacementParts(deviceId, model);
-                    // Add device and model info to each part
-                    const partsWithInfo = parts.map(part => ({
-                        ...part,
-                        deviceType: devices.find(d => d.id === deviceId)?.name || deviceId,
-                        modelType: model
-                    }));
-                    allParts = [...allParts, ...partsWithInfo];
-                });
-            });
+                    // Fetch items for each device-model combination
+                    for (const deviceId of selectedDevices) {
+                        for (const model of selectedModels) {
+                            // Ensure the model belongs to the selected device
+                            if (deviceModels[deviceId].includes(model)) {
+                                try {
+                                    // Fetch inventory parts for this specific device and model
+                                    const items = await getInventoryParts(deviceId, model);
 
-            setInventoryItems(allParts);
-        } else {
-            setInventoryItems([]);
-        }
-    }, [selectedDevices, selectedModels]);
+                                    // Add device and model information to the items
+                                    const itemsWithDetails = items.map(item => ({
+                                        ...item,
+                                        deviceId: deviceId,
+                                        deviceType: devices.find(d => d.id === deviceId)?.name || deviceId,
+                                        modelType: model
+                                    }));
+
+                                    allItems = [...allItems, ...itemsWithDetails];
+                                } catch (error) {
+                                    console.error(`Error fetching items for ${deviceId} ${model}:`, error);
+                                }
+                            }
+                        }
+                    }
+
+                    console.log('Fetched Inventory Items:', {
+                        count: allItems.length,
+                        devices: [...new Set(allItems.map(item => item.deviceType))],
+                        models: [...new Set(allItems.map(item => item.modelType))]
+                    });
+
+                    // Set inventory items and trigger filtering
+                    setInventoryItems(allItems);
+                } else {
+                    // Reset inventory items if devices or models are not fully selected
+                    setInventoryItems([]);
+                }
+            } catch (error) {
+                console.error('Error fetching inventory items:', error);
+                setInventoryItems([]);
+            }
+        };
+
+        fetchInventoryItems();
+    }, [selectedDevices, selectedModels, deviceModels, devices]);
 
     const handleDeviceSelect = (deviceId) => {
         if (selectedDevices.includes(deviceId)) {
@@ -598,135 +984,6 @@ function AdminPanel() {
         if (stockLevel <= reorderPoint) return '#ffc107'; // Warning - below reorder point
         return '#28a745'; // Good - above reorder point
     };
-    // Function to generate revenue data for different time periods
-    const getRevenueDataForPeriod = (period) => {
-        // Base revenue data for 7 days
-        const sevenDaysData = {
-            today: 2450,
-            thisWeek: 15680,
-            thisMonth: 68450,
-            lastMonth: 62340,
-            repairsByType: [
-                { type: 'Screen Replacements', count: 48, revenue: 7152 },
-                { type: 'Battery Replacements', count: 36, revenue: 2484 },
-                { type: 'Logic Board Repairs', count: 15, revenue: 4485 },
-                { type: 'Water Damage', count: 12, revenue: 3600 },
-                { type: 'Camera Modules', count: 9, revenue: 801 }
-            ],
-            deviceRevenue: [
-                { device: 'iPhone', revenue: 32450, percent: 47.4 },
-                { device: 'MacBook', revenue: 18700, percent: 27.3 },
-                { device: 'iPad', revenue: 9800, percent: 14.3 },
-                { device: 'Apple Watch', revenue: 4650, percent: 6.8 },
-                { device: 'AirPods', revenue: 2850, percent: 4.2 }
-            ],
-            dailyRevenue: [
-                { date: '2025-02-23', sales: 1930, repairs: 1480, total: 3410 },
-                { date: '2025-02-24', sales: 2100, repairs: 1950, total: 4050 },
-                { date: '2025-02-25', sales: 1820, repairs: 1350, total: 3170 },
-                { date: '2025-02-26', sales: 2340, repairs: 1780, total: 4120 },
-                { date: '2025-02-27', sales: 2560, repairs: 1840, total: 4400 },
-                { date: '2025-02-28', sales: 2870, repairs: 2080, total: 4950 },
-                { date: '2025-03-01', sales: 3060, repairs: 2450, total: 5510 }
-            ],
-            periodLabel: "Last 7 Days"
-        };
-
-        // Custom period data
-        switch (period) {
-            case 'today':
-                return {
-                    today: 2450,
-                    thisWeek: 15680,
-                    thisMonth: 68450,
-                    lastMonth: 62340,
-                    repairsByType: [
-                        { type: 'Screen Replacements', count: 8, revenue: 1192 },
-                        { type: 'Battery Replacements', count: 5, revenue: 345 },
-                        { type: 'Logic Board Repairs', count: 2, revenue: 598 },
-                        { type: 'Water Damage', count: 2, revenue: 600 },
-                        { type: 'Camera Modules', count: 1, revenue: 89 }
-                    ],
-                    deviceRevenue: [
-                        { device: 'iPhone', revenue: 1150, percent: 46.9 },
-                        { device: 'MacBook', revenue: 680, percent: 27.8 },
-                        { device: 'iPad', revenue: 350, percent: 14.3 },
-                        { device: 'Apple Watch', revenue: 170, percent: 6.9 },
-                        { device: 'AirPods', revenue: 100, percent: 4.1 }
-                    ],
-                    dailyRevenue: [
-                        { date: '2025-03-01', sales: 3060, repairs: 2450, total: 5510 }
-                    ],
-                    periodLabel: "Today"
-                };
-            case '7days':
-                return sevenDaysData;
-            case '30days':
-                return {
-                    today: 2450,
-                    thisWeek: 15680,
-                    thisMonth: 72480,
-                    lastMonth: 58340,
-                    repairsByType: [
-                        { type: 'Screen Replacements', count: 180, revenue: 26820 },
-                        { type: 'Battery Replacements', count: 140, revenue: 9660 },
-                        { type: 'Logic Board Repairs', count: 65, revenue: 19435 },
-                        { type: 'Water Damage', count: 48, revenue: 14400 },
-                        { type: 'Camera Modules', count: 42, revenue: 3738 }
-                    ],
-                    deviceRevenue: [
-                        { device: 'iPhone', revenue: 45250, percent: 46.1 },
-                        { device: 'MacBook', revenue: 28100, percent: 28.6 },
-                        { device: 'iPad', revenue: 13800, percent: 14.1 },
-                        { device: 'Apple Watch', revenue: 7050, percent: 7.2 },
-                        { device: 'AirPods', revenue: 3950, percent: 4.0 }
-                    ],
-                    dailyRevenue: sevenDaysData.dailyRevenue.concat([
-                        { date: '2025-01-31', sales: 2100, repairs: 1600, total: 3700 },
-                        { date: '2025-02-01', sales: 2200, repairs: 1650, total: 3850 },
-                        { date: '2025-02-02', sales: 1900, repairs: 1400, total: 3300 },
-                        { date: '2025-02-03', sales: 2000, repairs: 1500, total: 3500 },
-                        { date: '2025-02-04', sales: 2300, repairs: 1700, total: 4000 }
-                        // Additional days could be added here
-                    ]),
-                    periodLabel: "Last 30 Days"
-                };
-            case '90days':
-                return {
-                    today: 2450,
-                    thisWeek: 15680,
-                    thisMonth: 72480,
-                    lastMonth: 58340,
-                    repairsByType: [
-                        { type: 'Screen Replacements', count: 520, revenue: 77480 },
-                        { type: 'Battery Replacements', count: 405, revenue: 27945 },
-                        { type: 'Logic Board Repairs', count: 180, revenue: 53820 },
-                        { type: 'Water Damage', count: 135, revenue: 40500 },
-                        { type: 'Camera Modules', count: 120, revenue: 10680 }
-                    ],
-                    deviceRevenue: [
-                        { device: 'iPhone', revenue: 98450, percent: 45.1 },
-                        { device: 'MacBook', revenue: 62700, percent: 28.7 },
-                        { device: 'iPad', revenue: 31800, percent: 14.6 },
-                        { device: 'Apple Watch', revenue: 15650, percent: 7.2 },
-                        { device: 'AirPods', revenue: 9850, percent: 4.5 }
-                    ],
-                    dailyRevenue: [
-                        // For 90 days, we just show weekly aggregates to keep the chart readable
-                        { date: '2024-12-01', sales: 12100, repairs: 9300, total: 21400 },
-                        { date: '2024-12-15', sales: 13400, repairs: 10200, total: 23600 },
-                        { date: '2024-12-31', sales: 15600, repairs: 11900, total: 27500 },
-                        { date: '2025-01-15', sales: 14800, repairs: 11300, total: 26100 },
-                        { date: '2025-01-31', sales: 16200, repairs: 12400, total: 28600 },
-                        { date: '2025-02-15', sales: 17500, repairs: 13400, total: 30900 },
-                        { date: '2025-03-01', sales: 19200, repairs: 14800, total: 34000 }
-                    ],
-                    periodLabel: "Last 90 Days"
-                };
-            default:
-                return sevenDaysData;
-        }
-    };
 
     // Handler to open restock modal
     const handleRestockClick = (item) => {
@@ -735,44 +992,187 @@ function AdminPanel() {
         setIsRestockModalOpen(true);
     };
 
-// Handler to submit restock form
-    const handleRestockSubmit = () => {
-        // Update the inventory item
-        const updatedItems = inventoryItems.map(item => {
-            if (item.id === restockItem.id) {
-                return {
-                    ...item,
-                    stockLevel: item.stockLevel + parseInt(restockQuantity, 10),
-                    lastRestocked: new Date().toISOString().split('T')[0] // Today's date in YYYY-MM-DD format
-                };
+    const handleRestockSubmit = async () => {
+        try {
+            // Call the dedicated restock API endpoint
+            const updatedItem = await restockInventoryItem(restockItem.id, restockQuantity);
+            console.log('Restock successful, received updated item:', updatedItem);
+
+            // Remove this item from the notified low stock items list
+            const itemKeysToRemove = notifiedLowStockItems.filter(key =>
+                key.startsWith(`${restockItem.id}-`)
+            );
+
+            if (itemKeysToRemove.length > 0) {
+                const updatedNotifiedItems = notifiedLowStockItems.filter(key =>
+                    !itemKeysToRemove.includes(key)
+                );
+                setNotifiedLowStockItems(updatedNotifiedItems);
+                localStorage.setItem('notifiedLowStockItems', JSON.stringify(updatedNotifiedItems));
             }
-            return item;
-        });
 
-        setInventoryItems(updatedItems);
-        setIsRestockModalOpen(false);
-        setRestockItem(null);
-        setRestockQuantity(1);
-    };
+            // Create a notification for the restock action
+            await createNotification({
+                type: 'system',
+                message: `${updatedItem.name} for ${updatedItem.deviceType} ${updatedItem.modelType} has been restocked (+${restockQuantity} units).`,
+                time: 'just now'
+            });
+            window.dispatchEvent(new Event('notification-update'));
 
-// Handler to delete an inventory item
-    const handleDeleteItem = (itemId, e) => {
-        e.stopPropagation(); // Prevent event bubbling
-        if (window.confirm("Are you sure you want to delete this inventory item?")) {
-            const updatedItems = inventoryItems.filter(item => item.id !== itemId);
-            setInventoryItems(updatedItems);
+            // Get fresh notifications
+            const notificationsData = await getNotifications();
+            setNotifications(notificationsData);
+
+            // IMPORTANT: Refresh inventory data based on current selections
+            // Refetch all inventory items for currently selected device/model
+            if (selectedDevices.length > 0 && selectedModels.length > 0) {
+                let allItems = [];
+
+                for (const deviceId of selectedDevices) {
+                    for (const model of selectedModels) {
+                        // Ensure the model belongs to the selected device
+                        if (deviceModels[deviceId]?.includes(model)) {
+                            try {
+                                console.log(`Refreshing inventory for ${deviceId} ${model}`);
+                                // Fetch fresh inventory data
+                                const items = await getInventoryParts(deviceId, model);
+
+                                // Add device and model information
+                                const itemsWithDetails = items.map(item => ({
+                                    ...item,
+                                    deviceId: deviceId,
+                                    deviceType: devices.find(d => d.id === deviceId)?.name || deviceId,
+                                    modelType: model
+                                }));
+
+                                allItems = [...allItems, ...itemsWithDetails];
+                            } catch (error) {
+                                console.error(`Error refreshing items for ${deviceId} ${model}:`, error);
+                            }
+                        }
+                    }
+                }
+
+                console.log('Refreshed inventory data with', allItems.length, 'items');
+                setInventoryItems(allItems);
+
+                // Also update filtered inventory
+                if (showLowStockOnly) {
+                    const lowStockItems = allItems.filter(item =>
+                        item.stockLevel <= item.reorderPoint
+                    );
+                    setFilteredInventoryItems(lowStockItems);
+                } else {
+                    setFilteredInventoryItems(allItems);
+                }
+            }
+
+            // Reset UI state
+            setIsRestockModalOpen(false);
+            setRestockItem(null);
+            setRestockQuantity(1);
+
+            // Show success message
+            alert("Inventory item restocked successfully!");
+        } catch (error) {
+            console.error("Error restocking inventory item:", error);
+
+            // Enhanced error logging
+            if (error.response) {
+                console.error('Response status:', error.response.status);
+                console.error('Response data:', error.response.data);
+            }
+
+            alert("Failed to restock inventory item. Please try again.");
         }
     };
 
-    const markAllAsRead = () => {
-        setNotifications(notifications.map(notif => ({ ...notif, isRead: true })));
-    };
+// Handler to delete an inventory item - updated for database persistence
+    const markAllAsRead = async () => {
+        try {
+            console.log('Marking all notifications as read');
 
+            // Optimistically mark all as read locally
+            const updatedNotifications = notifications.map(notif => ({
+                ...notif,
+                isRead: true
+            }));
+
+            setNotifications(updatedNotifications);
+            setUnreadNotifications(0);  // Set to 0 immediately
+
+            // Call API to mark all as read
+            await markAllNotificationsAsRead();
+
+            // Refresh notifications to ensure consistency
+            const freshNotifications = await getNotifications();
+            setNotifications(freshNotifications);
+
+            // Update unread count
+            const unreadCount = freshNotifications.filter(n => !n.isRead).length;
+            console.log('Unread notifications count after marking all as read:', unreadCount);
+            setUnreadNotifications(unreadCount);
+
+            // Dispatch notification update event
+            window.dispatchEvent(new Event('notification-update'));
+
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+            // Revert to original state if API call fails
+            const originalNotifications = await getNotifications();
+            setNotifications(originalNotifications);
+            const originalUnreadCount = originalNotifications.filter(n => !n.isRead).length;
+            setUnreadNotifications(originalUnreadCount);
+        }
+    };
+    const handleDeleteItem = async (itemId, e) => {
+        e.stopPropagation(); // Prevent event bubbling
+
+        if (window.confirm("Are you sure you want to delete this inventory item? This action cannot be undone.")) {
+            try {
+                // Call API to delete the item from the database
+                await deleteInventoryItem(itemId);
+
+                // Remove this item from the notified low stock items list
+                const itemKeysToRemove = notifiedLowStockItems.filter(key =>
+                    key.startsWith(`${itemId}-`)
+                );
+
+                if (itemKeysToRemove.length > 0) {
+                    const updatedNotifiedItems = notifiedLowStockItems.filter(key =>
+                        !itemKeysToRemove.includes(key)
+                    );
+                    setNotifiedLowStockItems(updatedNotifiedItems);
+                    localStorage.setItem('notifiedLowStockItems', JSON.stringify(updatedNotifiedItems));
+                }
+
+                // Update local state to remove the item
+                const updatedItems = inventoryItems.filter(item => item.id !== itemId);
+                setInventoryItems(updatedItems);
+
+                // If we're also showing filtered items, update those too
+                if (filteredInventoryItems.length > 0) {
+                    const updatedFilteredItems = filteredInventoryItems.filter(item => item.id !== itemId);
+                    setFilteredInventoryItems(updatedFilteredItems);
+                }
+
+                // Show success message
+                alert("Inventory item deleted successfully.");
+            } catch (error) {
+                console.error("Error deleting inventory item:", error);
+                alert("Failed to delete inventory item. Please try again.");
+            }
+        }
+    };
     // Function to export revenue report as CSV
     const exportRevenueReport = () => {
         try {
-            // Get the current revenue data based on selected period
-            const data = getRevenueDataForPeriod(revenuePeriod);
+            // Use the revenue data from state
+            if (!revenueData) {
+                alert("Revenue data is still loading. Please try again in a moment.");
+                return;
+            }
+            const data = revenueData;
 
             // Create CSV content
             let csvContent = "data:text/csv;charset=utf-8,";
@@ -788,7 +1188,7 @@ function AdminPanel() {
             csvContent += `This Week,$${data.thisWeek.toLocaleString()}\r\n`;
             csvContent += `This Month,$${data.thisMonth.toLocaleString()}\r\n`;
             csvContent += `Last Month,$${data.lastMonth.toLocaleString()}\r\n`;
-            csvContent += `Repair to Sales Ratio,65:35\r\n\r\n`;
+            csvContent += `Repair to Sales Ratio,${data.repairSalesRatio}\r\n\r\n`;
 
             // Add revenue by device type
             csvContent += "Revenue by Device Type\r\n";
@@ -833,66 +1233,6 @@ function AdminPanel() {
         }
     };
 
-    // Function to get filtered inventory items
-    const getFilteredInventoryItems = () => {
-        // If checking low stock for all devices (no device selection)
-        if (selectedDevices.length === 0 && showLowStockOnly) {
-            let allLowStockItems = [];
-
-            // Generate items for all devices and models
-            for (const device of devices) {
-                for (const model of deviceModels[device.id]) {
-                    const deviceItems = generateReplacementParts(device.id, model);
-                    // Only keep low stock items
-                    const lowStockItems = deviceItems.filter(item => item.stockLevel <= item.reorderPoint);
-
-                    // Add device and model info to items
-                    const itemsWithDeviceInfo = lowStockItems.map(item => ({
-                        ...item,
-                        deviceType: device.name,
-                        modelType: model
-                    }));
-
-                    allLowStockItems = [...allLowStockItems, ...itemsWithDeviceInfo];
-                }
-            }
-            return allLowStockItems;
-        }
-
-        // If some devices are selected but no models, and showing low stock
-        if (selectedDevices.length > 0 && selectedModels.length === 0 && showLowStockOnly) {
-            let deviceLowStockItems = [];
-
-            for (const deviceId of selectedDevices) {
-                for (const model of deviceModels[deviceId]) {
-                    const deviceItems = generateReplacementParts(deviceId, model);
-                    // Only keep low stock items
-                    const lowStockItems = deviceItems.filter(item => item.stockLevel <= item.reorderPoint);
-
-                    // Add model info to items
-                    const itemsWithModelInfo = lowStockItems.map(item => ({
-                        ...item,
-                        deviceType: devices.find(d => d.id === deviceId)?.name || deviceId,
-                        modelType: model
-                    }));
-
-                    deviceLowStockItems = [...deviceLowStockItems, ...itemsWithModelInfo];
-                }
-            }
-            return deviceLowStockItems;
-        }
-
-        // If specific devices and models selected
-        if (selectedDevices.length > 0 && selectedModels.length > 0) {
-            if (showLowStockOnly) {
-                return inventoryItems.filter(item => item.stockLevel <= item.reorderPoint);
-            }
-            return inventoryItems;
-        }
-
-        // If no specific selection, return empty array
-        return [];
-    };
 
     const renderDashboard = () => (
         <div className="dashboard-container">
@@ -907,7 +1247,11 @@ function AdminPanel() {
                         <FontAwesomeIcon icon={faUsers} />
                     </div>
                     <div className="stat-content">
-                        <h3>425</h3>
+                        {dashboardStats ? (
+                            <h3>{dashboardStats.todayVisitors}</h3>
+                        ) : (
+                            <h3><div className="loading-indicator-small"></div></h3>
+                        )}
                         <p>Today's Visitors</p>
                     </div>
                 </div>
@@ -917,7 +1261,11 @@ function AdminPanel() {
                         <FontAwesomeIcon icon={faTicketAlt} />
                     </div>
                     <div className="stat-content">
-                        <h3>12</h3>
+                        {dashboardStats ? (
+                            <h3>{dashboardStats.newOrders}</h3>
+                        ) : (
+                            <h3><div className="loading-indicator-small"></div></h3>
+                        )}
                         <p>New Orders</p>
                     </div>
                 </div>
@@ -927,7 +1275,11 @@ function AdminPanel() {
                         <FontAwesomeIcon icon={faTools} />
                     </div>
                     <div className="stat-content">
-                        <h3>8</h3>
+                        {dashboardStats ? (
+                            <h3>{dashboardStats.repairsInProgress}</h3>
+                        ) : (
+                            <h3><div className="loading-indicator-small"></div></h3>
+                        )}
                         <p>Repairs in Progress</p>
                     </div>
                 </div>
@@ -937,7 +1289,11 @@ function AdminPanel() {
                         <FontAwesomeIcon icon={faMoneyBillWave} />
                     </div>
                     <div className="stat-content">
-                        <h3>$2,450</h3>
+                        {dashboardStats ? (
+                            <h3>${dashboardStats.todayRevenue.toLocaleString()}</h3>
+                        ) : (
+                            <h3><div className="loading-indicator-small"></div></h3>
+                        )}
                         <p>Today's Revenue</p>
                     </div>
                 </div>
@@ -986,7 +1342,7 @@ function AdminPanel() {
                 <h3>Website Traffic (Last 7 Days)</h3>
                 <div className="traffic-chart">
                     <div className="chart-bars">
-                        {getTrafficDataForPeriod('7days').map((day, index) => (
+                        {websiteTraffic.slice(0, 7).map((day, index) => (
                             <div key={index} className="chart-bar-container">
                                 <div
                                     className="chart-bar stacked-bar"
@@ -1041,36 +1397,360 @@ function AdminPanel() {
         <div className="notifications-container">
             <div className="notifications-header">
                 <h2>Notifications</h2>
-                <button className="mark-read-btn" onClick={markAllAsRead}>Mark All as Read</button>
+                <div className="notification-actions">
+                    <button
+                        className="mark-read-btn"
+                        onClick={markAllAsRead}  // Direct reference to the function
+                    >
+                        Mark All as Read
+                    </button>
+                    <select
+                        className="notification-filter"
+                        onChange={(e) => setNotificationFilter(e.target.value)}
+                        value={notificationFilter}
+                    >
+                        <option value="all">All Notifications</option>
+                        <option value="order">Order Updates</option>
+                        <option value="system">System Messages</option>
+                        <option value="user">User Notifications</option>
+                        <option value="alert">Inventory Alerts</option>
+                    </select>
+                </div>
             </div>
 
             <div className="notification-list">
-                {notifications.map(notification => (
-                    <div key={notification.id} className={`notification-item ${!notification.isRead ? 'unread' : ''}`}>
-                        <div className="notification-icon">
-                            <FontAwesomeIcon icon={getNotificationIcon(notification.type)} />
-                        </div>
-                        <div className="notification-content">
-                            <p>{notification.message}</p>
-                            <span className="notification-time">{notification.time}</span>
-                        </div>
+                {getFilteredNotifications().length === 0 ? (
+                    <div className="empty-notifications">
+                        <p>No notifications to display.</p>
                     </div>
-                ))}
+                ) : (
+                    getFilteredNotifications().map(notification => (
+                        <div
+                            key={notification.id}
+                            className={`notification-item ${!notification.isRead ? 'unread' : ''} notification-${notification.type}`}
+                        >
+                            <div className="notification-icon">
+                                <FontAwesomeIcon icon={getNotificationIcon(notification.type)} />
+                            </div>
+                            <div className="notification-content">
+                                <div className="notification-header">
+                                <span className="notification-type">
+                                    {notification.type === 'order' && 'Order Update'}
+                                    {notification.type === 'system' && 'System Message'}
+                                    {notification.type === 'user' && 'User Notification'}
+                                    {notification.type === 'alert' && 'Inventory Alert'}
+                                </span>
+                                    <span className="notification-time">{notification.time}</span>
+                                </div>
+                                <p>{notification.message}</p>
+                                {!notification.isRead && (
+                                    <button
+                                        className="mark-read-button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            console.log('Mark as Read button clicked for notification:', notification);
+                                            markSingleNotificationAsRead(notification);
+                                        }}
+                                    >
+                                        Mark as Read
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );
+    const loadInitialData = async () => {
+        // If data is already loaded, don't show loading
+        if (notifications.length > 0 && repairOrders.length > 0) {
+            return;
+        }
+
+        try {
+            // Minimal loading state
+            setIsLoading(true);
+
+            // Parallel data fetching
+            const [
+                notificationsData,
+                trafficData,
+                repairsData,
+                supportData,
+                revenueData
+            ] = await Promise.all([
+                getNotifications(),
+                getTrafficData(trafficPeriod),
+                getRepairs(),
+                getSupportRequests(),
+                getRevenueData(revenuePeriod)
+            ]);
+
+            // Update states
+            setNotifications(notificationsData);
+            setWebsiteTraffic(trafficData);
+            setRepairOrders(repairsData);
+            setSupportRequests(supportData);
+            setUnreadSupportRequests(supportData.filter(req => !req.isRead).length);
+            setRevenueData(revenueData);
+
+            // Dashboard specific calculations
+            if (activeTab === 'dashboard') {
+                const stats = {
+                    todayVisitors: trafficData[trafficData.length - 1]?.visitors || 0,
+                    newOrders: repairsData.filter(order =>
+                        order.date === new Date().toISOString().split('T')[0]
+                    ).length,
+                    repairsInProgress: repairsData.filter(order =>
+                        order.status === 'In Progress'
+                    ).length,
+                    todayRevenue: revenueData.today || 0
+                };
+                setDashboardStats(stats);
+            }
+        } catch (error) {
+            console.error('Error loading initial data:', error);
+        } finally {
+            // Ensure loading state is always turned off
+            setIsLoading(false);
+        }
+    };
+
+// Optimize useEffect for smoother tab switching
+    useEffect(() => {
+        // Only load if data is not already present
+        if (notifications.length === 0 || repairOrders.length === 0) {
+            loadInitialData();
+        }
+    }, [activeTab]);
+
+    const refreshNotifications = async () => {
+        try {
+            console.log('Refreshing notifications...');
+            const notificationsData = await getNotifications();
+            console.log('Refreshed notifications:', notificationsData.length, 'items');
+
+            // Ensure the isRead property is correctly set and processed
+            const processedNotifications = notificationsData.map(notification => ({
+                ...notification,
+                isRead: notification.isRead === true  // Explicitly convert to boolean
+            }));
+
+            // Sort notifications by date, most recent first
+            const sortedNotifications = processedNotifications.sort((a, b) =>
+                new Date(b.date) - new Date(a.date)
+            );
+
+            setNotifications(sortedNotifications);
+
+            // Update the unread notifications count
+            const unreadCount = sortedNotifications.filter(n => !n.isRead).length;
+            console.log('Refreshed unread notifications count:', unreadCount);
+            setUnreadNotifications(unreadCount);
+        } catch (error) {
+            console.error('Error refreshing notifications:', error);
+        }
+    };
+    // In the fetchAndProcessNotifications function, change this:
+    useEffect(() => {
+        const fetchAndProcessNotifications = async () => {
+            try {
+                console.log('Fetching and processing notifications...');
+                const notificationsData = await getNotifications();
+
+                // Sort notifications by date, most recent first
+                const sortedNotifications = notificationsData.sort((a, b) =>
+                    new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)
+                );
+
+                // Update state with sorted notifications
+                setNotifications(sortedNotifications);
+
+                // Update unread notifications count
+                const unreadCount = sortedNotifications.filter(n => !n.isRead).length;
+                console.log('Updated unread notifications count:', unreadCount);
+                setUnreadNotifications(unreadCount); // IMPORTANT: Fixed this line
+
+            } catch (error) {
+                console.error('Error refreshing notifications:', error);
+            }
+        };
+
+        // Run on initial load and when switching to notifications tab
+        if (!isLoading && (activeTab === 'notifications' || activeTab === 'dashboard')) {
+            fetchAndProcessNotifications();
+        }
+    }, [activeTab, isLoading]);
+
+    useEffect(() => {
+        // This useEffect runs when inventoryItems changes
+        if (!isLoading && inventoryItems.length > 0) {
+            const checkForNewLowStockItems = async () => {
+                try {
+                    let newNotifications = false;
+                    const updatedNotifiedItems = [...notifiedLowStockItems];
+
+                    // Check each inventory item
+                    for (const item of inventoryItems) {
+                        // Only process items that are at or below their reorder point
+                        if (item.stockLevel <= item.reorderPoint) {
+                            // Create a unique identifier for this item
+                            const itemKey = `${item.id}-${item.stockLevel}`;
+
+                            // Check if we've already notified about this item at this stock level
+                            if (!notifiedLowStockItems.includes(itemKey)) {
+                                // This is a new low stock condition
+                                if (item.stockLevel <= item.reorderPoint * 0.5) {
+                                    await createNotification({
+                                        type: 'alert',
+                                        message: `CRITICAL: ${item.name} for ${item.deviceType} ${item.modelType} is critically low (${item.stockLevel} units remaining).`,
+                                        time: 'just now'
+                                    });
+                                    newNotifications = true;
+                                } else if (item.stockLevel <= item.reorderPoint) {
+                                    await createNotification({
+                                        type: 'alert',
+                                        message: `LOW STOCK: ${item.name} for ${item.deviceType} ${item.modelType} is running low (${item.stockLevel} units remaining).`,
+                                        time: 'just now'
+                                    });
+                                    newNotifications = true;
+                                }
+
+                                // Add this item to the notified items list
+                                updatedNotifiedItems.push(itemKey);
+                            }
+                        }
+                    }
+
+                    // Update the list of notified items
+                    if (updatedNotifiedItems.length !== notifiedLowStockItems.length) {
+                        setNotifiedLowStockItems(updatedNotifiedItems);
+                        // Save to localStorage for persistence
+                        localStorage.setItem('notifiedLowStockItems', JSON.stringify(updatedNotifiedItems));
+                    }
+
+                    // Update the notifications in state only if we created new notifications
+                    if (newNotifications) {
+                        const notificationsData = await getNotifications();
+                        setNotifications(notificationsData);
+                    }
+                } catch (error) {
+                    console.error('Error checking for new low stock items:', error);
+                }
+            };
+
+            // Only run this when in the inventory tab to avoid excessive checks
+            if (activeTab === 'inventory') {
+                checkForNewLowStockItems();
+            }
+        }
+    }, [inventoryItems, isLoading, activeTab]);
+
+    useEffect(() => {
+        // Polling interval for checking notifications (in milliseconds)
+        const POLLING_INTERVAL = 5000; // 5 seconds - shorter for more responsiveness
+
+        // Always poll regardless of current tab
+        if (!isLoading) {
+            console.log('Setting up notification polling...');
+
+            // Set up periodic polling
+            const interval = setInterval(async () => {
+                try {
+                    // Fetch latest notifications
+                    console.log('Polling for new notifications...');
+                    const notificationsData = await getNotifications();
+
+                    // Calculate unread count
+                    const unreadCount = notificationsData.filter(n => !n.isRead).length;
+
+                    // Always update to ensure state is fresh
+                    console.log(`Current unread count: ${unreadCount}`);
+                    setUnreadNotifications(unreadCount);
+
+                    // Also update the notifications array if different
+                    if (JSON.stringify(notificationsData) !== JSON.stringify(notifications)) {
+                        setNotifications(notificationsData);
+                    }
+                } catch (error) {
+                    console.error('Error polling for notifications:', error);
+                }
+            }, POLLING_INTERVAL);
+
+            // Clean up interval on component unmount
+            return () => {
+                console.log('Cleaning up notification polling...');
+                clearInterval(interval);
+            };
+        }
+    }, [isLoading]);
 
     const renderTraffic = () => {
-        // Get data for the current period
-        const currentTrafficData = getTrafficDataForPeriod(trafficPeriod);
+        // Check if traffic data is loaded
+        if (!websiteTraffic || websiteTraffic.length === 0) {
+            return (
+                <div className="traffic-container">
+                    <div className="loading-indicator">
+                        <div className="spinner"></div>
+                        <p>Loading traffic data...</p>
+                    </div>
+                </div>
+            );
+        }
 
-        // Get summary stats
-        const summary = getTrafficSummary(currentTrafficData, trafficPeriod);
+        // Calculate summary statistics from actual data
+        const totalVisitors = websiteTraffic.reduce((sum, day) => sum + day.visitors, 0);
+        const totalPageViews = websiteTraffic.reduce((sum, day) => sum + day.pageViews, 0);
+        const totalConversions = websiteTraffic.reduce((sum, day) => sum + day.conversions, 0);
+        const conversionRate = ((totalConversions / totalVisitors) * 100).toFixed(1);
 
-        const handlePeriodChange = (e) => {
-            setTrafficPeriod(e.target.value);
+        // Calculate growth trends based on first vs last day
+        const firstDay = websiteTraffic[0];
+        const lastDay = websiteTraffic[websiteTraffic.length - 1];
+
+        const visitorGrowth = ((lastDay.visitors - firstDay.visitors) / firstDay.visitors) * 100;
+        const pageViewGrowth = ((lastDay.pageViews - firstDay.pageViews) / firstDay.pageViews) * 100;
+        const conversionGrowth = ((lastDay.conversions - firstDay.conversions) / firstDay.conversions) * 100;
+
+        // Format growth percentages
+        const formatGrowth = (growth) => {
+            return growth >= 0 ? `+${growth.toFixed(1)}%` : `${growth.toFixed(1)}%`;
+        };
+
+        // Calculate session duration
+        const avgSessionSeconds = Math.floor((totalPageViews / totalVisitors) * 60);
+        const avgSessionMinutes = Math.floor(avgSessionSeconds / 60);
+        const avgSessionRemainingSeconds = avgSessionSeconds % 60;
+        const formattedDuration = `${avgSessionMinutes}m ${avgSessionRemainingSeconds}s`;
+
+        // Create summary object with dynamic calculated values
+        const summary = {
+            visitors: totalVisitors,
+            pageViews: totalPageViews,
+            conversionRate: conversionRate,
+            avgSessionDuration: formattedDuration,
+            visitorChange: formatGrowth(visitorGrowth),
+            pageViewChange: formatGrowth(pageViewGrowth),
+            conversionChange: formatGrowth(conversionGrowth),
+            durationChange: formatGrowth(visitorGrowth * 0.8) // Duration typically correlates with visitor growth
+        };
+
+        const handlePeriodChange = async (e) => {
+            const newPeriod = e.target.value;
+            setTrafficPeriod(newPeriod);
             // Reset hovered bar when period changes
             setHoveredBar(null);
+
+            try {
+                setIsLoading(true);
+                const trafficData = await getTrafficData(newPeriod);
+                setWebsiteTraffic(trafficData);
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Error fetching traffic data:', error);
+                setIsLoading(false);
+            }
         };
 
         // Get the title based on period
@@ -1140,7 +1820,7 @@ function AdminPanel() {
                         <h3>Daily Traffic Overview ({getPeriodTitle()})</h3>
                         <div className="traffic-chart">
                             <div className="chart-bars">
-                                {currentTrafficData.map((day, index) => (
+                                {websiteTraffic.map((day, index) => (
                                     <div key={index} className="chart-bar-container">
                                         <div
                                             className="chart-bar stacked-bar"
@@ -1195,7 +1875,7 @@ function AdminPanel() {
                             </tr>
                             </thead>
                             <tbody>
-                            {currentTrafficData.map((day, index) => (
+                            {websiteTraffic.map((day, index) => (
                                 <tr key={index}>
                                     <td>{day.date}</td>
                                     <td>{day.visitors}</td>
@@ -1424,8 +2104,8 @@ function AdminPanel() {
                         <FontAwesomeIcon icon={faListAlt} /> Generate Inventory Report
                     </button>
                     <button
-                        className={`action-btn ${showLowStockOnly ? 'active' : ''}`}
-                        onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+                        className={`action-btn ${showLowStockOnly ? 'low-stock-active' : ''}`}
+                        onClick={handleLowStockToggle} // Use the new function instead
                     >
                         <FontAwesomeIcon icon={faClipboardList} /> Check Low Stock
                     </button>
@@ -1488,11 +2168,11 @@ function AdminPanel() {
                         (selectedDevices.length > 0 && selectedModels.length > 0 ?
                             `Inventory Items for Selected Models (${selectedModels.length} models)` :
                             'All Inventory Items')}
-                    {showLowStockOnly && getFilteredInventoryItems().length === 0 &&
+                    {showLowStockOnly && filteredInventoryItems.length === 0 &&
                         ' (No low stock items found)'}
                 </h3>
 
-                {getFilteredInventoryItems().length > 0 ? (
+                {filteredInventoryItems.length > 0 ? (
                     <table className="inventory-table">
                         <thead>
                         <tr>
@@ -1513,7 +2193,7 @@ function AdminPanel() {
                         </tr>
                         </thead>
                         <tbody>
-                        {getFilteredInventoryItems().map(item => (
+                        {filteredInventoryItems.map(item => (
                             <tr key={item.id}>
                                 {(selectedDevices.length === 0 || selectedModels.length === 0) && (
                                     <>
@@ -1530,11 +2210,43 @@ function AdminPanel() {
                                 </td>
                                 <td>{item.description}</td>
                                 <td>
-                                    <span className="stock-level" style={{
-                                        backgroundColor: getStockLevelColor(item.stockLevel, item.reorderPoint)
-                                    }}>
-                                    {item.stockLevel}
-                                    </span>
+                                    {(() => {
+                                        // Convert and log values for debugging
+                                        const stockNum = Number(item.stockLevel);
+                                        const reorderNum = Number(item.reorderPoint);
+                                        console.log(`Item ${item.name}: Stock=${stockNum}, Reorder=${reorderNum}`);
+
+                                        // Show both elements side by side for diagnosis
+                                        return (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                {/* Original element */}
+                                                <span className="stock-level" style={{
+                                                    backgroundColor: stockNum <= reorderNum * 0.9 ? '#dc3545' :
+                                                        stockNum <= reorderNum ? '#ffc107' :
+                                                            '#28a745'
+                                                }}>
+                    {stockNum}
+                </span>
+
+                                                {/* Diagnostic text element */}
+                                                <div style={{ fontSize: '12px' }}>
+                                                    <div>Stock: {stockNum}</div>
+                                                    <div>Reorder: {reorderNum}</div>
+                                                    <div>Ratio: {(stockNum / reorderNum).toFixed(2)}</div>
+                                                    <div style={{
+                                                        fontWeight: 'bold',
+                                                        color: stockNum <= reorderNum * 0.9 ? '#dc3545' :
+                                                            stockNum <= reorderNum ? '#ffc107' :
+                                                                '#28a745'
+                                                    }}>
+                                                        {stockNum <= reorderNum * 0.9 ? 'CRITICAL' :
+                                                            stockNum <= reorderNum ? 'LOW' :
+                                                                'GOOD'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </td>
                                 <td>${item.price.toFixed(2)}</td>
                                 <td>{item.supplier}</td>
@@ -1610,35 +2322,107 @@ function AdminPanel() {
         </div>
     );
     const renderSupportRequests = () => {
-        const markAsRead = (id) => {
-            const updatedRequest = supportService.markAsReadByAdmin(id);
+        const markAsRead = async (id) => {
+            try {
+                // Assuming you have an API endpoint for marking support requests as read
+                const updatedRequest = await updateSupportRequest(id, { isRead: true });
 
-            if (updatedRequest) {
                 // Update in the state
                 setSupportRequests(supportRequests.map(req =>
                     req.id === id ? updatedRequest : req
                 ));
 
+                // Update unread count - only count support requests
+                const updatedUnreadCount = supportRequests
+                    .filter(req => req.id !== id && !req.isRead)
+                    .length;
+
+                setUnreadSupportRequests(updatedUnreadCount);
+            } catch (error) {
+                console.error('Error marking request as read:', error);
+            }
+        };
+        const markAllSupportAsRead = async () => {
+            try {
+                console.log('Marking all support requests as read');
+
+                // Create a copy of all unread support requests
+                const unreadRequests = supportRequests.filter(req => !req.isRead);
+
+                if (unreadRequests.length === 0) {
+                    console.log('No unread support requests to mark');
+                    return;
+                }
+
+                // Optimistically update UI first
+                const updatedRequests = supportRequests.map(req => ({
+                    ...req,
+                    isRead: true
+                }));
+
+                setSupportRequests(updatedRequests);
+                setUnreadSupportRequests(0);
+
+                // Now call the API to update each unread request
+                for (const req of unreadRequests) {
+                    try {
+                        await updateSupportRequest(req.id, { isRead: true });
+                        console.log(`Marked support request ${req.id} as read`);
+                    } catch (error) {
+                        console.error(`Failed to mark support request ${req.id} as read:`, error);
+                    }
+                }
+
+                // Refresh the support requests to ensure data consistency
+                const freshRequests = await getSupportRequests();
+                setSupportRequests(freshRequests);
+
                 // Update unread count
-                setUnreadSupportRequests(prev => Math.max(0, prev - 1));
+                const remainingUnread = freshRequests.filter(req => !req.isRead).length;
+                setUnreadSupportRequests(remainingUnread);
+
+                console.log('All support requests marked as read');
+            } catch (error) {
+                console.error('Error marking all support requests as read:', error);
+                // If there's an error, refresh the data to make sure UI is consistent
+                try {
+                    const freshRequests = await getSupportRequests();
+                    setSupportRequests(freshRequests);
+                    setUnreadSupportRequests(freshRequests.filter(req => !req.isRead).length);
+                } catch (refreshError) {
+                    console.error('Error refreshing support requests:', refreshError);
+                }
             }
         };
 
-        // Function to mark all as read
-        const markAllAsRead = () => {
-            const updatedRequests = [...supportRequests];
+        const markAllAsRead = async () => {
+            try {
+                console.log('Marking all notifications as read - function called');
 
-            updatedRequests.forEach(req => {
-                if (!req.isRead) {
-                    supportService.markAsReadByAdmin(req.id);
+                // Call the API to update all notifications in the database
+                const updatedNotifications = await markAllNotificationsAsRead();
+                console.log('API call successful. Updated notifications:', updatedNotifications);
+
+                // Make sure we got a proper response
+                if (Array.isArray(updatedNotifications)) {
+                    console.log(`Setting state with ${updatedNotifications.length} notifications`);
+                    // Update the state with the response from the server
+                    setNotifications(updatedNotifications);
+                } else {
+                    console.error('Invalid response format:', updatedNotifications);
+                    throw new Error('Invalid response format from server');
                 }
-            });
 
-            // Update all requests as read in state
-            setSupportRequests(updatedRequests.map(req => ({...req, isRead: true})));
-            setUnreadSupportRequests(0);
+                // Force a refresh of notifications to ensure we have the latest data
+                setTimeout(() => {
+                    refreshNotifications();
+                }, 500);
+
+            } catch (error) {
+                console.error('Error marking all notifications as read:', error);
+                alert('There was an error marking all notifications as read. Please try again.');
+            }
         };
-
         // Status and priority badge helpers
         const getStatusBadgeClass = (status) => {
             switch (status.toLowerCase()) {
@@ -1690,17 +2474,26 @@ function AdminPanel() {
             setSelectedRequest(null);
         };
 
-        const sendReply = () => {
+        const sendReply = async () => {
             if (!replyText.trim() || !selectedRequest) return;
 
-            const updatedRequest = supportService.addMessage(
-                selectedRequest.id,
-                'agent',
-                'Admin Support',
-                replyText
-            );
+            try {
+                const newMessage = {
+                    id: Date.now(), // Generate temporary ID
+                    sender: 'agent',
+                    agentName: 'Admin Support',
+                    message: replyText,
+                    date: new Date().toLocaleString()
+                };
 
-            if (updatedRequest) {
+                // Add message to the request
+                const updatedMessages = [...selectedRequest.messages, newMessage];
+
+                // Update request with new message
+                const updatedRequest = await updateSupportRequest(selectedRequest.id, {
+                    messages: updatedMessages
+                });
+
                 // Update in the state
                 setSupportRequests(supportRequests.map(req =>
                     req.id === updatedRequest.id ? updatedRequest : req
@@ -1711,6 +2504,9 @@ function AdminPanel() {
 
                 // Clear reply text
                 setReplyText('');
+            } catch (error) {
+                console.error('Error sending reply:', error);
+                alert('Failed to send reply. Please try again.');
             }
         };
 
@@ -1847,7 +2643,7 @@ function AdminPanel() {
                 <div className="support-header">
                     <h2>Customer Support Requests</h2>
                     <div className="support-actions">
-                        <button className="mark-read-btn" onClick={markAllAsRead}>
+                        <button className="mark-read-btn" onClick={markAllSupportAsRead}>
                             Mark All as Read
                         </button>
                         <div className="filter-container">
@@ -1922,16 +2718,84 @@ function AdminPanel() {
     };
 
 
-// Revenue Tab
     const renderRevenue = () => {
-        // Get the revenue data for the selected period
-        const revenueData = getRevenueDataForPeriod(revenuePeriod);
+        // Check if data is still loading
+        if (isLoading) {
+            return (
+                <div className="revenue-container">
+                    <div className="loading-indicator">
+                        <div className="spinner"></div>
+                        <p>Loading revenue data...</p>
+                    </div>
+                </div>
+            );
+        }
+
+        // Check if we have data structure but it's empty
+        if (!revenueData || !revenueData.dailyRevenue || revenueData.dailyRevenue.length === 0) {
+            return (
+                <div className="revenue-container">
+                    <div className="revenue-header">
+                        <h2>Revenue Dashboard</h2>
+                        <div className="revenue-controls">
+                            <select
+                                className="date-range-select"
+                                value={revenuePeriod}
+                                onChange={(e) => setRevenuePeriod(e.target.value)}
+                            >
+                                <option value="today">Today</option>
+                                <option value="7days">Last 7 Days</option>
+                                <option value="30days">Last 30 Days</option>
+                                <option value="90days">Last 90 Days</option>
+                            </select>
+                            <button className="export-btn" onClick={exportRevenueReport}>Export Report</button>
+                        </div>
+                    </div>
+                    <div className="no-data-message" style={{
+                        textAlign: 'center',
+                        padding: '50px 20px',
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '8px',
+                        margin: '20px 0'
+                    }}>
+                        <p>No revenue data available for the selected period.</p>
+                        <p>Please select a different period or add revenue data to the system.</p>
+                    </div>
+                </div>
+            );
+        }
+
+        // Destructure with fallback values
+        const {
+            dailyRevenue = [],
+            deviceRevenue = [],
+            repairsByType = [],
+            today = 0,
+            thisWeek = 0,
+            thisMonth = 0,
+            repairSalesRatio = '0:0',
+            periodLabel = '',
+            todayChange = '0%',
+            weekChange = '0%',
+            monthChange = '0%'
+        } = revenueData;
 
         // Handle period change
-        const handleRevenuePeriodChange = (e) => {
-            setRevenuePeriod(e.target.value);
+        const handleRevenuePeriodChange = async (e) => {
+            const newPeriod = e.target.value;
+            setRevenuePeriod(newPeriod);
             // Reset hovered bar when period changes
             setHoveredRevenueBar(null);
+
+            try {
+                setIsLoading(true);
+                const data = await getRevenueData(newPeriod);
+                setRevenueData(data);
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Error fetching revenue data:', error);
+                setIsLoading(false);
+            }
         };
 
         return (
@@ -1956,28 +2820,35 @@ function AdminPanel() {
                 <div className="revenue-summary">
                     <div className="summary-card">
                         <h3>Today's Revenue</h3>
-                        <p className="summary-value">${revenueData.today.toLocaleString()}</p>
-                        <p className="summary-change positive">+14.2% from yesterday</p>
+                        <p className="summary-value">${(today || 0).toLocaleString()}</p>
+                        <p className={`summary-change ${todayChange?.startsWith('+') ? 'positive' : 'negative'}`}>
+                            {todayChange || '0%'} from yesterday
+                        </p>
                     </div>
 
                     <div className="summary-card">
                         <h3>This Week</h3>
-                        <p className="summary-value">${revenueData.thisWeek.toLocaleString()}</p>
-                        <p className="summary-change positive">+8.5% from last week</p>
+                        <p className="summary-value">${(thisWeek || 0).toLocaleString()}</p>
+                        <p className={`summary-change ${weekChange?.startsWith('+') ? 'positive' : 'negative'}`}>
+                            {weekChange || '0%'} from last week
+                        </p>
                     </div>
 
                     <div className="summary-card">
                         <h3>This Month</h3>
-                        <p className="summary-value">${revenueData.thisMonth.toLocaleString()}</p>
-                        <p className="summary-change positive">+9.8% from last month</p>
+                        <p className="summary-value">${(thisMonth || 0).toLocaleString()}</p>
+                        <p className={`summary-change ${monthChange?.startsWith('+') ? 'positive' : 'negative'}`}>
+                            {monthChange || '0%'} from last month
+                        </p>
                     </div>
 
                     <div className="summary-card">
                         <h3>Repair to Sales Ratio</h3>
-                        <p className="summary-value">65:35</p>
-                        <p className="summary-change neutral">No change from last month</p>
+                        <p className="summary-value">{repairSalesRatio}</p>
+                        <p className="summary-change neutral">Repairs vs Sales</p>
                     </div>
                 </div>
+
                 {/* Revenue Chart */}
                 <div className="revenue-chart-container">
                     <h3 style={{ marginBottom: '30px' }}>Revenue Data ({revenueData.periodLabel})</h3>
@@ -1985,7 +2856,7 @@ function AdminPanel() {
                         <div className={`chart-bars ${revenuePeriod === 'today' ? 'single-day-chart' : ''}`}>
                             {(() => {
                                 // Calculate maximum value to determine scaling factor
-                                const maxTotal = Math.max(...revenueData.dailyRevenue.map(day => day.total));
+                                const maxTotal = Math.max(...dailyRevenue.map(day => day.total || 0));
                                 // Adjust scaling factor to ensure maximum height is around 220px
                                 const scalingFactor = Math.max(maxTotal / 220, 10);
 
@@ -2002,22 +2873,21 @@ function AdminPanel() {
                                             onMouseLeave={() => setHoveredRevenueBar(null)}
                                         >
                                             <div className="revenue-bar-inner">
-                                                <div className="revenue-repair" style={{ height: `${(day.repairs/day.total)*100}%` }}></div>
-                                                <div className="revenue-sales" style={{ height: `${(day.sales/day.total)*100}%` }}></div>
+                                                <div className="revenue-repair" style={{ height: `${day.total > 0 ? (day.repairs/day.total)*100 : 0}%` }}></div>
+                                                <div className="revenue-sales" style={{ height: `${day.total > 0 ? (day.sales/day.total)*100 : 0}%` }}></div>
                                             </div>
-
                                             {/* Tooltip that appears on hover */}
                                             {hoveredRevenueBar === index && (
                                                 <div className="chart-tooltip">
                                                     <div><strong>Date:</strong> {day.date}</div>
-                                                    <div><strong>Total Revenue:</strong> ${day.total.toLocaleString()}</div>
-                                                    <div><strong>Repair Revenue:</strong> ${day.repairs.toLocaleString()} ({((day.repairs/day.total)*100).toFixed(1)}%)</div>
-                                                    <div><strong>Sales Revenue:</strong> ${day.sales.toLocaleString()} ({((day.sales/day.total)*100).toFixed(1)}%)</div>
+                                                    <div><strong>Total Revenue:</strong> ${(day.total || 0).toLocaleString()}</div>
+                                                    <div><strong>Repair Revenue:</strong> ${(day.repairs || 0).toLocaleString()} ({day.total > 0 ? ((day.repairs/day.total)*100).toFixed(1) : "0"}%)</div>
+                                                    <div><strong>Sales Revenue:</strong> ${(day.sales || 0).toLocaleString()} ({day.total > 0 ? ((day.sales/day.total)*100).toFixed(1) : "0"}%)</div>
                                                 </div>
                                             )}
                                         </div>
                                         <span className="chart-label">{day.date.substring(5)}</span>
-                                        <span className="chart-value">${day.total.toLocaleString()}</span>
+                                        <span className="chart-value">${(day.total || 0).toLocaleString()}</span>
                                     </div>
                                 ));
                             })()}
@@ -2050,18 +2920,29 @@ function AdminPanel() {
                             </tr>
                             </thead>
                             <tbody>
-                            {revenueData.deviceRevenue.map((item, index) => (
-                                <tr key={index}>
-                                    <td>{item.device}</td>
-                                    <td>${item.revenue.toLocaleString()}</td>
-                                    <td>
-                                        <div className="percent-bar-container">
-                                            <div className="percent-bar" style={{ width: `${item.percent}%` }}></div>
-                                            <span>{item.percent}%</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {(() => {
+                                // Calculate total revenue
+                                const totalRevenue = revenueData.deviceRevenue.reduce((sum, item) => sum + (item.revenue_amount || item.revenue || 0), 0);
+
+                                return revenueData.deviceRevenue.map((item, index) => {
+                                    // Calculate percentage for each device
+                                    const percentage = totalRevenue > 0 ?
+                                        (((item.revenue_amount || item.revenue || 0) / totalRevenue) * 100).toFixed(1) : "0.0";
+
+                                    return (
+                                        <tr key={index}>
+                                            <td>{item.device}</td>
+                                            <td>${(item.revenue_amount || item.revenue || 0).toLocaleString()}</td>
+                                            <td>
+                                                <div className="percent-bar-container">
+                                                    <div className="percent-bar" style={{ width: `${percentage}%` }}></div>
+                                                    <span>{percentage}%</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                });
+                            })()}
                             </tbody>
                         </table>
                     </div>
@@ -2081,7 +2962,7 @@ function AdminPanel() {
                                 <tr key={index}>
                                     <td>{item.type}</td>
                                     <td>{item.count}</td>
-                                    <td>${item.revenue.toLocaleString()}</td>
+                                    <td>${(item.revenue_amount || item.revenue || 0).toLocaleString()}</td>
                                 </tr>
                             ))}
                             </tbody>
@@ -2091,6 +2972,30 @@ function AdminPanel() {
             </div>
         );
     };
+    useEffect(() => {
+        // Create a function to handle notification updates
+        const handleNotificationUpdate = async () => {
+            console.log('Notification update event triggered');
+            try {
+                const notificationsData = await getNotifications();
+                const unreadCount = notificationsData.filter(n => !n.isRead).length;
+
+                // Update states
+                setNotifications(notificationsData);
+                setUnreadNotifications(unreadCount);
+            } catch (error) {
+                console.error('Error handling notification update:', error);
+            }
+        };
+
+        // Add the event listener
+        window.addEventListener('notification-update', handleNotificationUpdate);
+
+        // Clean up
+        return () => {
+            window.removeEventListener('notification-update', handleNotificationUpdate);
+        };
+    }, []);
 
     return (
         <div className="admin-page">
@@ -2121,12 +3026,15 @@ function AdminPanel() {
 
                             <li
                                 className={`sidebar-menu-item ${activeTab === 'notifications' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('notifications')}
+                                onClick={() => {
+                                    setActiveTab('notifications');
+                                    forceRefreshNotifications(); // Refresh notifications when clicking the tab
+                                }}
                             >
                                 <FontAwesomeIcon icon={faBell} className="sidebar-icon" />
                                 <span>Notifications</span>
-                                {notifications.filter(n => !n.isRead).length > 0 && (
-                                    <span className="badge">{notifications.filter(n => !n.isRead).length}</span>
+                                {unreadNotifications > 0 && (
+                                    <span className="badge">{unreadNotifications}</span>
                                 )}
                             </li>
 
@@ -2191,8 +3099,8 @@ function AdminPanel() {
                         >
                             <FontAwesomeIcon icon={faBell} className="mobile-nav-icon" />
                             <span className="mobile-nav-label">Alerts</span>
-                            {notifications.filter(n => !n.isRead).length > 0 && (
-                                <span className="mobile-badge">{notifications.filter(n => !n.isRead).length}</span>
+                            {unreadNotifications > 0 && (
+                                <span className="mobile-badge">{unreadNotifications}</span>
                             )}
                         </div>
                         <div

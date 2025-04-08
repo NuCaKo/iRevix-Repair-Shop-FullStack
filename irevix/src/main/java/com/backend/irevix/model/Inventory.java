@@ -1,97 +1,62 @@
 package com.backend.irevix.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.Data;
 
+import java.time.LocalDate;
+
+@Data
 @Entity
+@Table(name = "inventory")
 public class Inventory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String name;
-    private String brand;
-    private int stock;
-    private String status; // 'In Stock', 'Low Stock', 'Out of Stock'
-    private String location;
-    private String category;
-    private int quantity;
+
+    @Column(name = "part_number", nullable = false)
+    private String partNumber;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "stock_level", nullable = false)
+    private int stockLevel;
+
+    @Column(name = "reorder_point", nullable = false)
+    private int reorderPoint;
+
+    @Column(nullable = false)
     private double price;
 
-    // Getter ve Setter metodları
+    private String supplier;
 
-    public Long getId() {
-        return id;
+    @Column(name = "device_type", nullable = false)
+    private String deviceType;
+
+    @Column(name = "model_type", nullable = false)
+    private String modelType;
+
+    @Column(name = "last_restocked")
+    private String lastRestocked;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDate createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDate updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDate.now();
+        updatedAt = LocalDate.now();
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getBrand() {
-        return brand;
-    }
-
-    public void setBrand(String brand) {
-        this.brand = brand;
-    }
-
-    public int getStock() {
-        return stock;
-    }
-
-    public void setStock(int stock) {
-        this.stock = stock;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public void setPrice(double price) {
-        this.price = price;
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDate.now();
     }
 }

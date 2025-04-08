@@ -4,74 +4,66 @@ import com.backend.irevix.model.Inventory;
 import com.backend.irevix.repository.InventoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class InventoryService {
 
-    @Autowired
-    private InventoryRepository inventoryRepository;
+    private final InventoryRepository inventoryRepository;
 
-    // Tüm envanteri listelemek için
-    public List<Inventory> getAllInventory() {
+    @Autowired
+    public InventoryService(InventoryRepository inventoryRepository) {
+        this.inventoryRepository = inventoryRepository;
+    }
+
+    public List<Inventory> getAllInventoryItems() {
         return inventoryRepository.findAll();
     }
 
-    // ID'ye göre bir envanter parçası almak için
-    public Optional<Inventory> getInventoryById(Long id) {
+    public Optional<Inventory> getInventoryItemById(Long id) {
         return inventoryRepository.findById(id);
     }
 
-    // Yeni bir envanter parçası eklemek için
-    public Inventory addInventory(Inventory inventory) {
+    public List<Inventory> getLowStockItems() {
+        return inventoryRepository.findLowStockItems();
+    }
+
+    public List<Inventory> getInventoryItemsByDeviceAndModel(String deviceType, String modelType) {
+        return inventoryRepository.findByDeviceTypeAndModelType(deviceType, modelType);
+    }
+
+    public List<Inventory> getInventoryItemsByDevice(String deviceType) {
+        return inventoryRepository.findByDeviceType(deviceType);
+    }
+
+    @Transactional
+    public Inventory createInventoryItem(Inventory inventory) {
         return inventoryRepository.save(inventory);
     }
 
-    // Mevcut bir envanter parçasını güncellemek için
-    public Inventory updateInventory(Long id, Inventory updatedInventory) {
-        Optional<Inventory> existingInventory = inventoryRepository.findById(id);
+    @Transactional
+    public Inventory updateInventoryItem(Long id, Inventory inventory) {
+        inventory.setId(id);
+        return inventoryRepository.save(inventory);
+    }
 
-        if (existingInventory.isPresent()) {
-            Inventory inventory = existingInventory.get();
-            inventory.setName(updatedInventory.getName());
-            inventory.setBrand(updatedInventory.getBrand());
-            inventory.setStock(updatedInventory.getStock());
-            inventory.setStatus(updatedInventory.getStatus());
-            inventory.setLocation(updatedInventory.getLocation());
-            inventory.setCategory(updatedInventory.getCategory());
-            inventory.setQuantity(updatedInventory.getQuantity());
-            inventory.setPrice(updatedInventory.getPrice());
-
+    @Transactional
+    public Inventory restockInventoryItem(Long id, int quantity) {
+        Optional<Inventory> optionalInventory = inventoryRepository.findById(id);
+        if (optionalInventory.isPresent()) {
+            Inventory inventory = optionalInventory.get();
+            inventory.setStockLevel(inventory.getStockLevel() + quantity);
+            inventory.setLastRestocked(LocalDate.now().toString());
             return inventoryRepository.save(inventory);
         }
-        return null;  // Eğer ID bulunamazsa, null döneceğiz
+        return null;
     }
 
-    // Bir envanter parçasını silmek için
-    public boolean deleteInventory(Long id) {
-        Optional<Inventory> existingInventory = inventoryRepository.findById(id);
-
-        if (existingInventory.isPresent()) {
-            inventoryRepository.delete(existingInventory.get());
-            return true;  // Başarılı bir şekilde silindi
-        }
-        return false;  // Envanter parçası bulunamadı
-    }
-
-    // Kategorisine göre envanter parçalarını listelemek için
-    public List<Inventory> getInventoryByCategory(String category) {
-        return inventoryRepository.findByCategory(category);
-    }
-
-    // Stok durumuna göre envanter parçalarını listelemek için
-    public List<Inventory> getInventoryByStatus(String status) {
-        return inventoryRepository.findByStatus(status);
-    }
-
-    // Fiyat aralığına göre envanter parçalarını listelemek için
-    public List<Inventory> getInventoryByPriceRange(Double minPrice, Double maxPrice) {
-        return inventoryRepository.findByPriceBetween(minPrice, maxPrice);
+    public void deleteInventoryItem(Long id) {
+        inventoryRepository.deleteById(id);
     }
 }
