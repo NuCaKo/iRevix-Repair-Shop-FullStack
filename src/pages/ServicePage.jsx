@@ -309,6 +309,8 @@ const ServicePanel = () => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
+            const updated = await axios.get(`${API_BASE_URL}/repair-orders/${repairId}`);
+            setSelectedRepair(updated.data);
 
             console.log("Image uploaded successfully:", response.data);
             fetchAllData(); // Görselleri tekrar çekmek
@@ -600,7 +602,7 @@ const ServicePanel = () => {
                                                         .map((image) => (
                                                             <div key={image.id} className="image-item">
                                                                 <img
-                                                                    
+
                                                                     src={`http://localhost:8080${image.imageUrl}`}
                                                                     alt="Device"
                                                                     onClick={() => setEnlargedImage(image)}
