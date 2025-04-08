@@ -418,7 +418,11 @@ const ServicePanel = () => {
     //console.log("📅 Current Date:", currentDate.toISOString().slice(0, 10));
     //console.log("🗓️ All Appointment Dates:", appointments.map(a => a.appointmentDateTime));
 
-
+    useEffect(() => {
+        if (selectedRepair && selectedRepair.images) {
+            console.log("📷 selectedRepair images:", selectedRepair.images);
+        }
+    }, [selectedRepair]);
 
     const renderContent = () => {
         switch(activeTab) {
@@ -585,7 +589,7 @@ const ServicePanel = () => {
                                                         .map((image) => (
                                                             <div key={image.id} className="image-item">
                                                                 <img
-                                                                    src={image.imageUrl}  // image.src yerine image.imageUrl kullanıyoruz
+                                                                    src={image.imageUrl}
                                                                     alt={image.description}
                                                                     onClick={() => setEnlargedImage(image)}
                                                                 />
@@ -641,7 +645,7 @@ const ServicePanel = () => {
                                     >
                                         <div className="image-modal-container" style={{ maxWidth: '80%', maxHeight: '80vh' }}>
                                             <img
-                                                src={enlargedImage.src}
+                                                src={enlargedImage.imageUrl}
                                                 alt="Enlarged view"
                                                 style={{
                                                     maxWidth: '100%',
@@ -856,7 +860,7 @@ const ServicePanel = () => {
                                                             .map((image) => (
                                                                 <div key={image.id} className="image-item">
                                                                     <img
-                                                                        src={image.src}
+                                                                        src={image.imageUrl}
                                                                         alt="Device"
                                                                         onClick={() => setEnlargedImage(image)}
                                                                         style={{cursor: 'pointer'}}
@@ -900,7 +904,7 @@ const ServicePanel = () => {
                                                 onClick={() => setEnlargedImage(null)}
                                             >
                                                 <div className="image-modal-container">
-                                                    <img src={enlargedImage.src} alt="Enlarged view"/>
+                                                    <img src={enlargedImage.imageUrl} alt="Enlarged view"/>
                                                     <div className="image-modal-info">
                                                         <p>{enlargedImage.description}</p>
                                                         <p>{enlargedImage.date}</p>

@@ -33,6 +33,7 @@ public class RepairOrderController {
         this.repairOrderService = repairOrderService;
         this.repairImageService = repairImageService;
         this.repairNoteService = repairNoteService;
+
     }
 
     @GetMapping
@@ -105,63 +106,45 @@ public class RepairOrderController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/{id}/images")
-    public ResponseEntity<?> uploadRepairImage(@PathVariable Long id, @RequestParam("image") MultipartFile file, @RequestParam("type") String type) {
-        // Yükleme dizinini belirtelim
-        String uploadDir = "uploads/repair-images/";
-        String fileName = file.getOriginalFilename();
-        Path uploadPath = Paths.get(uploadDir, fileName);
 
-        // Log: Dosya yolu bilgisini yazdıralım
-        System.out.println("Upload path (absolute): " + uploadPath.toAbsolutePath().toString());
+    @PostMapping("/{id}/images")
+    public ResponseEntity<?> uploadRepairImage(
+            @PathVariable Long id,
+            @RequestParam("image") MultipartFile file,
+            @RequestParam("type") String type) {
+
+        String uploadDir = System.getProperty("user.dir") + "/uploads/repair-images/";
+
 
         try {
-            Files.createDirectories(uploadPath.getParent());
+            // ✅ Dizini oluşturma işlemi try bloğuna alındı
+            Files.createDirectories(Paths.get(uploadDir));
+
+            String fileName = file.getOriginalFilename();
+            Path uploadPath = Paths.get(uploadDir, fileName);
             file.transferTo(uploadPath.toFile());
 
             String imageUrl = "/uploads/repair-images/" + fileName;
+
+            // ✅ repairOrder ile ilişkilendirme
+            RepairOrder repairOrder = repairOrderService.getRepairOrderById(id)
+                    .orElseThrow(() -> new RuntimeException("Repair order not found"));
+
             RepairImage repairImage = new RepairImage();
-            repairImage.setRepairOrderId(id);
             repairImage.setImageUrl(imageUrl);
-            repairImage.setType(type);  // 'before' veya 'during'
+            repairImage.setType(type);
+            repairImage.setRepairOrder(repairOrder);
 
             repairImageService.saveRepairImage(repairImage);
-            System.out.println("Image successfully saved with URL: " + imageUrl);
 
             return ResponseEntity.ok("Image uploaded successfully");
+
         } catch (IOException e) {
-            e.printStackTrace();  // Log stack trace
+            e.printStackTrace();
             return ResponseEntity.status(500).body("Failed to upload image: " + e.getMessage());
         }
     }
 
-    // RepairOrderController.java
-    @PostMapping("/{id}/notes")
-    public ResponseEntity<?> addRepairNote(
-            @PathVariable Long id,
-            @RequestBody java.util.Map<String, String> noteBody) {
-
-        String content = noteBody.get("content");
-        String timestampString = noteBody.get("timestamp");
-
-        // Gelen timestamp varsa parse et, yoksa şu anki zamanı kullan
-        java.time.LocalDateTime timestamp = java.time.LocalDateTime.now();
-        if (timestampString != null) {
-            try {
-                timestamp = java.time.LocalDateTime.parse(timestampString);
-            } catch (Exception e) {
-                // Hata log'u alınabilir, ama default now kullanılacak
-            }
-        }
-
-        RepairNote note = new RepairNote();
-        note.setRepairOrderId(id);
-        note.setContent(content);
-        note.setTimestamp(timestamp);
-
-        RepairNote savedNote = repairNoteService.saveRepairNote(note);
-        return ResponseEntity.ok(savedNote);
-    }
 
 
 }

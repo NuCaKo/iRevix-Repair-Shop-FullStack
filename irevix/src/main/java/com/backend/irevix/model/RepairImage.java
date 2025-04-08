@@ -1,9 +1,7 @@
 package com.backend.irevix.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
 
 @Entity
 public class RepairImage {
@@ -12,11 +10,16 @@ public class RepairImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long repairOrderId;
     private String imageUrl;
+
     private String type; // 'before' veya 'during'
 
-    // Getter ve Setter metodları
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "repair_order_id")
+    @JsonBackReference
+    private RepairOrder repairOrder;
+
+    // Getter & Setter'lar
 
     public Long getId() {
         return id;
@@ -24,14 +27,6 @@ public class RepairImage {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Long getRepairOrderId() {
-        return repairOrderId;
-    }
-
-    public void setRepairOrderId(Long repairOrderId) {
-        this.repairOrderId = repairOrderId;
     }
 
     public String getImageUrl() {
@@ -50,4 +45,11 @@ public class RepairImage {
         this.type = type;
     }
 
+    public RepairOrder getRepairOrder() {
+        return repairOrder;
+    }
+
+    public void setRepairOrder(RepairOrder repairOrder) {
+        this.repairOrder = repairOrder;
+    }
 }

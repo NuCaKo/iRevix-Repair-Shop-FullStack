@@ -1,6 +1,9 @@
 package com.backend.irevix.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import java.util.List;
+
 
 @Entity
 public class RepairOrder {
@@ -17,7 +20,19 @@ public class RepairOrder {
     private String date;
 
 
-    
+
+    @OneToMany(mappedBy = "repairOrder", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<RepairImage> images;
+
+    public List<RepairImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<RepairImage> images) {
+        this.images = images;
+    }
+
     // Getter ve Setter metodları
 
     @Column(name = "technician")
