@@ -244,16 +244,6 @@ export const getDevicesAndModels = async () => {
         };
     }
 };
-
-export const getInventoryParts = async (deviceId, model) => {
-    try {
-        const response = await axios.get(`${API_URL}/inventory?devices=${deviceId}&models=${encodeURIComponent(model)}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching inventory parts:', error);
-        throw error;
-    }
-};
 // Delete inventory item
 export const deleteInventoryItem = async (id) => {
     try {
@@ -373,6 +363,32 @@ export const restockInventoryItem = async (id, quantity) => {
         return response.data;
     } catch (error) {
         console.error('Error restocking inventory item:', error);
+        throw error;
+    }
+};
+export const getInventoryParts = async (deviceId, model) => {
+    try {
+        // Get the device name from the device ID
+        // We need to find the proper device object to get its name
+        let deviceName = deviceId;
+
+        // If deviceId is known to be lowercase (like 'iphone'), but device_type in database is 'iPhone',
+        // we need to convert it to the proper name format
+        console.log(`Making API call for device: ${deviceId}, model: ${model}`);
+
+        // Use the CORRECT parameter names that match the Java controller: deviceType and modelType
+        const response = await axios.get(`${API_URL}/inventory?deviceType=${deviceName}&modelType=${encodeURIComponent(model)}`);
+
+        console.log(`API response for ${deviceName}/${model}:`, {
+            status: response.status,
+            itemCount: response.data.length,
+            sample: response.data.slice(0, 2)
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching inventory parts:', error);
+        console.error('Error details:', error.response?.data || error.message);
         throw error;
     }
 };

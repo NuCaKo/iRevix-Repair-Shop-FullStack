@@ -673,7 +673,11 @@ function AdminPanel() {
         // Always attempt to fetch stats when dashboard tab is active
         fetchDashboardStats();
     }, [activeTab]); // This will trigger on tab changes and initial render
+    const debugLog = (message, data) => {
+        console.log(`DEBUG: ${message}`, data);
+    };
 
+    // Replace the fetchDevicesAndModels function with this improved version
     useEffect(() => {
         const fetchDevicesAndModels = async () => {
             try {
@@ -681,44 +685,76 @@ function AdminPanel() {
                 const response = await axios.get('/api/inventory');
                 const inventoryItems = response.data;
 
-                // Extract unique device types
-                const uniqueDeviceTypes = [...new Set(inventoryItems.map(item => item.deviceType))];
+                debugLog("Raw inventory data (first 3 items):", inventoryItems.slice(0, 3));
+
+                // Extract unique device types and standardize them
+                const uniqueDeviceTypes = [...new Set(
+                    inventoryItems
+                        .filter(item => item.deviceType) // Filter out null/undefined
+                        .map(item => {
+                            // Standardize capitalization (first letter uppercase, rest lowercase)
+                            const deviceType = item.deviceType.charAt(0).toUpperCase() +
+                                item.deviceType.slice(1).toLowerCase();
+                            return deviceType;
+                        })
+                )];
+
+                debugLog("Extracted unique device types:", uniqueDeviceTypes);
 
                 // Create device objects with appropriate icons
                 const deviceIconMapping = {
+                    'Iphone': faMobileAlt,
                     'iPhone': faMobileAlt,
+                    'Ipad': faTabletScreenButton,
                     'iPad': faTabletScreenButton,
+                    'Macbook': faLaptop,
                     'MacBook': faLaptop,
+                    'Airpods': faHeadphones,
                     'AirPods': faHeadphones,
-                    'Apple Watch': faClock
-                    // Add any other device types you have
+                    'Apple watch': faClock,
+                    'Apple Watch': faClock,
+                    'Applewatch': faClock
                 };
 
                 const extractedDevices = uniqueDeviceTypes
-                    .filter(deviceType => deviceType) // Filter out any undefined or null
-                    .map(deviceType => ({
-                        id: deviceType.toLowerCase().replace(/\s+/g, ''), // Convert "Apple Watch" to "applewatch"
-                        name: deviceType,
-                        icon: deviceIconMapping[deviceType] || faMobileAlt // Default to mobile if not found
-                    }));
+                    .map(deviceType => {
+                        const id = deviceType.toLowerCase().replace(/\s+/g, '');
+                        return {
+                            id: id,
+                            name: deviceType,
+                            icon: deviceIconMapping[deviceType] || faMobileAlt
+                        };
+                    });
 
+                debugLog("Mapped devices with IDs:", extractedDevices);
                 setDevices(extractedDevices);
 
                 // Extract unique models for each device type
                 const modelMapping = {};
 
                 extractedDevices.forEach(device => {
-                    const deviceInventory = inventoryItems.filter(
-                        item => item.deviceType === device.name
+                    // KEY FIX: Use case-insensitive comparison for device type
+                    const deviceInventory = inventoryItems.filter(item =>
+                        item.deviceType &&
+                        item.deviceType.toLowerCase() === device.name.toLowerCase()
                     );
 
-                    const deviceModels = [...new Set(deviceInventory.map(item => item.modelType))]
-                        .filter(model => model); // Filter out any undefined or null
+                    debugLog(`Found ${deviceInventory.length} items for device ${device.name}`,
+                        deviceInventory.slice(0, 2)); // Show just a couple items
 
+                    // Extract all models for this device
+                    const deviceModels = [...new Set(
+                        deviceInventory
+                            .filter(item => item.modelType) // Filter out null/undefined
+                            .map(item => item.modelType)
+                    )];
+
+                    debugLog(`Models for ${device.name}:`, deviceModels);
                     modelMapping[device.id] = deviceModels;
                 });
 
                 setDeviceModels(modelMapping);
+                debugLog("Final device models mapping:", modelMapping);
 
             } catch (error) {
                 console.error('Error loading devices and models:', error);
@@ -806,62 +842,131 @@ function AdminPanel() {
         }
     };
 
+    // Replace the fetchFilteredItems function with this improved version
     const fetchFilteredItems = async () => {
         try {
-            console.log("Fetching filtered items", {
+            debugLog("Starting filtering with:", {
                 showLowStockOnly,
                 selectedDevices,
-                selectedModels
+                selectedModels,
+                inventoryItemsCount: inventoryItems.length
             });
 
             let filteredItems = [];
 
-            // If low stock is enabled
+            // If showing low stock items only
             if (showLowStockOnly) {
-                // Fetch low stock items
+                // Fetch low stock items from API
                 const lowStockItems = await fetchLowStockItems();
+                debugLog("Fetched low stock items:", lowStockItems.length);
 
                 // Filter low stock items based on selected devices and models
                 filteredItems = lowStockItems.filter(item => {
+                    // Case-insensitive device matching
                     const deviceMatch = selectedDevices.length === 0 ||
-                        selectedDevices.some(deviceId =>
-                            item.deviceType.toLowerCase() === deviceId.toLowerCase()
-                        );
+                        selectedDevices.some(deviceId => {
+                            // Find the corresponding device
+                            const device = devices.find(d => d.id === deviceId);
+                            const deviceName = device ? device.name : deviceId;
 
+                            // Convert both to lowercase for comparison
+                            const itemDeviceType = (item.deviceType || '').toLowerCase();
+                            const selectedDeviceType = deviceName.toLowerCase();
+
+                            const isMatch = itemDeviceType === selectedDeviceType;
+                            if (isMatch) {
+                                debugLog(`Device match: ${itemDeviceType} matches ${selectedDeviceType}`);
+                            }
+                            return isMatch;
+                        });
+
+                    // Case-insensitive model matching
                     const modelMatch = selectedModels.length === 0 ||
-                        selectedModels.includes(item.modelType);
+                        selectedModels.some(model => {
+                            const itemModelType = (item.modelType || '').toLowerCase();
+                            const selectedModelType = model.toLowerCase();
+
+                            const isMatch = itemModelType === selectedModelType;
+                            if (isMatch) {
+                                debugLog(`Model match: ${itemModelType} matches ${selectedModelType}`);
+                            }
+                            return isMatch;
+                        });
 
                     return deviceMatch && modelMatch;
                 });
 
-                console.log(`Found ${filteredItems.length} low stock items`);
+                debugLog(`Found ${filteredItems.length} filtered low stock items`);
             }
-            // If not showing low stock only
+            // If not showing low stock only, filter from loaded inventory items
             else {
                 // If no devices are selected, show all items
                 if (selectedDevices.length === 0) {
                     filteredItems = inventoryItems;
-                    console.log(`Found ${filteredItems.length} total inventory items`);
+                    debugLog(`Showing all ${filteredItems.length} inventory items`);
                 }
                 // If devices are selected but no models
                 else if (selectedDevices.length > 0 && selectedModels.length === 0) {
-                    filteredItems = inventoryItems.filter(item =>
-                        selectedDevices.some(deviceId =>
-                            item.deviceType.toLowerCase() === deviceId.toLowerCase()
-                        )
-                    );
-                    console.log(`Found ${filteredItems.length} items for selected devices`);
+                    filteredItems = inventoryItems.filter(item => {
+                        return selectedDevices.some(deviceId => {
+                            // Find the corresponding device
+                            const device = devices.find(d => d.id === deviceId);
+                            const deviceName = device ? device.name : deviceId;
+
+                            // Convert both to lowercase for comparison
+                            const itemDeviceType = (item.deviceType || '').toLowerCase();
+                            const selectedDeviceType = deviceName.toLowerCase();
+
+                            return itemDeviceType === selectedDeviceType;
+                        });
+                    });
+
+                    debugLog(`Found ${filteredItems.length} items for selected devices`);
                 }
                 // If both devices and models are selected
                 else if (selectedDevices.length > 0 && selectedModels.length > 0) {
-                    filteredItems = inventoryItems.filter(item =>
-                        selectedDevices.some(deviceId =>
-                            item.deviceType.toLowerCase() === deviceId.toLowerCase()
-                        ) &&
-                        selectedModels.includes(item.modelType)
-                    );
-                    console.log(`Found ${filteredItems.length} items for selected devices and models`);
+                    filteredItems = inventoryItems.filter(item => {
+                        // Case-insensitive device matching
+                        const deviceMatch = selectedDevices.some(deviceId => {
+                            // Find the corresponding device
+                            const device = devices.find(d => d.id === deviceId);
+                            const deviceName = device ? device.name : deviceId;
+
+                            // Convert both to lowercase for comparison
+                            const itemDeviceType = (item.deviceType || '').toLowerCase();
+                            const selectedDeviceType = deviceName.toLowerCase();
+
+                            return itemDeviceType === selectedDeviceType;
+                        });
+
+                        // Case-insensitive model matching
+                        const modelMatch = selectedModels.some(model => {
+                            const itemModelType = (item.modelType || '').toLowerCase();
+                            const selectedModelType = model.toLowerCase();
+
+                            return itemModelType === selectedModelType;
+                        });
+
+                        return deviceMatch && modelMatch;
+                    });
+
+                    debugLog(`Found ${filteredItems.length} items for selected devices and models`);
                 }
+            }
+
+            // Add debug logging to show what we're filtering by
+            if (selectedDevices.length > 0) {
+                debugLog('Selected device IDs:', selectedDevices);
+                debugLog('Selected device names:',
+                    selectedDevices.map(id => devices.find(d => d.id === id)?.name));
+            }
+            if (selectedModels.length > 0) {
+                debugLog('Selected models:', selectedModels);
+            }
+
+            // Show some sample results
+            if (filteredItems.length > 0) {
+                debugLog('Sample filtered items:', filteredItems.slice(0, 2));
             }
 
             // Set the filtered items
@@ -878,49 +983,69 @@ function AdminPanel() {
         fetchFilteredItems();
     }, [showLowStockOnly, selectedDevices, selectedModels, inventoryItems]);
 
-    // Update inventory items when devices and models are selected
     useEffect(() => {
         const fetchInventoryItems = async () => {
             try {
                 // If both devices and models are selected
                 if (selectedDevices.length > 0 && selectedModels.length > 0) {
+                    console.log("Fetching inventory with selections:", {
+                        devices: selectedDevices,
+                        models: selectedModels
+                    });
+
                     let allItems = [];
 
                     // Fetch items for each device-model combination
                     for (const deviceId of selectedDevices) {
-                        for (const model of selectedModels) {
-                            // Ensure the model belongs to the selected device
-                            if (deviceModels[deviceId].includes(model)) {
-                                try {
-                                    // Fetch inventory parts for this specific device and model
-                                    const items = await getInventoryParts(deviceId, model);
+                        // Find the actual device object from our devices array
+                        const device = devices.find(d => d.id === deviceId);
+                        const deviceName = device ? device.name : deviceId;
 
-                                    // Add device and model information to the items
+                        console.log(`Processing device: ${deviceId} -> ${deviceName}`);
+
+                        for (const model of selectedModels) {
+                            // Check if this model belongs to this device
+                            if (deviceModels[deviceId] && deviceModels[deviceId].includes(model)) {
+                                try {
+                                    console.log(`Fetching parts for device: ${deviceName}, model: ${model}`);
+
+                                    // Pass the device NAME (not device ID) and model to the API
+                                    const items = await getInventoryParts(deviceName, model);
+
+                                    console.log(`Received ${items.length} parts from API for ${deviceName}/${model}`);
+
+                                    // If we got items back, add device/model info to them
                                     const itemsWithDetails = items.map(item => ({
                                         ...item,
                                         deviceId: deviceId,
-                                        deviceType: devices.find(d => d.id === deviceId)?.name || deviceId,
+                                        deviceType: deviceName,
                                         modelType: model
                                     }));
 
                                     allItems = [...allItems, ...itemsWithDetails];
                                 } catch (error) {
-                                    console.error(`Error fetching items for ${deviceId} ${model}:`, error);
+                                    console.error(`Error fetching items for ${deviceName} ${model}:`, error);
                                 }
                             }
                         }
                     }
 
-                    console.log('Fetched Inventory Items:', {
-                        count: allItems.length,
-                        devices: [...new Set(allItems.map(item => item.deviceType))],
-                        models: [...new Set(allItems.map(item => item.modelType))]
-                    });
+                    console.log('Total inventory items fetched:', allItems.length);
+
+                    if (allItems.length > 0) {
+                        console.log('Sample items:', allItems.slice(0, 2));
+                    } else {
+                        console.warn('No items found for the selected device/model combinations');
+                    }
 
                     // Set inventory items and trigger filtering
                     setInventoryItems(allItems);
                 } else {
                     // Reset inventory items if devices or models are not fully selected
+                    console.log("Not enough selections to fetch inventory", {
+                        deviceCount: selectedDevices.length,
+                        modelCount: selectedModels.length
+                    });
                     setInventoryItems([]);
                 }
             } catch (error) {
@@ -933,29 +1058,51 @@ function AdminPanel() {
     }, [selectedDevices, selectedModels, deviceModels, devices]);
 
     const handleDeviceSelect = (deviceId) => {
+        debugLog("Device selection changed:", deviceId);
+
         if (selectedDevices.includes(deviceId)) {
             // If already selected, remove it from selection
             const updatedDevices = selectedDevices.filter(d => d !== deviceId);
+            debugLog("Removing device from selection:", deviceId);
+            debugLog("New device selection:", updatedDevices);
             setSelectedDevices(updatedDevices);
 
             // Also remove any models of this device from selected models
+            const deviceModelsToRemove = deviceModels[deviceId] || [];
+            debugLog("Models to potentially remove:", deviceModelsToRemove);
+
             const updatedModels = selectedModels.filter(model =>
-                !deviceModels[deviceId].includes(model)
+                !deviceModelsToRemove.some(deviceModel =>
+                    deviceModel.toLowerCase() === model.toLowerCase()
+                )
             );
+
+            debugLog("New model selection after device removal:", updatedModels);
             setSelectedModels(updatedModels);
         } else {
             // Add to selection
-            setSelectedDevices([...selectedDevices, deviceId]);
+            const updatedDevices = [...selectedDevices, deviceId];
+            debugLog("Adding device to selection:", deviceId);
+            debugLog("New device selection:", updatedDevices);
+            setSelectedDevices(updatedDevices);
         }
     };
 
     const handleModelSelect = (model, deviceId) => {
+        debugLog("Model selection changed:", { model, deviceId });
+
         if (selectedModels.includes(model)) {
             // If already selected, remove it
-            setSelectedModels(selectedModels.filter(m => m !== model));
+            debugLog("Removing model from selection:", model);
+            const updatedModels = selectedModels.filter(m => m !== model);
+            debugLog("New model selection:", updatedModels);
+            setSelectedModels(updatedModels);
         } else {
             // Add to selection
-            setSelectedModels([...selectedModels, model]);
+            debugLog("Adding model to selection:", model);
+            const updatedModels = [...selectedModels, model];
+            debugLog("New model selection:", updatedModels);
+            setSelectedModels(updatedModels);
         }
     };
 
