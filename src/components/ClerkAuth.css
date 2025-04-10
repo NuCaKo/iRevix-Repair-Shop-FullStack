@@ -1,0 +1,180 @@
+/* ClerkAuth.css */
+.clerk-auth-container {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+.clerk-container {
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-switch {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.admin-auth-btn,
+.toggle-auth-button {
+    background-color: transparent;
+    color: #0d6efd;
+    border: none;
+    padding: 8px 16px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.admin-auth-btn:hover,
+.toggle-auth-button:hover {
+    color: #0a58ca;
+    text-decoration: none;
+}
+
+.legacy-auth-container {
+    width: 100%;
+    max-width: 420px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #e1e1e1;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+}
+
+.legacy-auth-container h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.auth-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+}
+
+.auth-actions button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.auth-actions button[type="submit"] {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.auth-actions button[type="submit"]:hover {
+    background-color: #0a58ca;
+}
+
+.auth-actions button[type="submit"]:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.switch-auth-btn {
+    background-color: transparent;
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+.switch-auth-btn:hover {
+    color: #0a58ca;
+    text-decoration: none;
+}
+
+.error-message {
+    color: #dc3545;
+    margin-bottom: 15px;
+    padding: 8px;
+    background-color: rgba(220, 53, 69, 0.1);
+    border-radius: 4px;
+}
+
+.auth-toggle {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Custom styling for Clerk components */
+.cl-card {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.cl-header {
+    margin-bottom: 1.5rem !important;
+}
+
+.cl-socialButtonsIconButton {
+    border-radius: 4px !important;
+}
+
+.cl-formButtonPrimary {
+    background-color: #0d6efd !important;
+}
+
+.cl-formButtonPrimary:hover {
+    background-color: #0a58ca !important;
+}
+
+.cl-footerActionLink {
+    color: #0d6efd !important;
+}
+
+.cl-footerActionLink:hover {
+    color: #0a58ca !important;
+}
+
+/* Responsive styles */
+@media (max-width: 576px) {
+    .clerk-auth-container,
+    .legacy-auth-container {
+        max-width: 100%;
+        padding: 15px;
+    }
+
+    .auth-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .auth-actions button {
+        width: 100%;
+    }
+}

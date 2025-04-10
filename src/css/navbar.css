@@ -238,7 +238,35 @@
     font-size: 14px;
 }
 
-/* Add these fixes to your navbar.css file */
+/* Clerk User Profile */
+.clerk-user-profile {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+/* Customize Clerk components */
+.cl-userButtonBox {
+    height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.cl-userButtonTrigger {
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 50% !important;
+    transition: all 0.2s ease !important;
+}
+
+.cl-userButtonTrigger:hover {
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: scale(1.05) !important;
+}
+
+.cl-userButtonPopoverCard {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
 
 /* Hide hamburger menu on desktop and show only on mobile */
 .menu-icon {

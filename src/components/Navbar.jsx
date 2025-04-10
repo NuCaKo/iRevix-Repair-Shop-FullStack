@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import logo from '../icons/logo.png';
 import '../css/navbar.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { faLock, faTools, faWrench } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from '../CartContext'; // Import the cart context
+import { UserButton, useUser, useClerk } from '@clerk/clerk-react';
 import {
     faUser,
     faShoppingCart,
@@ -24,6 +24,10 @@ function Navbar() {
     const navigate = useNavigate();
     const location = useLocation();
     const { getCartCount } = useCart(); // Get cart count from context
+
+    // Clerk integration
+    const { isSignedIn, user: clerkUser } = useUser();
+    const { signOut: clerkSignOut } = useClerk();
 
     // Kullanıcı bilgileri
     const [userData, setUserData] = useState({
@@ -47,6 +51,25 @@ function Navbar() {
                     role: user.role,
                     avatar: null
                 });
+            } else if (isSignedIn && clerkUser) {
+                // Handle Clerk user
+                setIsLoggedIn(true);
+                setUserData({
+                    name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`,
+                    role: 'customer', // Clerk users are always customers
+                    avatar: clerkUser.imageUrl || null
+                });
+
+                // Store basic user info in localStorage for consistent behavior
+                if (!localStorage.getItem('currentUser')) {
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: clerkUser.id,
+                        firstName: clerkUser.firstName || '',
+                        lastName: clerkUser.lastName || '',
+                        email: clerkUser.primaryEmailAddress?.emailAddress || '',
+                        role: 'customer'
+                    }));
+                }
             } else {
                 setIsLoggedIn(false);
                 setUserData({
@@ -61,7 +84,7 @@ function Navbar() {
 
         // Force update to refresh cart count
         setForceUpdate(prev => prev + 1);
-    }, [location.pathname]); // Her sayfa değişiminde kontrol et
+    }, [location.pathname, isSignedIn, clerkUser]); // Check on page change and Clerk auth state change
 
     // Add a listener for storage events to update cart count when localStorage changes
     useEffect(() => {
@@ -96,7 +119,17 @@ function Navbar() {
     }, []);
 
     // Çıkış yapma işlemi
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        // Check if user is signed in with Clerk
+        if (isSignedIn) {
+            try {
+                await clerkSignOut();
+            } catch (error) {
+                console.error("Error signing out with Clerk:", error);
+            }
+        }
+
+        // Clear localStorage regardless of auth method
         localStorage.removeItem('currentUser');
 
         // Diğer kullanıcı bilgilerini sıfırla
@@ -137,6 +170,9 @@ function Navbar() {
 
     // Get the current cart count - calculate it directly to ensure it's up to date
     const cartCount = getCartCount();
+
+    // Check if the user is a Clerk user
+    const isClerkUser = isSignedIn && clerkUser;
 
     return (
         <>
@@ -189,45 +225,53 @@ function Navbar() {
                         <div className="user-container" ref={dropdownRef}>
                             {isLoggedIn ? (
                                 <>
-                                    <div className="user-profile" onClick={toggleDropdown}>
-                                        {userData.avatar ? (
-                                            <img src={userData.avatar} alt="User" className="user-avatar" />
-                                        ) : (
-                                            <FontAwesomeIcon icon={faUser} className="user-icon" />
-                                        )}
-                                        <span className="user-name">{userData.name}</span>
-                                    </div>
-
-                                    {dropdownOpen && (
-                                        <div className="user-dropdown">
-                                            <Link to="/profile" className="dropdown-item">
-                                                <FontAwesomeIcon icon={faUser} />
-                                                <span>Profil</span>
-                                            </Link>
-
-                                            {/* My Orders sadece müşteriler için gösterilsin */}
-                                            {userData.role === 'customer' && (
-                                                <Link to="/orders" className="dropdown-item">
-                                                    <FontAwesomeIcon icon={faClipboardList} />
-                                                    <span>My Orders</span>
-                                                </Link>
-                                            )}
-
-                                            {/* Support Requests sadece müşteriler için gösterilsin */}
-                                            {userData.role === 'customer' && (
-                                                <Link to="/support" className="dropdown-item">
-                                                    <FontAwesomeIcon icon={faHeadset} />
-                                                    <span>Support Requests</span>
-                                                </Link>
-                                            )}
-
-                                            <div className="dropdown-divider"></div>
-
-                                            <button className="dropdown-item logout-button" onClick={handleLogout}>
-                                                <FontAwesomeIcon icon={faSignOutAlt} />
-                                                <span>Logout</span>
-                                            </button>
+                                    {isClerkUser ? (
+                                        <div className="clerk-user-profile">
+                                            <UserButton afterSignOutUrl="/" />
                                         </div>
+                                    ) : (
+                                        <>
+                                            <div className="user-profile" onClick={toggleDropdown}>
+                                                {userData.avatar ? (
+                                                    <img src={userData.avatar} alt="User" className="user-avatar" />
+                                                ) : (
+                                                    <FontAwesomeIcon icon={faUser} className="user-icon" />
+                                                )}
+                                                <span className="user-name">{userData.name}</span>
+                                            </div>
+
+                                            {dropdownOpen && (
+                                                <div className="user-dropdown">
+                                                    <Link to="/profile" className="dropdown-item">
+                                                        <FontAwesomeIcon icon={faUser} />
+                                                        <span>Profile</span>
+                                                    </Link>
+
+                                                    {/* My Orders sadece müşteriler için gösterilsin */}
+                                                    {userData.role === 'customer' && (
+                                                        <Link to="/orders" className="dropdown-item">
+                                                            <FontAwesomeIcon icon={faClipboardList} />
+                                                            <span>My Orders</span>
+                                                        </Link>
+                                                    )}
+
+                                                    {/* Support Requests sadece müşteriler için gösterilsin */}
+                                                    {userData.role === 'customer' && (
+                                                        <Link to="/support" className="dropdown-item">
+                                                            <FontAwesomeIcon icon={faHeadset} />
+                                                            <span>Support Requests</span>
+                                                        </Link>
+                                                    )}
+
+                                                    <div className="dropdown-divider"></div>
+
+                                                    <button className="dropdown-item logout-button" onClick={handleLogout}>
+                                                        <FontAwesomeIcon icon={faSignOutAlt} />
+                                                        <span>Logout</span>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </>
                             ) : (
