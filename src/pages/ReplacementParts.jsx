@@ -131,12 +131,29 @@ function ReplacementParts() {
     // Set default parts data when device and model are selected
     useEffect(() => {
         if (selectedDevice && selectedModel) {
-            const generatedParts = generateReplacementParts(selectedDevice, selectedModel);
-            setPartsData(generatedParts);
+            fetch(`http://localhost:8080/api/replacement-parts/model?model=${encodeURIComponent(selectedModel)}`)
+                .then(res => res.json())
+                .then(data => {
+                    // Backend'den gelen verileri frontend'e uygun hale getir
+                    const formattedParts = data.map((part, index) => ({
+                        id: part.id || `${selectedDevice}-${index}-${Math.random() * 1000}`,
+                        name: part.name,
+                        price: part.price,
+                        icon: faScrewdriver, // varsayılan ikon ya da kategoriye göre seçilebilir
+                        description: part.description,
+                        compatibility: [part.modelName],
+                        partNumber: part.partNumber,
+                        image: part.imageUrl || `https://source.unsplash.com/random/100x100/?${part.name}`
+                    }));
+
+                    setPartsData(formattedParts);
+                })
+                .catch(err => console.error("Error fetching parts:", err));
         } else {
             setPartsData([]);
         }
     }, [selectedDevice, selectedModel]);
+
 
     const handleDeviceSelect = (deviceId) => {
         setSelectedDevice(deviceId);

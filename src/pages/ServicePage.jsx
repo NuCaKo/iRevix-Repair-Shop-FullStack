@@ -131,13 +131,13 @@ const ServicePanel = () => {
 
 
     // Calculate derived values based on repairs state
-    const pendingRepairsCount = repairs.filter(r => r.status === "PENDING").length;
-    const inProgressRepairs = repairs.filter(r => r.status === "IN REPAIR" || r.status === "DIAGNOSING").length;
-    const completedRepairs = repairs.filter(r => r.status === "COMPLETED").length;
-    const awaitingParts = repairs.filter(r => r.status === "WAITING_FOR_PARTS").length;
+    const pendingRepairsCount = repairs.filter(r => r.status === "Pending").length;
+    const inProgressRepairs = repairs.filter(r => r.status === "In Progress" || r.status === "Diagnosing").length;
+    const completedRepairs = repairs.filter(r => r.status === "Completed").length;
+    const awaitingParts = repairs.filter(r => r.status === "Awaiting Parts").length;
 
     const pendingRepairs = repairs.filter(repair => {
-        return repair.status === "PENDING" &&
+        return repair.status === "Pending" &&
             (searchTerm === "" ||
                 repair.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 repair.device?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -146,9 +146,9 @@ const ServicePanel = () => {
     });
 
     const activeTasks = repairs.filter(repair =>
-        repair.status === "IN_REPAIR" ||
+        repair.status === "In Progress" ||
         repair.status === "DIAGNOSING" ||
-        repair.status === "WAITING_FOR_PARTS"
+        repair.status === "Awaiting Parts"
     );
 
 
@@ -171,7 +171,7 @@ const ServicePanel = () => {
                 model: '',
                 issue: '',
                 priority: 'Medium',
-                status: 'PENDING',
+                status: 'Pending',
                 date: new Date().toISOString().split('T')[0]
             });
         } catch (error) {
@@ -186,7 +186,7 @@ const ServicePanel = () => {
 
             // Step 1: Status güncellemesi
             const statusResponse = await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
-                status: "IN_REPAIR"
+                status: "In Progress"
             });
             console.log("✅ Status updated:", statusResponse.status);
 
@@ -220,7 +220,7 @@ const ServicePanel = () => {
         try {
             // You might want a specific status for rejected repairs
             await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
-                status: "PENDING"
+                status: "Pending"
             });
 
             // Refresh data
