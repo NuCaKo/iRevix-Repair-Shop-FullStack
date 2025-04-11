@@ -81,6 +81,9 @@ const ServicePanel = () => {
     const fetchAllData = async () => {
         setLoading(true);
         try {
+            const response = await fetch('/data/serviceData.json');
+            const data = await response.json();
+
             console.log("Fetching data from API...");
 
             const repairsResponse = await axios.get(`${API_BASE_URL}/repair-orders`);
@@ -120,6 +123,7 @@ const ServicePanel = () => {
             const kbResponse = await axios.get(`${API_BASE_URL}/knowledge-base`);
             setKbArticles(kbResponse.data || []);
 
+            setKbArticles(data.knowledgeBase || []);
         } catch (error) {
             console.error("Error loading data:", error);
             setError("Failed to load data from server. Please try again later.");
@@ -329,27 +333,35 @@ const ServicePanel = () => {
         try {
             setPdfReady(false);
 
-            // Wait for images to load
             const images = reportRef.current.querySelectorAll('img');
-            if (images.length > 0) {
-                await Promise.all([...images].map(img => {
-                    if (img.complete) return Promise.resolve();
-                    return new Promise(resolve => {
+
+            const toDataURL = (url) =>
+                fetch(url)
+                    .then(response => response.blob())
+                    .then(blob => new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    }));
+
+            await Promise.all([...images].map(async (img) => {
+                if (!img.complete || img.naturalHeight === 0) {
+                    const base64 = await toDataURL(img.src);
+                    img.src = base64;
+                    await new Promise(resolve => {
                         img.onload = resolve;
                         img.onerror = resolve;
                     });
-                }));
-            }
+                }
+            }));
 
-            // Add a small delay to ensure rendering is complete
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 300));
 
-            // Create canvas with better settings
             const canvas = await html2canvas(reportRef.current, {
                 scale: 2,
                 useCORS: true,
                 allowTaint: true,
-                logging: false
             });
 
             const imgData = canvas.toDataURL('image/png');
@@ -363,14 +375,30 @@ const ServicePanel = () => {
             const imgY = 30;
 
             pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-            pdf.save(`Service_Report_${selectedRepair.id}.pdf`);
 
+            // BLOB olarak al
+            const pdfBlob = pdf.output('blob');
+            const formData = new FormData();
+            formData.append('file', pdfBlob, `service_report_${selectedRepair.id}.pdf`);
+
+            // Backend'e gönder
+            const response = await fetch(`http://localhost:8080/api/repair-orders/${selectedRepair.id}/upload-pdf`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) throw new Error("Upload failed");
+
+            alert("✅ PDF başarıyla sunucuya yüklendi!");
             setPdfReady(true);
+
         } catch (error) {
-            console.error("PDF generation error:", error);
-            alert("Error generating PDF. Please try again.");
+            console.error("❌ PDF upload error:", error);
+            alert("❌ PDF oluşturulurken veya yüklenirken hata oluştu.");
         }
     };
+
+
 
     // Utility functions
 

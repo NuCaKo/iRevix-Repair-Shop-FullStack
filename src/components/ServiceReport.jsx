@@ -107,7 +107,12 @@ const ServiceReport = ({ selectedRepair, reportRef, generatePDF }) => {
                         <div className="image-grid">
                             {selectedRepair.images.map((image) => (
                                 <div key={image.id} className="report-image-item">
-                                    <img src={image.src} alt={image.description} />
+                                    <img
+                                        src={`http://localhost:8080${image.imageUrl}`}
+                                        alt={image.description}
+                                        crossOrigin="anonymous"
+                                    />
+
                                     <div className="image-caption">
                                         <small>{image.description} ({image.date})</small>
                                     </div>
