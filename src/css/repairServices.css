@@ -146,6 +146,13 @@
     color: #007bff;
 }
 
+.pdf-actions {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+
 .selected-device {
     border: 2px solid #28a745;
     background-color: rgba(40, 167, 69, 0.1);
