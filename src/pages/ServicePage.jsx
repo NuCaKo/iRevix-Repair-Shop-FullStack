@@ -261,6 +261,28 @@ const ServicePanel = () => {
         }
     };
 
+    const fetchServiceReport = async (repairId) => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/repair-orders/${repairId}/service-report`);
+            const selectedRepair = response.data;
+
+            if (selectedRepair.serviceReportUrl) {
+                const pdfUrl = `http://localhost:8080${selectedRepair.serviceReportUrl}`; // Backend'den gelen PDF URL'sini burada kullanıyoruz
+                const link = document.createElement('a');
+                link.href = pdfUrl;
+                link.target = '_blank';
+                link.download = `service_report_${repairId}.pdf`; // Dosya adını belirleyebilirsiniz
+                link.click();
+            } else {
+                alert("Service report not found.");
+            }
+        } catch (error) {
+            console.error("Error fetching service report:", error);
+        }
+    };
+
+
+
     const addRepairNote = async (repairId) => {
         if (!repairNotes.trim()) return;
 
@@ -328,13 +350,12 @@ const ServicePanel = () => {
     // PDF generation
 
     const generatePDF = async () => {
-        if (!reportRef.current) return;
+        if (!reportRef.current || !selectedRepair?.id) return;
 
         try {
             setPdfReady(false);
 
             const images = reportRef.current.querySelectorAll('img');
-
             const toDataURL = (url) =>
                 fetch(url)
                     .then(response => response.blob())
@@ -358,45 +379,37 @@ const ServicePanel = () => {
 
             await new Promise(resolve => setTimeout(resolve, 300));
 
-            const canvas = await html2canvas(reportRef.current, {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-            });
-
+            const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, allowTaint: true });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-            const imgX = (pdfWidth - imgWidth * ratio) / 2;
-            const imgY = 30;
+            const ratio = Math.min(pdf.internal.pageSize.getWidth() / canvas.width, pdf.internal.pageSize.getHeight() / canvas.height);
+            const x = (pdf.internal.pageSize.getWidth() - canvas.width * ratio) / 2;
+            const y = 30;
+            pdf.addImage(imgData, 'PNG', x, y, canvas.width * ratio, canvas.height * ratio);
 
-            pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-
-            // BLOB olarak al
+            // PDF blob oluştur
             const pdfBlob = pdf.output('blob');
             const formData = new FormData();
-            formData.append('file', pdfBlob, `service_report_${selectedRepair.id}.pdf`);
+            formData.append("file", pdfBlob, `service_report_${selectedRepair.id}.pdf`);
 
             // Backend'e gönder
             const response = await fetch(`http://localhost:8080/api/repair-orders/${selectedRepair.id}/upload-pdf`, {
-                method: 'POST',
+                method: "POST",
                 body: formData,
             });
 
-            if (!response.ok) throw new Error("Upload failed");
+            if (!response.ok) {
+                throw new Error("Upload failed");
+            }
 
-            alert("✅ PDF başarıyla sunucuya yüklendi!");
+            alert("Service report PDF uploaded successfully.");
             setPdfReady(true);
-
         } catch (error) {
             console.error("❌ PDF upload error:", error);
-            alert("❌ PDF oluşturulurken veya yüklenirken hata oluştu.");
+            alert("Error uploading service report PDF.");
         }
     };
+
 
 
 
@@ -615,10 +628,11 @@ const ServicePanel = () => {
                                             </button>
                                             <button
                                                 className="service-report-btn"
-                                                onClick={() => setShowReportForm(true)}
+                                                onClick={() => fetchServiceReport(selectedRepair.id)}
                                             >
-                                                Service Report
+                                                <FaDownload /> View Service Report
                                             </button>
+
                                         </div>
 
                                         <div className="images-container">
@@ -719,12 +733,12 @@ const ServicePanel = () => {
                                         </div>
                                     )}
 
-                                    {selectedRepair && selectedRepair.serviceReport && (
-                                        <ServiceReport
-                                            selectedRepair={selectedRepair}
-                                            reportRef={reportRef}
-                                            generatePDF={generatePDF}
-                                        />
+                                    {showHistory && selectedRepair?.serviceReport && (
+                                        <div className="pdf-actions" style={{ marginTop: '20px' }}>
+                                            <button onClick={generatePDF}>
+                                                <FaDownload /> Download Service Report PDF
+                                            </button>
+                                        </div>
                                     )}
 
                                 </div>

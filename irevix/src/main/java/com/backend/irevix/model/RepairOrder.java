@@ -19,6 +19,10 @@ public class RepairOrder {
     private String priority;
     private String date;
 
+    @Column(name = "service_report_url")
+    private String serviceReportUrl;
+
+
 
 
     @OneToMany(mappedBy = "repairOrder", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -111,4 +115,14 @@ public class RepairOrder {
     public void setDate(String date) {
         this.date = date;
     }
+
+    public String getServiceReportUrl() {
+        return serviceReportUrl;
+    }
+
+    public void setServiceReportUrl(String serviceReportUrl) {
+        this.serviceReportUrl = serviceReportUrl;
+    }
+
+
 }
