@@ -733,13 +733,6 @@ const ServicePanel = () => {
                                         </div>
                                     )}
 
-                                    {showHistory && selectedRepair?.serviceReport && (
-                                        <div className="pdf-actions" style={{ marginTop: '20px' }}>
-                                            <button onClick={generatePDF}>
-                                                <FaDownload /> Download Service Report PDF
-                                            </button>
-                                        </div>
-                                    )}
 
                                 </div>
 
