@@ -164,20 +164,45 @@ function ReplacementParts() {
         setSelectedModel(model);
     };
 
-    const handleAddToCart = (part) => {
-        // Make sure part has all required fields
-        const partWithDefaults = {
-            ...part,
-            quantity: 1,
-            // If image is missing, add a placeholder
-            image: part.image || `https://source.unsplash.com/random/100x100/?${part.category || 'apple'}`,
-            // Ensure type is specified
-            type: 'part'
-        };
+    const handleAddToCart = async (part) => {
+        const storedUser = JSON.parse(localStorage.getItem("currentUser"));
+        if (!storedUser || storedUser.role !== 'customer') {
+            alert("Please log in as a customer to add items to your cart.");
+            return;
+        }
 
-        addToCart(partWithDefaults);
-        alert(`Added ${part.name} to cart!`);
+        const userId = storedUser.id;
+
+        try {
+            const res = await fetch(`http://localhost:8080/api/cart/add`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    userId: userId,
+                    partId: part.id,
+                    quantity: 1,
+                    type: 'part'
+                })
+            });
+
+            if (!res.ok) throw new Error("Failed to add item to cart");
+
+            const data = await res.json();
+            console.log("✅ Backend cart response:", data);
+
+            // optionally update context if needed
+            // addToCart(part);
+
+            alert(`Added ${part.name} to cart!`);
+
+        } catch (err) {
+            console.error("🚨 Error adding to cart:", err);
+            alert("Failed to add item to cart.");
+        }
     };
+
 
     // Framer motion variants for animations
     const fadeIn = {
