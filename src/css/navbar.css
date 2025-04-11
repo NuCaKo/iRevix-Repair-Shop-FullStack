@@ -228,6 +228,14 @@
     background-color: #e0e0e0;
     margin: 5px 0;
 }
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
 
 .logout-button {
     width: 100%;
@@ -238,18 +246,31 @@
     font-size: 14px;
 }
 
-/* Clerk User Profile */
-.clerk-user-profile {
+/* Quick links next to user button */
+.quick-links {
     display: flex;
     align-items: center;
+    gap: 12px;
     margin-left: 10px;
 }
 
-/* Customize Clerk components */
-.cl-userButtonBox {
-    height: 40px;
+.quick-link {
+    color: white;
+    font-size: 16px;
     display: flex;
     align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+}
+
+.quick-link:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    color: #0d6efd;
 }
 
 .cl-userButtonTrigger {
@@ -266,6 +287,19 @@
 .cl-userButtonPopoverCard {
     border-radius: 8px !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Optional: Customize popover items */
+.cl-userButtonPopoverActions {
+    padding: 8px 0 !important;
+}
+
+.cl-userButtonPopoverActionButton {
+    transition: background-color 0.2s ease !important;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+    background-color: #f5f7fa !important;
 }
 
 /* Hide hamburger menu on desktop and show only on mobile */
@@ -357,6 +391,23 @@
         margin-left: auto;
         z-index: 1001;
     }
+
+    /* Mobile-specific styling for clerk and quick links */
+    .quick-links {
+        margin-left: 5px;
+        gap: 8px;
+    }
+
+    .quick-link {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
+}
+
+/* Additional cleanup in navbar.css */
+.navbar-right .user-container .cl-userButtonBox {
+    display: none !important;
 }
 
 /* For very small screens */

@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { faLock, faTools, faWrench } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from '../CartContext'; // Import the cart context
-import { UserButton, useUser, useClerk } from '@clerk/clerk-react';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import {
     faUser,
     faShoppingCart,
@@ -225,53 +225,46 @@ function Navbar() {
                         <div className="user-container" ref={dropdownRef}>
                             {isLoggedIn ? (
                                 <>
-                                    {isClerkUser ? (
-                                        <div className="clerk-user-profile">
-                                            <UserButton afterSignOutUrl="/" />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="user-profile" onClick={toggleDropdown}>
-                                                {userData.avatar ? (
-                                                    <img src={userData.avatar} alt="User" className="user-avatar" />
-                                                ) : (
-                                                    <FontAwesomeIcon icon={faUser} className="user-icon" />
-                                                )}
-                                                <span className="user-name">{userData.name}</span>
-                                            </div>
+                                    <div className="user-profile" onClick={toggleDropdown}>
+                                        {userData.avatar && userData.avatar !== 'null' && userData.avatar !== '' ? (
+                                            <img src={userData.avatar} alt="User" className="user-avatar" />
+                                        ) : (
+                                            <FontAwesomeIcon icon={faUser} className="user-icon" />
+                                        )}
 
-                                            {dropdownOpen && (
-                                                <div className="user-dropdown">
-                                                    <Link to="/profile" className="dropdown-item">
-                                                        <FontAwesomeIcon icon={faUser} />
-                                                        <span>Profile</span>
-                                                    </Link>
+                                        <span className="user-name">{userData.name}</span>
+                                    </div>
 
-                                                    {/* My Orders sadece müşteriler için gösterilsin */}
-                                                    {userData.role === 'customer' && (
-                                                        <Link to="/orders" className="dropdown-item">
-                                                            <FontAwesomeIcon icon={faClipboardList} />
-                                                            <span>My Orders</span>
-                                                        </Link>
-                                                    )}
+                                    {dropdownOpen && (
+                                        <div className="user-dropdown">
+                                            <Link to="/profile" className="dropdown-item">
+                                                <FontAwesomeIcon icon={faUser} />
+                                                <span>Profile</span>
+                                            </Link>
 
-                                                    {/* Support Requests sadece müşteriler için gösterilsin */}
-                                                    {userData.role === 'customer' && (
-                                                        <Link to="/support" className="dropdown-item">
-                                                            <FontAwesomeIcon icon={faHeadset} />
-                                                            <span>Support Requests</span>
-                                                        </Link>
-                                                    )}
-
-                                                    <div className="dropdown-divider"></div>
-
-                                                    <button className="dropdown-item logout-button" onClick={handleLogout}>
-                                                        <FontAwesomeIcon icon={faSignOutAlt} />
-                                                        <span>Logout</span>
-                                                    </button>
-                                                </div>
+                                            {/* My Orders only for non-clerk customers, admins and technicians */}
+                                            {userData.role === 'customer' && (
+                                                <Link to="/orders" className="dropdown-item">
+                                                    <FontAwesomeIcon icon={faClipboardList} />
+                                                    <span>My Orders</span>
+                                                </Link>
                                             )}
-                                        </>
+
+                                            {/* Support Requests only for customers */}
+                                            {userData.role === 'customer' && (
+                                                <Link to="/support" className="dropdown-item">
+                                                    <FontAwesomeIcon icon={faHeadset} />
+                                                    <span>Support Requests</span>
+                                                </Link>
+                                            )}
+
+                                            <div className="dropdown-divider"></div>
+
+                                            <button className="dropdown-item logout-button" onClick={handleLogout}>
+                                                <FontAwesomeIcon icon={faSignOutAlt} />
+                                                <span>Logout</span>
+                                            </button>
+                                        </div>
                                     )}
                                 </>
                             ) : (
