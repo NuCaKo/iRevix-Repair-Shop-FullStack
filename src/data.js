@@ -60,7 +60,7 @@ export const users = [
         firstName: "Admin",
         lastName: "User",
         email: "admin@irevix.com",
-        password: "Admin123!",
+        password: "Admpass123!",
         phone: "5551234567",
         role: "admin",
         address: "",
@@ -108,7 +108,7 @@ export const users = [
         firstName: "Ahmet",
         lastName: "Technician", // Changed from "Tamirci"
         email: "technician@irevix.com", // Changed from "tamirci@irevix.com"
-        password: "Technician123!", // Changed from "Tamirci123!"
+        password: "Techpass123!", // Changed from "Tamirci123!"
         phone: "5551234588",
         role: "tamirci", // Changed from "tamirci"
         address: "Istanbul, Besiktas", // Removed accents

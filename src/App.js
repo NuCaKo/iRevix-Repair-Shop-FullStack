@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
-import Navbar from './components/Navbar';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import {
+    ClerkProvider,
+    SignedIn,
+    SignedOut,
+    RedirectToSignIn,
+    useOrganization,
+    useUser,
+    useClerk,
+} from '@clerk/clerk-react';
+
+// Import all your pages
 import MainPage from './pages/MainPage';
 import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
@@ -26,144 +35,232 @@ import ReturnsRefundsPage from './pages/ReturnsRefundsPage';
 
 import './App.css';
 
-const clerkPubKey = 'pk_test_c3RpcnJpbmctY29icmEtNDAuY2xlcmsuYWNjb3VudHMuZGV2JA';
+// Get Clerk publishable key from environment variables
+const clerkPubKey = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || 'pk_test_c3RpcnJpbmctY29icmEtNDAuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
-// Custom role-based route protection
-const ProtectedRoute = ({ element, allowedRoles }) => {
-    const storedUser = localStorage.getItem('currentUser');
-    const currentUser = storedUser ? JSON.parse(storedUser) : null;
-    const isAuthenticated = !!currentUser;
-    const userRole = currentUser?.role;
-
-    if (!isAuthenticated || !allowedRoles.includes(userRole)) {
-        return <Navigate to="/login" replace />;
-    }
-
-    return element;
+// Helper function to map Clerk roles to application roles
+const mapClerkRoleToAppRole = (clerkRole) => {
+    if (clerkRole === 'technician') return 'tamirci';
+    return clerkRole; // admin and customer roles stay the same
 };
 
-// This route requires authentication (either clerk or legacy)
-const AnyAuthProtectedRoute = ({ element }) => {
-    const storedUser = localStorage.getItem('currentUser');
-    const isAuthenticated = !!storedUser;
-
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
-
-    return element;
+// Helper function to map application roles to Clerk roles
+const mapAppRoleToClerkRole = (appRole) => {
+    if (appRole === 'tamirci') return 'technician';
+    return appRole; // admin and customer roles stay the same
 };
 
-function AppContent() {
-    const location = useLocation();
-    const [currentUser, setCurrentUser] = useState(null);
+/**
+ * ClerkAuth component:
+ * - Runs in the background (renders nothing)
+ * - Updates the user's publicMetadata.role based on email
+ * - Adds user to the organization if needed
+ * - Logs debug info
+ */
+function ClerkAuth() {
+    const { isLoaded: isUserLoaded, isSignedIn, user } = useUser();
+    // Always call the hook, but we'll conditionally use its values
+    const { isLoaded: isOrgLoaded, organization } = useOrganization();
+    const clerkClient = useClerk();
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('currentUser');
-        if (storedUser) {
-            setCurrentUser(JSON.parse(storedUser));
-        }
-    }, [location.pathname]);
+        const setUserRoleAndOrganization = async () => {
+            // If user data isn't loaded or user not signed in, skip
+            if (!isUserLoaded || !isSignedIn || !user) {
+                return;
+            }
 
-    const hideNavbarRoutes = ['/login', '/loginadm', '/signup', '/forgot-password'];
-    const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
+            // Determine role based on email
+            const email = user.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || '';
+            let appRole = 'customer';
+            if (email === 'admin@irevix.com') {
+                appRole = 'admin';
+            } else if (email === 'technician@irevix.com') {
+                appRole = 'tamirci'; // Use app role format
+            }
 
-    const isTechnician = currentUser?.role === 'tamirci';
-    const allowedTechnicianRoutes = ['/service', '/profile'];
+            // Convert to Clerk role for storage
+            const clerkRole = mapAppRoleToClerkRole(appRole);
 
-    if (isTechnician &&
-        !allowedTechnicianRoutes.some(route => location.pathname.startsWith(route)) &&
-        !hideNavbarRoutes.includes(location.pathname)) {
-        return <Navigate to="/service" replace />;
+            // Update publicMetadata if needed
+            try {
+                if (user.publicMetadata?.role !== clerkRole) {
+                    await clerkClient.user?.update({
+                        publicMetadata: {
+                            ...user.publicMetadata,
+                            role: clerkRole,     // Store Clerk role format
+                            appRole: appRole     // Also store app role format
+                        },
+                    });
+                    await clerkClient.user?.reload(); // refresh local user data
+                }
+            } catch (error) {
+                // Silent error handling
+            }
+
+            // Store the app role in localStorage for easy access
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: user.id,
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                email: user.primaryEmailAddress?.emailAddress || '',
+                role: appRole // Store the app role format
+            }));
+
+            // Only perform organization operations in production
+            if (process.env.NODE_ENV === 'production' && isOrgLoaded && organization) {
+                try {
+                    // Check if user is already a member of the organization
+                    const existingMembership = organization.memberships?.find(
+                        (membership) => membership.publicUserData.userId === user.id
+                    );
+
+                    if (!existingMembership) {
+                        // Use Clerk role format for organization (make sure these roles exist in Clerk Dashboard)
+                        await organization.addMember({ userId: user.id, role: clerkRole });
+                    } else if (existingMembership.role !== clerkRole) {
+                        // Optionally update organization role if different
+                        await organization.updateMember({
+                            userId: user.id,
+                            role: clerkRole
+                        });
+                    }
+                } catch (error) {
+                    // Silent catch - organization operations should not block authentication
+                }
+            }
+        };
+
+        setUserRoleAndOrganization();
+    }, [isUserLoaded, isOrgLoaded, isSignedIn, user, organization, clerkClient]);
+
+    return null; // Renders nothing; just runs the effect
+}
+
+/**
+ * Modified ProtectedRoute component that checks both Clerk roles and app roles
+ */
+const ProtectedRoute = ({ children, allowedRoles }) => {
+    const { isLoaded: isUserLoaded, user } = useUser();
+
+    // Wait until data is loaded
+    if (!isUserLoaded) {
+        return <div>Loading...</div>;
     }
 
-    return (
-        <>
-            {shouldShowNavbar && <Navbar />}
-            <Routes>
-                <Route path="/" element={<MainPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                {/* New route for direct admin login */}
-                <Route path="/loginadm" element={<LoginPage adminMode={true} />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/faq" element={<FAQPage />} />
-                <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                <Route path="/terms" element={<TermsConditionsPage />} />
-                <Route path="/shipping" element={<ShippingPolicyPage />} />
-                <Route path="/returns" element={<ReturnsRefundsPage />} />
+    // Get role from publicMetadata and map to app role
+    const clerkRole = user?.publicMetadata?.role;
+    const appRole = user?.publicMetadata?.appRole || mapClerkRoleToAppRole(clerkRole);
 
-                {/* Admin routes */}
-                <Route
-                    path="/admin"
-                    element={
-                        <ProtectedRoute
-                            element={<AdminPanel />}
-                            allowedRoles={['admin']}
-                        />
-                    }
-                />
+    // Map allowedRoles to Clerk roles for comparison
+    const allowedClerkRoles = allowedRoles.map(mapAppRoleToClerkRole);
 
-                {/* Technician routes */}
-                <Route
-                    path="/service/*"
-                    element={
-                        <ProtectedRoute
-                            element={<ServicePage />}
-                            allowedRoles={['tamirci', 'admin']}
-                        />
-                    }
-                />
+    // Check if user has access (check both formats)
+    const hasAccess = allowedRoles.includes(appRole) || allowedClerkRoles.includes(clerkRole);
 
-                {/* Customer auth routes */}
-                <Route
-                    path="/profile"
-                    element={
-                        <AnyAuthProtectedRoute element={<ProfilePage />} />
-                    }
-                />
-
-                <Route
-                    path="/support"
-                    element={
-                        <AnyAuthProtectedRoute element={<SupportRequestsPage />} />
-                    }
-                />
-
-                {/* Public routes with optional auth */}
-                <Route path="/services" element={<RepairServicesPage />} />
-                <Route path="/parts" element={<ReplacementParts />} />
-                <Route path="/repair-services" element={<RepairServicesPage />} />
-
-                {/* Customer-only routes that need auth */}
-                <Route
-                    path="/cart"
-                    element={<AnyAuthProtectedRoute element={<CartPage />} />}
-                />
-                <Route
-                    path="/checkout"
-                    element={<AnyAuthProtectedRoute element={<CheckoutPage />} />}
-                />
-                <Route
-                    path="/payment"
-                    element={<AnyAuthProtectedRoute element={<PaymentPage />} />}
-                />
-                <Route
-                    path="/orders"
-                    element={<AnyAuthProtectedRoute element={<OrdersPage />} />}
-                />
-            </Routes>
-        </>
-    );
-}
+    return hasAccess ? children : <Navigate to="/" replace />;
+};
 
 function App() {
     return (
         <ClerkProvider publishableKey={clerkPubKey}>
             <CartProvider>
+                {/* 1) Run ClerkAuth in the background so user's role & membership get updated */}
+                <ClerkAuth />
+
+                {/* 2) Your normal router and routes */}
                 <Router>
-                    <AppContent />
+                    <Routes>
+                        {/* Public Routes */}
+                        <Route path="/" element={<MainPage />} />
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/signup" element={<SignupPage />} />
+                        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                        <Route path="/contact" element={<ContactPage />} />
+                        <Route path="/faq" element={<FAQPage />} />
+                        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                        <Route path="/terms" element={<TermsConditionsPage />} />
+                        <Route path="/shipping" element={<ShippingPolicyPage />} />
+                        <Route path="/returns" element={<ReturnsRefundsPage />} />
+                        <Route path="/services" element={<RepairServicesPage />} />
+                        <Route path="/parts" element={<ReplacementParts />} />
+
+                        {/* Admin Routes */}
+                        <Route
+                            path="/admin/*"
+                            element={
+                                <SignedIn>
+                                    <ProtectedRoute allowedRoles={['admin']}>
+                                        <AdminPanel />
+                                    </ProtectedRoute>
+                                </SignedIn>
+                            }
+                        />
+
+                        {/* Technician Routes - note we use 'tamirci' here (app role) */}
+                        <Route
+                            path="/service/*"
+                            element={
+                                <SignedIn>
+                                    <ProtectedRoute allowedRoles={['tamirci', 'admin']}>
+                                        <ServicePage />
+                                    </ProtectedRoute>
+                                </SignedIn>
+                            }
+                        />
+
+                        {/* Customer Protected Routes */}
+                        <Route
+                            path="/profile"
+                            element={
+                                <SignedIn>
+                                    <ProfilePage />
+                                </SignedIn>
+                            }
+                        />
+                        <Route
+                            path="/cart"
+                            element={
+                                <SignedIn>
+                                    <CartPage />
+                                </SignedIn>
+                            }
+                        />
+                        <Route
+                            path="/checkout"
+                            element={
+                                <SignedIn>
+                                    <CheckoutPage />
+                                </SignedIn>
+                            }
+                        />
+                        <Route
+                            path="/orders"
+                            element={
+                                <SignedIn>
+                                    <OrdersPage />
+                                </SignedIn>
+                            }
+                        />
+                        <Route
+                            path="/support"
+                            element={
+                                <SignedIn>
+                                    <SupportRequestsPage />
+                                </SignedIn>
+                            }
+                        />
+
+                        {/* Fallback for signed out users */}
+                        <Route
+                            path="*"
+                            element={
+                                <SignedOut>
+                                    <RedirectToSignIn />
+                                </SignedOut>
+                            }
+                        />
+                    </Routes>
                 </Router>
             </CartProvider>
         </ClerkProvider>

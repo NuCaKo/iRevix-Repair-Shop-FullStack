@@ -98,6 +98,27 @@
 .clerk-container {
     padding-bottom: 2rem;
 }
+.login-info-message {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.login-info-message p {
+    margin: 0.5rem 0;
+    color: #1e3a8a;
+    font-size: 1rem;
+}
+
+.login-tip {
+    font-size: 0.9rem !important;
+    color: #4b5563 !important;
+    font-style: italic;
+    margin-top: 0.5rem !important;
+}
 
 /* Parlama Efekti - Only for non-minimal containers */
 .login-form-container:not(.minimal)::before {
