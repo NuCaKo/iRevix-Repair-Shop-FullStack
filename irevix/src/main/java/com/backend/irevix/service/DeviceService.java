@@ -55,8 +55,6 @@ public class DeviceService {
         List<Map<String, Object>> devicesList = devices.stream()
                 .map(device -> {
                     String deviceId = device.getName().toLowerCase().replaceAll("\\s+", "");
-
-                    // Get device models from the separate entity
                     List<String> modelNames = deviceModelRepository.findByDeviceId(device.getId())
                             .stream()
                             .map(DeviceModel::getName)

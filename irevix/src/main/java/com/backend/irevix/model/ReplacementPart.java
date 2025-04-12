@@ -22,8 +22,6 @@ public class ReplacementPart {
     @ManyToOne
     @JoinColumn(name = "category_id")
     private ReplacementPartCategory category;
-
-    // GETTER'lar
     public Long getId() {
         return id;
     }
@@ -55,8 +53,6 @@ public class ReplacementPart {
     public ReplacementPartCategory getCategory() {
         return category;
     }
-
-    // SETTER'lar
     public void setId(Long id) {
         this.id = id;
     }

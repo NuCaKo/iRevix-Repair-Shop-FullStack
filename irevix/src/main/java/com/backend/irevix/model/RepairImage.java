@@ -19,8 +19,6 @@ public class RepairImage {
     @JsonBackReference
     private RepairOrder repairOrder;
 
-    // Getter & Setter'lar
-
     public Long getId() {
         return id;
     }

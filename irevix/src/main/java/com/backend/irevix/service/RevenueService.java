@@ -27,8 +27,6 @@ public class RevenueService {
 
             if (revenueOpt.isPresent()) {
                 Revenue revenue = revenueOpt.get();
-
-                // Explicitly initialize collections to avoid lazy loading issues
                 if (revenue.getDailyRevenue() != null) {
                     Hibernate.initialize(revenue.getDailyRevenue());
                 }
@@ -48,8 +46,6 @@ public class RevenueService {
         } catch (Exception e) {
             System.err.println("Error fetching revenue data: " + e.getMessage());
             e.printStackTrace();
-
-            // Create a default Revenue object with empty collections
             Revenue defaultRevenue = new Revenue();
             defaultRevenue.setPeriod(period);
             defaultRevenue.setToday(0);
@@ -68,8 +64,6 @@ public class RevenueService {
             return Optional.of(defaultRevenue);
         }
     }
-
-    // This method could be used for refreshing or creating new revenue data
     @Transactional
     public Revenue createOrUpdateRevenue(Revenue revenue) {
         return revenueRepository.save(revenue);

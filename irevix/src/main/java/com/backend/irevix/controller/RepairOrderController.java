@@ -1,8 +1,6 @@
 package com.backend.irevix.controller;
 
-import com.backend.irevix.model.Repair;
 import com.backend.irevix.model.RepairImage;
-import com.backend.irevix.model.RepairNote;
 import com.backend.irevix.model.RepairOrder;
 import com.backend.irevix.repository.RepairOrderRepository;
 import com.backend.irevix.service.RepairNoteService;
@@ -156,18 +154,13 @@ public class RepairOrderController {
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
         try {
-            // Fiziksel klasör yolu
             String uploadsDir = System.getProperty("user.dir") + "/uploads/service-reports/";
             String filename = "service_report_" + id + ".pdf";
 
             File uploadDir = new File(uploadsDir);
             if (!uploadDir.exists()) uploadDir.mkdirs();
-
-            // Kaydet
             Path filePath = Paths.get(uploadsDir + filename);
             Files.write(filePath, file.getBytes());
-
-            // Veritabanına yaz
             RepairOrder repair = repairOrderRepository.findById(id).orElse(null);
             if (repair == null) return ResponseEntity.notFound().build();
 

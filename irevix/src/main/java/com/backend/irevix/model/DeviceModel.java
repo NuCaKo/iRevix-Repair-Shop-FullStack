@@ -24,14 +24,9 @@ public class DeviceModel {
 
     @Column(name = "release_order")
     private int releaseOrder;
-
-    // Helper method to get deviceId (for API backward compatibility)
     public Long getDeviceId() {
         return device != null ? device.getId() : null;
     }
-
-    // Helper method to set device by id (handled by service layer)
     public void setDeviceId(Long deviceId) {
-        // This is just a placeholder - actual implementation is in service
     }
 }

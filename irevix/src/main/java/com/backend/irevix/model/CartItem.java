@@ -28,9 +28,7 @@ public class CartItem {
 
     @ManyToOne
     @JoinColumn(name = "part_id", nullable = true)
-    private ReplacementPart part; // sadece part'lar için
-
-    // --- GETTERS & SETTERS ---
+    private ReplacementPart part;
 
     public Long getId() {
         return id;

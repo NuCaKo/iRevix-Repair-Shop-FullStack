@@ -18,8 +18,6 @@ public class Appointment {
     private String issueDescription;
     private LocalDateTime appointmentDateTime;
     private String status; // PENDING, CONFIRMED, CANCELLED, COMPLETED
-
-    // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

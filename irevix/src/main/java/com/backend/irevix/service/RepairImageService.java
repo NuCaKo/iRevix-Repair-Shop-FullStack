@@ -14,8 +14,6 @@ public class RepairImageService {
     public RepairImageService(RepairImageRepository repairImageRepository) {
         this.repairImageRepository = repairImageRepository;
     }
-
-    // Görseli kaydetmek için metod
     public RepairImage saveRepairImage(RepairImage repairImage) {
         return repairImageRepository.save(repairImage); // Görseli veritabanına kaydeder
     }

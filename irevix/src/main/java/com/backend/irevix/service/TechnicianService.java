@@ -12,8 +12,6 @@ public class TechnicianService {
 
     @Autowired
     private TechnicianRepository technicianRepository;
-
-    // Tüm teknikerleri getir
     public List<Technician> getTechnicians() {
         return technicianRepository.findAll();
     }

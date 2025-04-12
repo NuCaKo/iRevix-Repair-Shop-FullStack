@@ -44,12 +44,9 @@ public class RepairService {
 
     @Transactional
     public Repair createRepair(Repair repair) {
-        // Generate a repair ID if not provided
         if (repair.getRepairId() == null || repair.getRepairId().isEmpty()) {
             repair.setRepairId("RPR" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         }
-
-        // Set default date if not provided
         if (repair.getDate() == null) {
             repair.setDate(LocalDate.now().toString());
         }
@@ -62,8 +59,6 @@ public class RepairService {
         Optional<Repair> optionalRepair = repairRepository.findById(id);
         if (optionalRepair.isPresent()) {
             Repair repair = optionalRepair.get();
-
-            // Update only the fields that are provided
             if (repairDetails.getCustomer() != null) {
                 repair.setCustomer(repairDetails.getCustomer());
             }

@@ -24,8 +24,6 @@ public class Device {
 
     @OneToMany(mappedBy = "device", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartCategory> partCategories;
-
-    // Helper methods to maintain bidirectional relationship
     public void addDeviceModel(DeviceModel model) {
         models.add(model);
         model.setDevice(this);

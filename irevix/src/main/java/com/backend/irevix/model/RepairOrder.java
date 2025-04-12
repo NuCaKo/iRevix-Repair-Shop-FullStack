@@ -37,8 +37,6 @@ public class RepairOrder {
         this.images = images;
     }
 
-    // Getter ve Setter metodları
-
     @Column(name = "technician")
     private Long technicianId;
 
@@ -94,8 +92,6 @@ public class RepairOrder {
     public String getStatus() {
         return status;
     }
-
-    // setStatus metodunu ekliyoruz
     public void setStatus(String status) {
         this.status = status;
     }

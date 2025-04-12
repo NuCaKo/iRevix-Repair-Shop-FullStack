@@ -20,18 +20,14 @@ public class RevenueController {
     public RevenueController(RevenueService revenueService) {
         this.revenueService = revenueService;
     }
-
-    // Get revenue by period
     @GetMapping("/{period}")
     public ResponseEntity<Revenue> getRevenueByPeriod(@PathVariable String period) {
         try {
             Optional<Revenue> revenue = revenueService.getRevenueByPeriod(period);
 
             if (revenue.isPresent()) {
-                // Return the found revenue data
                 return ResponseEntity.ok(revenue.get());
             } else {
-                // Create a default object if not found
                 Revenue defaultRevenue = new Revenue();
                 defaultRevenue.setPeriod(period);
                 defaultRevenue.setToday(0);
@@ -50,11 +46,8 @@ public class RevenueController {
                 return ResponseEntity.ok(defaultRevenue);
             }
         } catch (Exception e) {
-            // Log the error
             System.err.println("Error in revenue controller: " + e.getMessage());
             e.printStackTrace();
-
-            // Create a default object even on error
             Revenue errorRevenue = new Revenue();
             errorRevenue.setPeriod(period);
             errorRevenue.setPeriodLabel(period);
@@ -65,16 +58,12 @@ public class RevenueController {
             return ResponseEntity.ok(errorRevenue);
         }
     }
-
-    // Alternative method with query parameter
     @GetMapping
     public ResponseEntity<Revenue> getRevenue(
             @RequestParam(required = false, defaultValue = "7days") String period
     ) {
         return getRevenueByPeriod(period);
     }
-
-    // Create or update revenue data
     @PostMapping
     public ResponseEntity<Revenue> createOrUpdateRevenue(@RequestBody Revenue revenue) {
         try {

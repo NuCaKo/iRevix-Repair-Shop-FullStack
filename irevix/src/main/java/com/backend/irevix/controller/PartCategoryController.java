@@ -20,37 +20,27 @@ public class PartCategoryController {
     public PartCategoryController(PartCategoryService partCategoryService) {
         this.partCategoryService = partCategoryService;
     }
-
-    // Get all part categories
     @GetMapping
     public ResponseEntity<List<PartCategory>> getAllPartCategories() {
         List<PartCategory> partCategories = partCategoryService.getAllPartCategories();
         return ResponseEntity.ok(partCategories);
     }
-
-    // Get part categories by device ID
     @GetMapping("/device/{deviceId}")
     public ResponseEntity<List<PartCategory>> getPartCategoriesByDeviceId(@PathVariable Long deviceId) {
         List<PartCategory> partCategories = partCategoryService.getPartCategoriesByDeviceId(deviceId);
         return ResponseEntity.ok(partCategories);
     }
-
-    // Get a specific part category by ID
     @GetMapping("/{id}")
     public ResponseEntity<PartCategory> getPartCategoryById(@PathVariable Long id) {
         Optional<PartCategory> partCategory = partCategoryService.getPartCategoryById(id);
         return partCategory.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    // Create a new part category
     @PostMapping
     public ResponseEntity<PartCategory> createPartCategory(@RequestBody PartCategory partCategory) {
         PartCategory createdPartCategory = partCategoryService.createPartCategory(partCategory);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdPartCategory);
     }
-
-    // Update an existing part category
     @PutMapping("/{id}")
     public ResponseEntity<PartCategory> updatePartCategory(
             @PathVariable Long id,
@@ -63,8 +53,6 @@ public class PartCategoryController {
             return ResponseEntity.notFound().build();
         }
     }
-
-    // Delete a part category
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePartCategory(@PathVariable Long id) {
         partCategoryService.deletePartCategory(id);

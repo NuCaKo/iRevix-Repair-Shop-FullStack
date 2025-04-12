@@ -19,8 +19,6 @@ public class TrafficController {
     public TrafficController(TrafficService trafficService) {
         this.trafficService = trafficService;
     }
-
-    // Get traffic data by period
     @GetMapping
     public ResponseEntity<List<Traffic>> getTrafficByPeriod(
             @RequestParam(required = false, defaultValue = "7days") String period
@@ -28,15 +26,11 @@ public class TrafficController {
         List<Traffic> trafficData = trafficService.getTrafficByPeriod(period);
         return ResponseEntity.ok(trafficData);
     }
-
-    // Create a new traffic record
     @PostMapping
     public ResponseEntity<Traffic> createTrafficRecord(@RequestBody Traffic traffic) {
         Traffic createdTraffic = trafficService.createTrafficRecord(traffic);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTraffic);
     }
-
-    // Bulk create traffic records
     @PostMapping("/bulk")
     public ResponseEntity<List<Traffic>> createTrafficRecords(@RequestBody List<Traffic> trafficRecords) {
         List<Traffic> savedTrafficRecords = trafficService.saveAllTrafficRecords(trafficRecords);

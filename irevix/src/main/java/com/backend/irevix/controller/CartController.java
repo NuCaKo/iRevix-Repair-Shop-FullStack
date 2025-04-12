@@ -15,8 +15,6 @@ public class CartController {
     public CartController(CartService cartService) {
         this.cartService = cartService;
     }
-
-    // Yeni eklenen RequestParam ile çalışan versiyon
     @GetMapping
     public ResponseEntity<Cart> getCartByRequestParam(@RequestParam String userId) {
         return ResponseEntity.ok(cartService.getCart(userId));

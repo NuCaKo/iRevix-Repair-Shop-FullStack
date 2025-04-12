@@ -20,8 +20,6 @@ public class InventoryController {
     public InventoryController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
     }
-
-    // Get all inventory items
     @GetMapping
     public ResponseEntity<List<Inventory>> getAllInventoryItems(
             @RequestParam(required = false) String deviceType,
@@ -37,30 +35,22 @@ public class InventoryController {
         }
         return ResponseEntity.ok(items);
     }
-
-    // Get low stock items
     @GetMapping("/low-stock")
     public ResponseEntity<List<Inventory>> getLowStockItems() {
         List<Inventory> lowStockItems = inventoryService.getLowStockItems();
         return ResponseEntity.ok(lowStockItems);
     }
-
-    // Get inventory item by ID
     @GetMapping("/{id}")
     public ResponseEntity<Inventory> getInventoryItemById(@PathVariable Long id) {
         Optional<Inventory> item = inventoryService.getInventoryItemById(id);
         return item.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    // Create a new inventory item
     @PostMapping
     public ResponseEntity<Inventory> createInventoryItem(@RequestBody Inventory inventory) {
         Inventory createdItem = inventoryService.createInventoryItem(inventory);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdItem);
     }
-
-    // Update an existing inventory item
     @PutMapping("/{id}")
     public ResponseEntity<Inventory> updateInventoryItem(
             @PathVariable Long id,
@@ -68,8 +58,6 @@ public class InventoryController {
         Inventory updatedItem = inventoryService.updateInventoryItem(id, inventoryDetails);
         return ResponseEntity.ok(updatedItem);
     }
-
-    // Restock an inventory item
     @PatchMapping("/{id}/restock")
     public ResponseEntity<Inventory> restockInventoryItem(
             @PathVariable Long id,
@@ -80,8 +68,6 @@ public class InventoryController {
         }
         return ResponseEntity.notFound().build();
     }
-
-    // Delete an inventory item
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteInventoryItem(@PathVariable Long id) {
         inventoryService.deleteInventoryItem(id);

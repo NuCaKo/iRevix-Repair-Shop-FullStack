@@ -21,45 +21,33 @@ public class DeviceController {
     public DeviceController(DeviceService deviceService) {
         this.deviceService = deviceService;
     }
-
-    // Get all devices
     @GetMapping
     public ResponseEntity<List<Device>> getAllDevices() {
         List<Device> devices = deviceService.getAllDevices();
         return ResponseEntity.ok(devices);
     }
-
-    // Get a specific device by ID
     @GetMapping("/{id}")
     public ResponseEntity<Device> getDeviceById(@PathVariable Long id) {
         Optional<Device> device = deviceService.getDeviceById(id);
         return device.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    // Get a device by name
     @GetMapping("/name/{name}")
     public ResponseEntity<Device> getDeviceByName(@PathVariable String name) {
         Optional<Device> device = deviceService.getDeviceByName(name);
         return device.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    // Get devices with their models (enhanced version)
     @GetMapping("/all")
     public ResponseEntity<Map<String, Object>> getDevicesWithModels() {
         Map<String, Object> devicesWithModels = deviceService.getDevicesWithModels();
         return ResponseEntity.ok(devicesWithModels);
     }
-
-    // Create a new device
     @PostMapping
     public ResponseEntity<Device> createDevice(@RequestBody Device device) {
         Device createdDevice = deviceService.createOrUpdateDevice(device);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdDevice);
     }
-
-    // Sync multiple devices
     @PostMapping("/sync")
     public ResponseEntity<Map<String, Object>> syncDevices(@RequestBody Map<String, List<Device>> requestBody) {
         List<Device> devices = requestBody.get("devices");
@@ -78,8 +66,6 @@ public class DeviceController {
 
         return ResponseEntity.ok(response);
     }
-
-    // Update an existing device
     @PutMapping("/{id}")
     public ResponseEntity<Device> updateDevice(
             @PathVariable Long id,
@@ -88,8 +74,6 @@ public class DeviceController {
         Device updatedDevice = deviceService.createOrUpdateDevice(deviceDetails);
         return ResponseEntity.ok(updatedDevice);
     }
-
-    // Delete a device
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDevice(@PathVariable Long id) {
         deviceService.deleteDevice(id);

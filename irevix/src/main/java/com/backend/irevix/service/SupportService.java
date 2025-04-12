@@ -37,15 +37,12 @@ public class SupportService {
 
     @Transactional
     public Support createSupportRequest(Support support) {
-        // Generate the next supportId (simulating auto-increment)
         int maxSupportId = supportRepository.findAll().stream()
                 .mapToInt(Support::getSupportId)
                 .max()
                 .orElse(0);
 
         support.setSupportId(maxSupportId + 1);
-
-        // Set default values if not provided
         if (support.getStatus() == null) {
             support.setStatus("Open");
         }
@@ -55,8 +52,6 @@ public class SupportService {
         if (support.getDate() == null) {
             support.setDate(java.time.LocalDate.now().toString());
         }
-
-        // Ensure read status is set to false for new support requests
         support.setRead(false);
 
         return supportRepository.save(support);
@@ -67,16 +62,12 @@ public class SupportService {
         Optional<Support> optionalSupport = supportRepository.findBySupportId(supportId);
         if (optionalSupport.isPresent()) {
             Support support = optionalSupport.get();
-
-            // Update only the fields that are provided
             if (supportRequest.getStatus() != null) {
                 support.setStatus(supportRequest.getStatus());
             }
             if (supportRequest.getPriority() != null) {
                 support.setPriority(supportRequest.getPriority());
             }
-
-            // Handle read status
             if (supportRequest.isRead() != support.isRead()) {
                 support.setRead(supportRequest.isRead());
             }

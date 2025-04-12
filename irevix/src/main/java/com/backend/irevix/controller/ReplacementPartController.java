@@ -18,14 +18,10 @@ public class ReplacementPartController {
     public ReplacementPartController(ReplacementPartService service) {
         this.service = service;
     }
-
-    // Belirli bir modele göre yedek parçaları getir
     @GetMapping("/model")
     public ResponseEntity<List<ReplacementPart>> getByModel(@RequestParam String model) {
         return ResponseEntity.ok(service.getPartsByModelName(model));
     }
-
-    // Belirli bir parçanın stok miktarını azalt
     @PostMapping("/reduce-stock/{partId}")
     public ResponseEntity<String> reduceStock(
             @PathVariable Long partId,
@@ -34,9 +30,9 @@ public class ReplacementPartController {
         boolean success = service.reduceStock(partId, quantity);
 
         if (success) {
-            return ResponseEntity.ok("Stok başarıyla azaltıldı");
+            return ResponseEntity.ok("Successfully reduced stock");
         } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Yetersiz stok");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Insufficient stock");
         }
     }
 }

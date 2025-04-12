@@ -20,8 +20,6 @@ public class SupportController {
     public SupportController(SupportService supportService) {
         this.supportService = supportService;
     }
-
-    // Get all support requests
     @GetMapping
     public ResponseEntity<List<Support>> getAllSupportRequests(
             @RequestParam(required = false) String status
@@ -34,30 +32,22 @@ public class SupportController {
         }
         return ResponseEntity.ok(supportRequests);
     }
-
-    // Get unread support requests
     @GetMapping("/unread")
     public ResponseEntity<List<Support>> getUnreadSupportRequests() {
         List<Support> unreadRequests = supportService.getUnreadSupportRequests();
         return ResponseEntity.ok(unreadRequests);
     }
-
-    // Get support request by ID
     @GetMapping("/{supportId}")
     public ResponseEntity<Support> getSupportRequestById(@PathVariable int supportId) {
         Optional<Support> supportRequest = supportService.getSupportRequestById(supportId);
         return supportRequest.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    // Create a new support request
     @PostMapping
     public ResponseEntity<Support> createSupportRequest(@RequestBody Support support) {
         Support createdSupportRequest = supportService.createSupportRequest(support);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdSupportRequest);
     }
-
-    // Update a support request
     @PutMapping("/{supportId}")
     public ResponseEntity<Support> updateSupportRequest(
             @PathVariable int supportId,

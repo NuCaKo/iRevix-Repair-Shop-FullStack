@@ -20,8 +20,6 @@ public class RepairController {
     public RepairController(RepairService repairService) {
         this.repairService = repairService;
     }
-
-    // Get all repairs
     @GetMapping
     public ResponseEntity<List<Repair>> getAllRepairs(
             @RequestParam(required = false) String status,
@@ -40,23 +38,17 @@ public class RepairController {
         }
         return ResponseEntity.ok(repairs);
     }
-
-    // Get repair by ID
     @GetMapping("/{id}")
     public ResponseEntity<Repair> getRepairById(@PathVariable Long id) {
         Optional<Repair> repair = repairService.getRepairById(id);
         return repair.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    // Create a new repair
     @PostMapping
     public ResponseEntity<Repair> createRepair(@RequestBody Repair repair) {
         Repair createdRepair = repairService.createRepair(repair);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRepair);
     }
-
-    // Update an existing repair
     @PutMapping("/{id}")
     public ResponseEntity<Repair> updateRepair(
             @PathVariable Long id,
@@ -67,8 +59,6 @@ public class RepairController {
         }
         return ResponseEntity.notFound().build();
     }
-
-    // Delete a repair
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRepair(@PathVariable Long id) {
         repairService.deleteRepair(id);

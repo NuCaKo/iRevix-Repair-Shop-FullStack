@@ -45,12 +45,8 @@ public class NotificationService {
 
         if (optionalNotification.isPresent()) {
             Notification notification = optionalNotification.get();
-
-            // Explicitly set to true and save
             notification.setIsRead(true);
             notification.setReadAt(new Date());
-
-            // Ensure the change is persisted
             Notification savedNotification = notificationRepository.saveAndFlush(notification);
 
             return savedNotification;
@@ -61,18 +57,13 @@ public class NotificationService {
 
     @Transactional
     public List<Notification> markAllNotificationsAsRead() {
-        // Find all unread notifications
         List<Notification> unreadNotifications = notificationRepository.findByIsRead(false);
 
         Date now = new Date();
-
-        // Mark each unread notification
         for (Notification notification : unreadNotifications) {
             notification.setIsRead(true);
             notification.setReadAt(now);
         }
-
-        // Save all modified notifications
         return notificationRepository.saveAll(unreadNotifications);
     }
 }

@@ -15,8 +15,6 @@ public class RepairNote {
     private String content;
     private LocalDateTime timestamp;
 
-    // Getter ve Setter metodları
-
     public Long getId() {
         return id;
     }

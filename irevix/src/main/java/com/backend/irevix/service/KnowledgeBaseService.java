@@ -12,8 +12,6 @@ public class KnowledgeBaseService {
 
     @Autowired
     private KnowledgeBaseRepository knowledgeBaseRepository;
-
-    // Tüm bilgi tabanı makalelerini getir
     public List<KnowledgeBaseArticle> getArticles() {
         return knowledgeBaseRepository.findAll();
     }

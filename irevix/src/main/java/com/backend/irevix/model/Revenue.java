@@ -100,8 +100,6 @@ public class Revenue {
         private Revenue revenue;
 
         private String device;
-
-        // Use a different field name to avoid conflicts
         @Column(name = "revenue")
         private double revenueValue;
 
@@ -126,8 +124,6 @@ public class Revenue {
 
         private String type;
         private int count;
-
-        // Use a different field name to avoid conflicts
         @Column(name = "revenue")
         private double revenueValue;
 

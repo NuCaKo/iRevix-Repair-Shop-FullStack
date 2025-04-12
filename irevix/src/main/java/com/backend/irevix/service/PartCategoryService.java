@@ -51,8 +51,6 @@ public class PartCategoryService {
         Optional<PartCategory> optionalPartCategory = partCategoryRepository.findById(id);
         if (optionalPartCategory.isPresent()) {
             PartCategory partCategory = optionalPartCategory.get();
-
-            // Update fields that might have changed
             if (partCategoryDetails.getDeviceId() != null) {
                 Optional<Device> deviceOpt = deviceRepository.findById(partCategoryDetails.getDeviceId());
                 if (deviceOpt.isPresent()) {

@@ -19,15 +19,11 @@ public class NotificationController {
     public NotificationController(NotificationService notificationService) {
         this.notificationService = notificationService;
     }
-
-    // Create a new notification
     @PostMapping
     public ResponseEntity<Notification> createNotification(@RequestBody Notification notification) {
         Notification createdNotification = notificationService.createNotification(notification);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdNotification);
     }
-
-    // Mark a specific notification as read
     @PutMapping("/{id}/read")
     public ResponseEntity<Notification> markNotificationAsRead(@PathVariable Long id) {
         try {
@@ -44,8 +40,6 @@ public class NotificationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-    // Mark all notifications as read
     @PutMapping("/read-all")
     public ResponseEntity<List<Notification>> markAllNotificationsAsRead() {
         try {
@@ -56,15 +50,11 @@ public class NotificationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-    // Get all notifications
     @GetMapping
     public ResponseEntity<List<Notification>> getAllNotifications() {
         List<Notification> notifications = notificationService.getAllNotifications();
         return ResponseEntity.ok(notifications);
     }
-
-    // Get unread notifications
     @GetMapping("/unread")
     public ResponseEntity<List<Notification>> getUnreadNotifications() {
         List<Notification> unreadNotifications = notificationService.getUnreadNotifications();
