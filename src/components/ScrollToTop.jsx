@@ -4,28 +4,19 @@ import { faArrowUp } from '@fortawesome/free-solid-svg-icons';
 
 const ScrollToTop = () => {
     const [isVisible, setIsVisible] = useState(false);
-
-    // Show button when page is scrolled down
     const toggleVisibility = () => {
-        // We'll show the button after 200px of scrolling
         if (window.pageYOffset > 200) {
             setIsVisible(true);
         } else {
             setIsVisible(false);
         }
     };
-
-    // Set the scroll event listener
     useEffect(() => {
         window.addEventListener('scroll', toggleVisibility);
-
-        // Clean up the event listener on component unmount
         return () => {
             window.removeEventListener('scroll', toggleVisibility);
         };
     }, []);
-
-    // Scroll to top function
     const scrollToTop = () => {
         window.scrollTo({
             top: 0,

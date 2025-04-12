@@ -55,8 +55,6 @@ function ContactPage() {
             return;
         }
 
-        // integrate with an email sending API
-
         console.log('Form submitted:', formData);
 
 

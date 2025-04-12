@@ -13,40 +13,28 @@ const SupportRequestsPage = () => {
     const [filter, setFilter] = useState('all');
     const [replyText, setReplyText] = useState('');
     const [unreadCount, setUnreadCount] = useState(0);
-
-    // New request form state
     const [newRequest, setNewRequest] = useState({
         title: '',
         priority: 'normal',
         category: 'technical',
         description: ''
     });
-
-    // Form errors
     const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {
-        // Check if user is logged in
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
             const user = JSON.parse(storedUser);
             setCurrentUser(user);
-
-            // If not a customer, redirect to home page
             if (user.role !== 'customer') {
                 navigate('/');
                 return;
             }
-
-            // Load support requests for this user
             loadUserRequests(user.id);
         } else {
-            // Redirect to login if not logged in
             navigate('/login');
         }
     }, [navigate]);
-
-    // Poll for updates every 10 seconds to check for new messages
     useEffect(() => {
         if (!currentUser) return;
 
@@ -59,27 +47,19 @@ const SupportRequestsPage = () => {
 
     const loadUserRequests = (userId) => {
         setIsLoading(true);
-
-        // Get requests from service
         const userRequests = supportService.getUserRequests(userId);
         setSupportRequests(userRequests);
-
-        // Count unread messages
         const unreadCount = supportService.getUnreadCountForUser(userId);
         setUnreadCount(unreadCount);
 
         setIsLoading(false);
     };
-
-    // Handle form input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setNewRequest({
             ...newRequest,
             [name]: value
         });
-
-        // Clear error when typing
         if (formErrors[name]) {
             setFormErrors({
                 ...formErrors,
@@ -87,8 +67,6 @@ const SupportRequestsPage = () => {
             });
         }
     };
-
-    // Validate form
     const validateForm = () => {
         const errors = {};
 
@@ -105,38 +83,26 @@ const SupportRequestsPage = () => {
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
-
-    // Submit new request
     const handleSubmit = (e) => {
         e.preventDefault();
 
         if (!validateForm()) {
             return;
         }
-
-        // Create new request through the service
         const createdRequest = supportService.createRequest(
             currentUser.id,
             currentUser.name || currentUser.username || 'Customer',
             newRequest
         );
-
-        // Add new request to the list
         setSupportRequests([createdRequest, ...supportRequests]);
-
-        // Reset form
         setNewRequest({
             title: '',
             priority: 'normal',
             category: 'technical',
             description: ''
         });
-
-        // Hide form
         setShowNewRequestForm(false);
     };
-
-    // Get filtered requests
     const getFilteredRequests = () => {
         if (filter === 'all') {
             return supportRequests;
@@ -146,8 +112,6 @@ const SupportRequestsPage = () => {
             request.status.toLowerCase() === filter.toLowerCase()
         );
     };
-
-    // Get status badge style
     const getStatusBadgeClass = (status) => {
         switch (status.toLowerCase()) {
             case 'open':
@@ -160,8 +124,6 @@ const SupportRequestsPage = () => {
                 return '';
         }
     };
-
-    // Get priority badge style
     const getPriorityBadgeClass = (priority) => {
         switch (priority.toLowerCase()) {
             case 'high':
@@ -174,32 +136,20 @@ const SupportRequestsPage = () => {
                 return '';
         }
     };
-
-    // View request details
     const viewRequestDetails = (request) => {
         setSelectedRequest(request);
-
-        // Mark as read by customer
         if (!request.isReadByCustomer) {
             supportService.markAsReadByCustomer(request.id);
-
-            // Update local state
             setSupportRequests(supportRequests.map(req =>
                 req.id === request.id ? {...req, isReadByCustomer: true} : req
             ));
-
-            // Decrement unread count
             setUnreadCount(prev => Math.max(0, prev - 1));
         }
     };
-
-    // Close request details
     const closeRequestDetails = () => {
         setSelectedRequest(null);
         setReplyText('');
     };
-
-    // Send a reply
     const sendReply = () => {
         if (!replyText.trim() || !selectedRequest) return;
 
@@ -211,25 +161,16 @@ const SupportRequestsPage = () => {
         );
 
         if (updatedRequest) {
-            // Update in the state
             setSupportRequests(supportRequests.map(req =>
                 req.id === updatedRequest.id ? updatedRequest : req
             ));
-
-            // Update selected request
             setSelectedRequest(updatedRequest);
-
-            // Clear reply text
             setReplyText('');
         }
     };
-
-    // Check if a request has new messages the user hasn't seen
     const hasUnreadMessages = (request) => {
         return !request.isReadByCustomer;
     };
-
-    // Render request details modal
     const renderRequestDetails = () => {
         if (!selectedRequest) return null;
 
@@ -324,8 +265,6 @@ const SupportRequestsPage = () => {
             </div>
         );
     };
-
-    // Render new request form
     const renderNewRequestForm = () => {
         return (
             <div className="new-request-container">
@@ -414,8 +353,6 @@ const SupportRequestsPage = () => {
             </div>
         );
     };
-
-    // Main render
     return (
         <div className="support-page">
             <div className="support-container">

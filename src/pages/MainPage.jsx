@@ -7,16 +7,13 @@ import Footer from '../components/footer';
 import Testimonials from '../components/Testimonials';
 import macIcon from '../images/devices/mac-icon.svg';
 import RepairShowcase from '../components/RepairShowcase';
-// import iphoneIcon from '../images/devices/iphone-icon.png';
-// import appleWatchIcon from '../images/devices/apple-watch-icon.png';
-// import ipadIcon from '../images/devices/ipad-icon.png';
 import airpodsIcon from '../images/devices/airpods-icon.png';
 import ScrollToTop from '../components/ScrollToTop';
-import repairImage1 from '../images/repair1.jpg'; // MacBook repair
-import repairImage2 from '../images/repair2.jpg'; // Apple Watch repair
-import repairImage3 from '../images/repair3.jpg'; // iPad repair (corrected)
-import repairImage4 from '../images/repair4.jpg'; // iPhone repair
-import repairImage5 from '../images/repair5.jpg'; // AirPods repair
+import repairImage1 from '../images/repair1.png'; // MacBook repair
+import repairImage2 from '../images/repair2.jpeg'; // Apple Watch repair
+import repairImage3 from '../images/repair3.png'; // iPad repair (corrected)
+import repairImage4 from '../images/repair4.png'; // iPhone repair
+import repairImage5 from '../images/repair5.png'; // AirPods repair
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -111,12 +108,8 @@ function MainPage() {
 
     const location = useLocation();
     const navigate = useNavigate();
-
-    // Page load animation and scroll handling
     useEffect(() => {
         setIsVisible(true);
-
-        // Handle scrolling from navigation if state contains scrollTo
         if (location.state && location.state.scrollTo) {
             const section = document.getElementById(location.state.scrollTo);
             if (section) {
@@ -124,40 +117,24 @@ function MainPage() {
                     section.scrollIntoView({ behavior: 'smooth' });
                 }, 500); // Small delay to ensure the page is loaded
             }
-            // Clear the state to avoid scrolling on subsequent renders
             window.history.replaceState({}, document.title);
         }
     }, [location]);
-
-    // Mobile performance optimizations
     useEffect(() => {
-        // Check if the device is a mobile device
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
             navigator.userAgent
         );
-
-        // Check for low performance devices
         if (isMobile) {
-            // Get CPU core count if available
             const cpuCores = navigator.hardwareConcurrency || 4;
-
-            // Check if it's a low-performance device
             if (cpuCores <= 4 || /iPhone|iPad|iPod/.test(navigator.userAgent)) {
                 document.body.classList.add('low-performance');
             }
-
-            // Optimize video on mobile
             const videoElement = document.querySelector('.fullscreen-video');
             if (videoElement) {
-                // Lower quality for mobile
                 videoElement.setAttribute('playsinline', '');
-
-                // Check if video is playing correctly
                 videoElement.addEventListener('error', () => {
                     document.body.classList.add('low-performance');
                 });
-
-                // Pause video when it's not visible to save performance
                 const observerOptions = {
                     root: null,
                     rootMargin: '0px',
@@ -168,7 +145,6 @@ function MainPage() {
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
                             videoElement.play().catch(err => {
-                                // If autoplay fails, add low-performance class
                                 document.body.classList.add('low-performance');
                             });
                         } else {
@@ -178,8 +154,6 @@ function MainPage() {
                 }, observerOptions);
 
                 videoObserver.observe(videoElement);
-
-                // Clean up
                 return () => {
                     if (videoElement) {
                         videoObserver.unobserve(videoElement);
@@ -188,13 +162,8 @@ function MainPage() {
             }
         }
     }, []);
-
-    // Lazy loading for performance-heavy components
     useEffect(() => {
-        // Get all elements that should be lazy loaded
         const lazyElements = document.querySelectorAll('.how-it-works-image-container, .about-commitment, .values-grid');
-
-        // Create an observer for lazy loading
         const lazyObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -203,27 +172,19 @@ function MainPage() {
                 }
             });
         }, { rootMargin: '100px' });
-
-        // Add all elements to be observed
         lazyElements.forEach(element => {
             element.classList.add('lazy-loaded');
             lazyObserver.observe(element);
         });
-
-        // Clean up
         return () => {
             lazyElements.forEach(element => {
                 lazyObserver.unobserve(element);
             });
         };
     }, []);
-
-    // Function to navigate to repair services page
     const navigateToRepairServices = () => {
         navigate('/repair-services');
     };
-
-    // Animation variants
     const fadeInUp = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
@@ -238,14 +199,10 @@ function MainPage() {
             }
         }
     };
-
-    // Slide in from right animation
     const slideInRight = {
         hidden: { x: 100, opacity: 0 },
         visible: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
     };
-
-    // Device information
     const deviceIcons = {
         Mac: {
             icon: macIcon,
@@ -305,7 +262,6 @@ function MainPage() {
     };
 
     const handleGetPrice = () => {
-        //šimdilik simüle edilmiš fiyatlandırma
         let basePrice = 0;
 
         if (selectedProblems.includes('Battery') && subProblems['Battery']) {
@@ -340,8 +296,6 @@ function MainPage() {
 
         setEstimatedPrice(`$${basePrice} - $${basePrice + 50}`);
     };
-
-    //icon rengi belirteci
     const getIconColor = (device) => {
         return selectedDevice === device ? "#28a745" : "currentColor"; // Seçilirse yešil
     };

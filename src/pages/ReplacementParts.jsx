@@ -27,8 +27,6 @@ function ReplacementParts() {
     const [partsData, setPartsData] = useState([]);
     const { addToCart } = useCart();
     const location = useLocation();
-
-    // Sample device data
     const devices = [
         { id: 'iphone', name: 'iPhone', icon: faMobileAlt },
         { id: 'ipad', name: 'iPad', icon: faTabletScreenButton },
@@ -36,8 +34,6 @@ function ReplacementParts() {
         { id: 'airpods', name: 'AirPods', icon: faHeadphones },
         { id: 'applewatch', name: 'Apple Watch', icon: faClock }
     ];
-
-    // Sample models based on device selection
     const deviceModels = {
         iphone: ['iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 15', 'iPhone 14 Pro', 'iPhone 14', 'iPhone 13 Pro', 'iPhone 13', 'iPhone 12 Pro', 'iPhone 12', 'iPhone 11 Pro', 'iPhone 11'],
         ipad: ['iPad Pro 12.9"', 'iPad Pro 11"', 'iPad Air', 'iPad Mini', 'iPad'],
@@ -45,8 +41,6 @@ function ReplacementParts() {
         airpods: ['AirPods Pro 2nd Gen', 'AirPods Pro', 'AirPods 3rd Gen', 'AirPods 2nd Gen', 'AirPods Max'],
         applewatch: ['Apple Watch Ultra 2', 'Apple Watch Series 9', 'Apple Watch Series 8', 'Apple Watch SE 2nd Gen', 'Apple Watch Series 7']
     };
-
-    // Common replacement parts categories by device type
     const commonParts = {
         iphone: [
             { icon: faScrewdriver, category: 'Screen Assembly', prefix: 'iPhone' },
@@ -81,14 +75,9 @@ function ReplacementParts() {
             { icon: faClock, category: 'Heart Rate Sensor', prefix: 'Apple Watch' }
         ]
     };
-
-    // Function to generate replacement parts based on device and model
     const generateReplacementParts = (device, model) => {
         if (!device || !model || !commonParts[device]) return [];
-
-        // Generate price based on device, model, and part type
         const getPriceForPart = (device, model, category) => {
-            // Base prices by device type
             const basePrices = {
                 iphone: { 'Screen Assembly': 149, 'Battery': 69, 'Speaker Assembly': 39, 'Camera Module': 89, 'Logic Board': 199 },
                 ipad: { 'Screen Assembly': 199, 'Battery': 89, 'Speaker Assembly': 49, 'Camera Module': 79, 'Logic Board': 249 },
@@ -96,22 +85,16 @@ function ReplacementParts() {
                 airpods: { 'Battery': 49, 'Speaker Driver': 39, 'Charging Case': 69 },
                 applewatch: { 'Screen Assembly': 119, 'Battery': 49, 'Logic Board': 149, 'Heart Rate Sensor': 59 }
             };
-
-            // Premium models have higher prices
             const isPremium = model.toLowerCase().includes('pro') || model.toLowerCase().includes('max');
             const modelIndex = deviceModels[device].indexOf(model);
             const isNewerModel = modelIndex < deviceModels[device].length / 2;
 
             let basePrice = basePrices[device][category] || 99;
-
-            // Adjust price based on model
             if (isPremium) basePrice *= 1.3;
             if (isNewerModel) basePrice *= 1.2;
 
             return Math.round(basePrice * 100) / 100;
         };
-
-        // Create parts for the selected device and model
         return commonParts[device].map((part, index) => {
             const price = getPriceForPart(device, model, part.category);
             const modelPrefix = model.replace(/"/g, ''); // Remove quotes from model name
@@ -127,14 +110,11 @@ function ReplacementParts() {
             };
         });
     };
-
-    // Set default parts data when device and model are selected
     useEffect(() => {
         if (selectedDevice && selectedModel) {
             fetch(`http://localhost:8080/api/replacement-parts/model?model=${encodeURIComponent(selectedModel)}`)
                 .then(res => res.json())
                 .then(data => {
-                    // Backend'den gelen verileri frontend'e uygun hale getir
                     const formattedParts = data.map((part, index) => ({
                         id: part.id || `${selectedDevice}-${index}-${Math.random() * 1000}`,
                         name: part.name,
@@ -192,9 +172,6 @@ function ReplacementParts() {
             const data = await res.json();
             console.log("✅ Backend cart response:", data);
 
-            // optionally update context if needed
-            // addToCart(part);
-
             alert(`Added ${part.name} to cart!`);
 
         } catch (err) {
@@ -202,9 +179,6 @@ function ReplacementParts() {
             alert("Failed to add item to cart.");
         }
     };
-
-
-    // Framer motion variants for animations
     const fadeIn = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }

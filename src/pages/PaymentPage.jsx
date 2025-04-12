@@ -19,8 +19,6 @@ function PaymentPage() {
     const navigate = useNavigate();
     const orderData = location.state?.orderData;
     const paymentMethod = location.state?.paymentMethod;
-
-    // Check if we have order data, if not redirect back to checkout
     useEffect(() => {
         if (!orderData) {
             navigate('/checkout');
@@ -47,11 +45,7 @@ function PaymentPage() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        // In a real app, you would process payment here
         alert('Payment processed successfully!');
-
-        // Redirect to main page
         navigate('/', { replace: true });
     };
 

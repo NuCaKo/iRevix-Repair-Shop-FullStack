@@ -52,8 +52,6 @@ export const faqs = [
         answer: "We provide a 6-month warranty for all our repair services."
     }
 ]
-
-// User data (for front-end demo)
 export const users = [
     {
         id: 1,

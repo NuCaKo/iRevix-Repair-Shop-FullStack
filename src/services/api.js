@@ -28,8 +28,6 @@ export const updateRepairOrder = async (id, repairOrder) => {
 export const deleteRepairOrder = async (id) => {
     return axios.delete(`${API_URL}/repair-orders/${id}`);
 };
-
-// Technician API calls
 export const getTechnicians = async () => {
     return axios.get(`${API_URL}/technicians`);
 };
@@ -53,7 +51,6 @@ export const deleteTechnician = async (id) => {
 export const getActiveTechnicians = async () => {
     return axios.get(`${API_URL}/technicians/active`);
 };
-// Repair orders API calls
 export const getRepairs = async () => {
     try {
         const res = await axios.get(`${API_URL}/repairs`);
@@ -93,8 +90,6 @@ export const deleteRepair = async (id) => {
         throw err;
     }
 };
-
-// Support requests API calls
 export const getSupportRequests = async () => {
     try {
         const res = await axios.get(`${API_URL}/support`);
@@ -114,8 +109,6 @@ export const updateSupportRequest = async (id, requestData) => {
         throw err;
     }
 };
-
-// Traffic data API calls
 export const getTrafficData = async (period = '7days') => {
     try {
         const res = await axios.get(`${API_URL}/traffic?period=${period}`);
@@ -125,8 +118,6 @@ export const getTrafficData = async (period = '7days') => {
         throw err;
     }
 };
-
-// Revenue data API calls
 export const getRevenueData = async (period = '7days') => {
     try {
         console.log('Fetching revenue data for period:', period);
@@ -136,8 +127,6 @@ export const getRevenueData = async (period = '7days') => {
         return res.data;
     } catch (err) {
         console.error('Error fetching revenue data:', err);
-
-        // Always return a valid structure even if there's no data
         return {
             dailyRevenue: [],
             deviceRevenue: [],
@@ -154,7 +143,6 @@ export const getRevenueData = async (period = '7days') => {
         };
     }
 };
-// Notification API calls
 export const getNotifications = async () => {
     try {
         const res = await axios.get(`${API_URL}/notifications`);
@@ -193,13 +181,9 @@ export const getPartCategories = async (deviceId) => {
         throw err;
     }
 };
-
-// Get all devices and their models
 export const getDevicesAndModels = async () => {
     try {
         const response = await axios.get(`${API_URL}/devices/all`);
-
-        // Map the icon strings to the actual FontAwesome icons
         const iconMapping = {
             'faMobileAlt': faMobileAlt,
             'faTabletScreenButton': faTabletScreenButton,
@@ -207,8 +191,6 @@ export const getDevicesAndModels = async () => {
             'faHeadphones': faHeadphones,
             'faClock': faClock
         };
-
-        // Map the fetched devices to include the correct FontAwesome icon objects
         const mappedDevices = response.data.devices.map(device => ({
             ...device,
             icon: iconMapping[device.icon] || faMobileAlt
@@ -220,8 +202,6 @@ export const getDevicesAndModels = async () => {
         };
     } catch (error) {
         console.error('Error fetching devices and models:', error);
-
-        // Fallback data if the API call fails
         const fallbackDevices = [
             { id: 'iphone', name: 'iPhone', icon: faMobileAlt },
             { id: 'ipad', name: 'iPad', icon: faTabletScreenButton },
@@ -244,7 +224,6 @@ export const getDevicesAndModels = async () => {
         };
     }
 };
-// Delete inventory item
 export const deleteInventoryItem = async (id) => {
     try {
         const response = await axios.delete(`${API_URL}/inventory/${id}`);
@@ -270,8 +249,6 @@ export const fetchLowStockItems = async () => {
                 lowStock: 'true'
             }
         });
-
-        // Check if the response has a message (in case no low stock items are found)
         if (response.data.message) {
             console.log(response.data.message);
             return []; // Return empty array if no low stock items
@@ -312,8 +289,6 @@ export const createNotification = async (notificationData) => {
 export const markNotificationAsRead = async (id) => {
     try {
         const res = await axios.put(`${API_URL}/notifications/${id}/read`);
-
-        // Log the response for debugging
         console.log('Mark Notification As Read Response:', {
             data: res.data,
             status: res.status
@@ -322,8 +297,6 @@ export const markNotificationAsRead = async (id) => {
         return res.data;
     } catch (err) {
         console.error('Error marking notification as read:', err);
-
-        // More detailed error logging
         if (err.response) {
             console.error('Response data:', err.response.data);
             console.error('Response status:', err.response.status);
@@ -337,8 +310,6 @@ export const markNotificationAsRead = async (id) => {
 export const markAllNotificationsAsRead = async () => {
     try {
         const res = await axios.put(`${API_URL}/notifications/read-all`);
-
-        // Log the response for debugging
         console.log('Mark All Notifications As Read Response:', {
             data: res.data,
             status: res.status
@@ -347,8 +318,6 @@ export const markAllNotificationsAsRead = async () => {
         return res.data;
     } catch (err) {
         console.error('Error marking all notifications as read:', err);
-
-        // More detailed error logging
         if (err.response) {
             console.error('Response data:', err.response.data);
             console.error('Response status:', err.response.status);
@@ -368,15 +337,8 @@ export const restockInventoryItem = async (id, quantity) => {
 };
 export const getInventoryParts = async (deviceId, model) => {
     try {
-        // Get the device name from the device ID
-        // We need to find the proper device object to get its name
         let deviceName = deviceId;
-
-        // If deviceId is known to be lowercase (like 'iphone'), but device_type in database is 'iPhone',
-        // we need to convert it to the proper name format
         console.log(`Making API call for device: ${deviceId}, model: ${model}`);
-
-        // Use the CORRECT parameter names that match the Java controller: deviceType and modelType
         const response = await axios.get(`${API_URL}/inventory?deviceType=${deviceName}&modelType=${encodeURIComponent(model)}`);
 
         console.log(`API response for ${deviceName}/${model}:`, {

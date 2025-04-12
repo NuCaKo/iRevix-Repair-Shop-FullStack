@@ -93,26 +93,19 @@ function AdminPanel() {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [notifiedLowStockItems, setNotifiedLowStockItems] = useState([]);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
-    // User login check
     useEffect(() => {
         const storedUser = localStorage.getItem('currentUser');
 
         if (!storedUser) {
-            // Redirect to login if user is not logged in
             navigate('/login');
             return;
         }
 
         const user = JSON.parse(storedUser);
-
-        // Redirect to login if user is not admin
         if (user.role !== 'admin') {
             navigate('/login');
         }
     }, [navigate]);
-
-
-    // Order handlers
     const handleViewOrder = (order) => {
         setSelectedOrder(order);
         setIsViewModalOpen(true);
@@ -126,33 +119,21 @@ function AdminPanel() {
 
     const handleSaveOrder = async () => {
         try {
-            // Store the original order to compare status change
             const originalOrder = repairOrders.find(order =>
                 (order._id === editOrderData._id || order.id === editOrderData.id)
             );
-
-            // Call API to update the order
             const orderId = editOrderData.id;
-
-            // Only send fields that can be updated - problem and status
             const updateData = {
                 problem: editOrderData.problem,
                 status: editOrderData.status
             };
-
-            // Call the API
             const updatedOrder = await updateRepair(orderId, updateData);
-
-            // Update local state
             const updatedOrders = repairOrders.map(order =>
                 order.id === orderId ? updatedOrder : order
             );
 
             setRepairOrders(updatedOrders);
             setIsEditModalOpen(false);
-
-            // If status has changed, create a notification
-            // If status has changed, create a notification
             if (originalOrder && originalOrder.status !== updatedOrder.status) {
                 await createNotification({
                     type: 'order',
@@ -160,16 +141,11 @@ function AdminPanel() {
                     time: 'just now'
                 });
                 window.dispatchEvent(new Event('notification-update'));
-
-
-                // Update the notifications in state
                 const notificationsData = await getNotifications();
                 setNotifications(notificationsData);
                 const unreadCount = notificationsData.filter(n => !n.isRead).length;
                 setUnreadNotifications(unreadCount);
             }
-
-            // Show success message
             alert(`Repair order for ${updatedOrder.customer}'s ${updatedOrder.device} has been updated.`);
         } catch (error) {
             console.error('Error updating order:', error);
@@ -181,25 +157,16 @@ function AdminPanel() {
         try {
             const lowStockItems = await fetchLowStockItems();
             let newNotifications = false;
-
-            // Create a deep copy of the current notified items array
             const updatedNotifiedItems = [...notifiedLowStockItems];
-
-            // Check each low stock item
             for (const item of lowStockItems) {
-                // Create a unique identifier for this item
                 const itemKey = `${item.id}-${item.stockLevel}`;
-
-                // Check if we've already notified about this item at this stock level
                 if (!notifiedLowStockItems.includes(itemKey)) {
-                    // This is a new low stock item or its stock level has changed
                     if (item.stockLevel <= item.reorderPoint * 0.5) {
                         await createNotification({
                             type: 'alert',
                             message: `CRITICAL: ${item.name} for ${item.deviceType} ${item.modelType} is critically low (${item.stockLevel} units remaining).`,
                             time: 'just now'
                         });
-// Add this line
                         window.dispatchEvent(new Event('notification-update'));
                         newNotifications = true;
                     } else if (item.stockLevel <= item.reorderPoint) {
@@ -208,35 +175,23 @@ function AdminPanel() {
                             message: `CRITICAL: ${item.name} for ${item.deviceType} ${item.modelType} is critically low (${item.stockLevel} units remaining).`,
                             time: 'just now'
                         });
-// Add this line
                         window.dispatchEvent(new Event('notification-update'));
                         newNotifications = true;
                     }
-
-                    // Add this item to the notified items list with timestamp
                     updatedNotifiedItems.push(itemKey);
                     trackLowStockItem(itemKey);
                 }
             }
-
-            // Update the list of notified items
             if (updatedNotifiedItems.length !== notifiedLowStockItems.length) {
                 setNotifiedLowStockItems(updatedNotifiedItems);
                 localStorage.setItem('notifiedLowStockItems', JSON.stringify(updatedNotifiedItems));
             }
-
-            // Update the notifications in state only if we created new notifications
-            // Update the notifications in state only if we created new notifications
             if (newNotifications) {
                 const notificationsData = await getNotifications();
                 setNotifications(notificationsData);
-
-                // Add these lines to update the unread counter
                 const unreadCount = notificationsData.filter(n => !n.isRead).length;
                 setUnreadNotifications(unreadCount);
             }
-
-            // Periodically clean up old notification tracking
             cleanupNotificationTracking();
         } catch (error) {
             console.error('Error checking low stock items:', error);
@@ -248,56 +203,36 @@ function AdminPanel() {
         }
     }, [activeTab, isLoading]);
     const trackLowStockItem = (itemKey) => {
-        // Get the current timestamp tracking
         const trackedKeys = JSON.parse(localStorage.getItem('notifiedLowStockItemsTimestamp') || '{}');
-
-        // Add/update this item's timestamp
         trackedKeys[itemKey] = Date.now();
-
-        // Save back to localStorage
         localStorage.setItem('notifiedLowStockItemsTimestamp', JSON.stringify(trackedKeys));
     };
     const cleanupNotificationTracking = () => {
         try {
-            // Get items that are no longer in low stock but are in our tracking list
             const keysToKeep = [];
-
-            // For each inventory item that's in low stock, keep its tracking key
             inventoryItems.forEach(item => {
                 if (item.stockLevel <= item.reorderPoint) {
                     const itemKey = `${item.id}-${item.stockLevel}`;
                     keysToKeep.push(itemKey);
                 }
             });
-
-            // Filter the notification list to only include items that are still in low stock
-            // or items that were added in the last 24 hours
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
 
             const trackedKeys = JSON.parse(localStorage.getItem('notifiedLowStockItemsTimestamp') || '{}');
             const currentTrackedKeys = {};
-
-            // Keep only keys that are current low stock items or recent notifications
             const prunedNotifiedItems = notifiedLowStockItems.filter(key => {
-                // Always keep current low stock items
                 if (keysToKeep.includes(key)) {
                     currentTrackedKeys[key] = Date.now();
                     return true;
                 }
-
-                // Check if this notification is recent (less than 24 hours old)
                 const timestamp = trackedKeys[key] || 0;
                 if (timestamp > yesterday.getTime()) {
                     currentTrackedKeys[key] = timestamp;
                     return true;
                 }
-
-                // Otherwise remove it from tracking
                 return false;
             });
-
-            // Update the notified items list if it changed
             if (prunedNotifiedItems.length !== notifiedLowStockItems.length) {
                 setNotifiedLowStockItems(prunedNotifiedItems);
                 localStorage.setItem('notifiedLowStockItems', JSON.stringify(prunedNotifiedItems));
@@ -323,16 +258,12 @@ function AdminPanel() {
     const handleLowStockToggle = () => {
         console.log("Toggle low stock, current value:", showLowStockOnly);
         setShowLowStockOnly(!showLowStockOnly);
-
-        // Check for low stock items and create notifications if needed
         checkLowStockItems();
     };
     const markSingleNotificationAsRead = async (notification) => {
         try {
             const notificationId = notification.id || notification._id;
             console.log('Marking notification as read:', notificationId);
-
-            // Optimistically update the local state first
             const updatedNotifications = notifications.map(notif =>
                 notif.id === notificationId || notif._id === notificationId
                     ? { ...notif, isRead: true }
@@ -340,30 +271,19 @@ function AdminPanel() {
             );
 
             setNotifications(updatedNotifications);
-
-            // Update unread notifications count
             const unreadCount = updatedNotifications.filter(n => !n.isRead).length;
             console.log('Updated unread notifications count after marking one as read:', unreadCount);
             setUnreadNotifications(unreadCount);
-
-            // Call API to mark as read
             await markNotificationAsRead(notificationId);
-
-            // Refresh notifications to ensure consistency
             const freshNotifications = await getNotifications();
             setNotifications(freshNotifications);
-
-            // Update unread notifications count
             const freshUnreadCount = freshNotifications.filter(n => !n.isRead).length;
             console.log('Fresh unread notifications count after API call:', freshUnreadCount);
             setUnreadNotifications(freshUnreadCount);
-
-            // Dispatch notification update event
             window.dispatchEvent(new Event('notification-update'));
 
         } catch (error) {
             console.error('Error marking notification as read:', error);
-            // Revert the optimistic update if API call fails
             const originalNotifications = await getNotifications();
             setNotifications(originalNotifications);
             const originalUnreadCount = originalNotifications.filter(n => !n.isRead).length;
@@ -372,26 +292,17 @@ function AdminPanel() {
     };
     const getFilteredNotifications = () => {
         if (notificationFilter === 'all') {
-            // Sort notifications, with unread notifications first
             return notifications.sort((a, b) => {
-                // Prioritize unread notifications
                 if (a.isRead === false && b.isRead === true) return -1;
                 if (a.isRead === true && b.isRead === false) return 1;
-
-                // Then sort by date
                 return new Date(b.date) - new Date(a.date);
             });
         }
-
-        // Filter by type and sort
         return notifications
             .filter(notification => notification.type === notificationFilter)
             .sort((a, b) => {
-                // Prioritize unread notifications
                 if (a.isRead === false && b.isRead === true) return -1;
                 if (a.isRead === true && b.isRead === false) return 1;
-
-                // Then sort by date
                 return new Date(b.date) - new Date(a.date);
             });
     };
@@ -400,21 +311,15 @@ function AdminPanel() {
         try {
             let reportItems = [];
             let reportTitle = "iRevix Full Inventory Report";
-
-            // If specific devices and models are selected, use only those items
             if (selectedDevices.length > 0 && selectedModels.length > 0) {
                 reportItems = inventoryItems;
                 reportTitle = `iRevix Inventory Report - Selected Models (${selectedModels.length} models)`;
             } else {
-                // Fetch all inventory items
                 const allItems = [];
-
-                // Loop through all devices and models
                 for (const device of devices) {
                     for (const model of deviceModels[device.id]) {
                         try {
                             const deviceItems = await fetchReplacementParts(device.id, model);
-                            // Add device and model info to items
                             const itemsWithInfo = deviceItems.map(item => ({
                                 ...item,
                                 deviceType: device.name,
@@ -429,18 +334,10 @@ function AdminPanel() {
 
                 reportItems = allItems;
             }
-
-            // Create CSV content
             let csvContent = "data:text/csv;charset=utf-8,";
-
-            // Add header and date
             csvContent += `${reportTitle}\r\n`;
             csvContent += `Generated on: ${new Date().toLocaleDateString()}\r\n\r\n`;
-
-            // Add headers
             csvContent += "Device,Model,Part Number,Part Name,Description,Stock Level,Reorder Point,Price,Supplier,Last Restocked\r\n";
-
-            // Add inventory items
             reportItems.forEach(item => {
                 csvContent += `${item.deviceType || ''},`;
                 csvContent += `${item.modelType || ''},`;
@@ -453,13 +350,9 @@ function AdminPanel() {
                 csvContent += `"${item.supplier}",`;
                 csvContent += `${item.lastRestocked}\r\n`;
             });
-
-            // Create download link and trigger it
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-
-            // Set filename
             const filename = `iRevix_Inventory_Report_${new Date().toISOString().split('T')[0]}.csv`;
 
             link.setAttribute("download", filename);
@@ -479,30 +372,19 @@ function AdminPanel() {
             setNotifiedLowStockItems(JSON.parse(savedNotifiedItems));
         }
     }, []);
-
-    // Load initial data from API
     useEffect(() => {
         const fetchAllData = async () => {
             try {
-                // Fetch notifications
                 const notificationsData = await getNotifications();
                 setNotifications(notificationsData);
-
-                // Count unread notifications separately
                 const unreadNotificationCount = notificationsData.filter(n => !n.isRead).length;
                 setUnreadNotifications(unreadNotificationCount);
                 console.log('Initial unread notifications count:', unreadNotificationCount);
-
-                // Fetch support requests
                 const supportData = await getSupportRequests();
                 setSupportRequests(supportData);
-
-                // Only count unread support requests for the support badge
                 const unreadSupportCount = supportData.filter(req => !req.isRead).length;
                 setUnreadSupportRequests(unreadSupportCount);
                 console.log('Initial unread support requests count:', unreadSupportCount);
-
-                // Other data fetching...
                 const trafficData = await getTrafficData(trafficPeriod);
                 setWebsiteTraffic(trafficData);
 
@@ -527,8 +409,6 @@ function AdminPanel() {
                     console.log('===== REVENUE DEBUG START =====');
                     console.log('Fetching revenue data for period:', revenuePeriod);
                     setIsLoading(true);
-
-                    // Add a timestamp to avoid caching issues
                     const timestamp = new Date().getTime();
                     console.log('Making API call with timestamp:', timestamp);
 
@@ -538,15 +418,11 @@ function AdminPanel() {
                     console.log('Has dailyRevenue:', data.hasOwnProperty('dailyRevenue'));
                     console.log('dailyRevenue type:', Array.isArray(data.dailyRevenue) ? 'array' : typeof data.dailyRevenue);
                     console.log('dailyRevenue length:', data.dailyRevenue ? data.dailyRevenue.length : 'N/A');
-
-                    // Check all expected properties
                     const expectedProps = ['dailyRevenue', 'deviceRevenue', 'repairsByType', 'today', 'thisWeek', 'thisMonth', 'lastMonth'];
                     expectedProps.forEach(prop => {
                         console.log(`Property ${prop} exists:`, data.hasOwnProperty(prop));
                         console.log(`Property ${prop} value:`, data[prop]);
                     });
-
-                    // Process data but always set it even if dailyRevenue is empty
                     const processedData = {
                         dailyRevenue: data.dailyRevenue || [],
                         deviceRevenue: data.deviceRevenue || [],
@@ -564,11 +440,7 @@ function AdminPanel() {
 
                     console.log('Processed data:', processedData);
                     console.log('Setting revenueData state...');
-
-                    // Always set the data, even if empty
                     setRevenueData(processedData);
-
-                    // Add slight delay to ensure state is updated before isLoading is set to false
                     setTimeout(() => {
                         console.log('Setting isLoading to false');
                         setIsLoading(false);
@@ -585,8 +457,6 @@ function AdminPanel() {
                     console.error('Response status:', error.response.status);
                     console.error('Response data:', error.response.data);
                 }
-
-                // Set a default data structure rather than null
                 const defaultData = {
                     dailyRevenue: [],
                     deviceRevenue: [],
@@ -614,85 +484,59 @@ function AdminPanel() {
             fetchRevenueData();
         }
     }, [revenuePeriod, activeTab]);
-    // In AdminPanel.jsx, update the useEffect for dashboard stats
     useEffect(() => {
         const fetchDashboardStats = async () => {
-            // Ensure we only fetch when on dashboard tab
             if (activeTab === 'dashboard') {
                 try {
-                    // Create an object to hold all dashboard stats
                     let stats = {
                         todayVisitors: 0,
                         newOrders: 0,
                         repairsInProgress: 0,
                         todayRevenue: 0
                     };
-
-                    // Fetch traffic data for today's visitors
                     const trafficData = await getTrafficData('7days');
                     if (trafficData && trafficData.length > 0) {
-                        // Get the most recent day's data
                         const todayData = trafficData[trafficData.length - 1];
                         stats.todayVisitors = todayData.visitors;
                     }
-
-                    // Fetch repair orders
                     const repairsData = await getRepairs();
                     if (repairsData) {
-                        // Get today's date in YYYY-MM-DD format
                         const today = new Date().toISOString().split('T')[0];
-
-                        // Count new orders from today
                         stats.newOrders = repairsData.filter(order =>
                             order.date === today
                         ).length;
-
-                        // Count repairs in progress
                         stats.repairsInProgress = repairsData.filter(order =>
                             order.status === 'In Progress'
                         ).length;
                     }
-
-                    // Fetch revenue data
                     const revData = await getRevenueData('today');
                     if (revData) {
                         stats.todayRevenue = revData.today || 0;
                     }
-
-                    // Update dashboard stats state
                     setDashboardStats(stats);
 
                 } catch (error) {
                     console.error('Error fetching dashboard stats:', error);
-                    // Optionally set some default or error state
                     setDashboardStats(null);
                 }
             }
         };
-
-        // Always attempt to fetch stats when dashboard tab is active
         fetchDashboardStats();
     }, [activeTab]); // This will trigger on tab changes and initial render
     const debugLog = (message, data) => {
         console.log(`DEBUG: ${message}`, data);
     };
-
-    // Replace the fetchDevicesAndModels function with this improved version
     useEffect(() => {
         const fetchDevicesAndModels = async () => {
             try {
-                // Fetch inventory items to extract device and model info
                 const response = await axios.get('/api/inventory');
                 const inventoryItems = response.data;
 
                 debugLog("Raw inventory data (first 3 items):", inventoryItems.slice(0, 3));
-
-                // Extract unique device types and standardize them
                 const uniqueDeviceTypes = [...new Set(
                     inventoryItems
                         .filter(item => item.deviceType) // Filter out null/undefined
                         .map(item => {
-                            // Standardize capitalization (first letter uppercase, rest lowercase)
                             const deviceType = item.deviceType.charAt(0).toUpperCase() +
                                 item.deviceType.slice(1).toLowerCase();
                             return deviceType;
@@ -700,8 +544,6 @@ function AdminPanel() {
                 )];
 
                 debugLog("Extracted unique device types:", uniqueDeviceTypes);
-
-                // Create device objects with appropriate icons
                 const deviceIconMapping = {
                     'Iphone': faMobileAlt,
                     'iPhone': faMobileAlt,
@@ -728,12 +570,9 @@ function AdminPanel() {
 
                 debugLog("Mapped devices with IDs:", extractedDevices);
                 setDevices(extractedDevices);
-
-                // Extract unique models for each device type
                 const modelMapping = {};
 
                 extractedDevices.forEach(device => {
-                    // KEY FIX: Use case-insensitive comparison for device type
                     const deviceInventory = inventoryItems.filter(item =>
                         item.deviceType &&
                         item.deviceType.toLowerCase() === device.name.toLowerCase()
@@ -741,8 +580,6 @@ function AdminPanel() {
 
                     debugLog(`Found ${deviceInventory.length} items for device ${device.name}`,
                         deviceInventory.slice(0, 2)); // Show just a couple items
-
-                    // Extract all models for this device
                     const deviceModels = [...new Set(
                         deviceInventory
                             .filter(item => item.modelType) // Filter out null/undefined
@@ -758,7 +595,6 @@ function AdminPanel() {
 
             } catch (error) {
                 console.error('Error loading devices and models:', error);
-                // Fall back to hardcoded values if API fails
                 setDevices([
                     { id: 'iphone', name: 'iPhone', icon: faMobileAlt },
                     { id: 'ipad', name: 'iPad', icon: faTabletScreenButton },
@@ -792,29 +628,19 @@ function AdminPanel() {
             return []; // Return empty array on error
         }
     };
-
-// Load support requests when the component mounts and when activeTab changes to 'support'
     useEffect(() => {
         if (!isLoading && activeTab === 'support') {
-            // Get all requests from the service
             const allRequests = supportService.getAllRequests();
             setSupportRequests(allRequests);
-
-            // Count unread messages
             const unreadCount = supportService.getUnreadCountForAdmin();
             setUnreadSupportRequests(unreadCount);
         }
     }, [isLoading, activeTab]);
-
-// Poll for new support requests every 10 seconds, but only when on the support tab
     useEffect(() => {
         if (!isLoading && activeTab === 'support') {
             const interval = setInterval(() => {
-                // Get all requests from the service
                 const allRequests = supportService.getAllRequests();
                 setSupportRequests(allRequests);
-
-                // Count unread messages
                 const unreadCount = supportService.getUnreadCountForAdmin();
                 setUnreadSupportRequests(unreadCount);
             }, 10000);
@@ -826,11 +652,7 @@ function AdminPanel() {
         try {
             console.log('Force refreshing notifications...');
             const notificationsData = await getNotifications();
-
-            // Update notifications state
             setNotifications(notificationsData);
-
-            // Update unread count
             const unreadCount = notificationsData.filter(n => !n.isRead).length;
             console.log(`Force refresh - unread count: ${unreadCount}`);
             setUnreadNotifications(unreadCount);
@@ -841,8 +663,6 @@ function AdminPanel() {
             return null;
         }
     };
-
-    // Replace the fetchFilteredItems function with this improved version
     const fetchFilteredItems = async () => {
         try {
             debugLog("Starting filtering with:", {
@@ -853,23 +673,14 @@ function AdminPanel() {
             });
 
             let filteredItems = [];
-
-            // If showing low stock items only
             if (showLowStockOnly) {
-                // Fetch low stock items from API
                 const lowStockItems = await fetchLowStockItems();
                 debugLog("Fetched low stock items:", lowStockItems.length);
-
-                // Filter low stock items based on selected devices and models
                 filteredItems = lowStockItems.filter(item => {
-                    // Case-insensitive device matching
                     const deviceMatch = selectedDevices.length === 0 ||
                         selectedDevices.some(deviceId => {
-                            // Find the corresponding device
                             const device = devices.find(d => d.id === deviceId);
                             const deviceName = device ? device.name : deviceId;
-
-                            // Convert both to lowercase for comparison
                             const itemDeviceType = (item.deviceType || '').toLowerCase();
                             const selectedDeviceType = deviceName.toLowerCase();
 
@@ -879,8 +690,6 @@ function AdminPanel() {
                             }
                             return isMatch;
                         });
-
-                    // Case-insensitive model matching
                     const modelMatch = selectedModels.length === 0 ||
                         selectedModels.some(model => {
                             const itemModelType = (item.modelType || '').toLowerCase();
@@ -898,22 +707,16 @@ function AdminPanel() {
 
                 debugLog(`Found ${filteredItems.length} filtered low stock items`);
             }
-            // If not showing low stock only, filter from loaded inventory items
             else {
-                // If no devices are selected, show all items
                 if (selectedDevices.length === 0) {
                     filteredItems = inventoryItems;
                     debugLog(`Showing all ${filteredItems.length} inventory items`);
                 }
-                // If devices are selected but no models
                 else if (selectedDevices.length > 0 && selectedModels.length === 0) {
                     filteredItems = inventoryItems.filter(item => {
                         return selectedDevices.some(deviceId => {
-                            // Find the corresponding device
                             const device = devices.find(d => d.id === deviceId);
                             const deviceName = device ? device.name : deviceId;
-
-                            // Convert both to lowercase for comparison
                             const itemDeviceType = (item.deviceType || '').toLowerCase();
                             const selectedDeviceType = deviceName.toLowerCase();
 
@@ -923,23 +726,16 @@ function AdminPanel() {
 
                     debugLog(`Found ${filteredItems.length} items for selected devices`);
                 }
-                // If both devices and models are selected
                 else if (selectedDevices.length > 0 && selectedModels.length > 0) {
                     filteredItems = inventoryItems.filter(item => {
-                        // Case-insensitive device matching
                         const deviceMatch = selectedDevices.some(deviceId => {
-                            // Find the corresponding device
                             const device = devices.find(d => d.id === deviceId);
                             const deviceName = device ? device.name : deviceId;
-
-                            // Convert both to lowercase for comparison
                             const itemDeviceType = (item.deviceType || '').toLowerCase();
                             const selectedDeviceType = deviceName.toLowerCase();
 
                             return itemDeviceType === selectedDeviceType;
                         });
-
-                        // Case-insensitive model matching
                         const modelMatch = selectedModels.some(model => {
                             const itemModelType = (item.modelType || '').toLowerCase();
                             const selectedModelType = model.toLowerCase();
@@ -953,8 +749,6 @@ function AdminPanel() {
                     debugLog(`Found ${filteredItems.length} items for selected devices and models`);
                 }
             }
-
-            // Add debug logging to show what we're filtering by
             if (selectedDevices.length > 0) {
                 debugLog('Selected device IDs:', selectedDevices);
                 debugLog('Selected device names:',
@@ -963,13 +757,9 @@ function AdminPanel() {
             if (selectedModels.length > 0) {
                 debugLog('Selected models:', selectedModels);
             }
-
-            // Show some sample results
             if (filteredItems.length > 0) {
                 debugLog('Sample filtered items:', filteredItems.slice(0, 2));
             }
-
-            // Set the filtered items
             setFilteredInventoryItems(filteredItems);
         } catch (error) {
             console.error('Error fetching filtered inventory items:', error);
@@ -977,8 +767,6 @@ function AdminPanel() {
             alert(`Failed to fetch inventory items: ${error.message}`);
         }
     };
-
-// Update the useEffect to trigger filtering whenever necessary
     useEffect(() => {
         fetchFilteredItems();
     }, [showLowStockOnly, selectedDevices, selectedModels, inventoryItems]);
@@ -986,7 +774,6 @@ function AdminPanel() {
     useEffect(() => {
         const fetchInventoryItems = async () => {
             try {
-                // If both devices and models are selected
                 if (selectedDevices.length > 0 && selectedModels.length > 0) {
                     console.log("Fetching inventory with selections:", {
                         devices: selectedDevices,
@@ -994,27 +781,19 @@ function AdminPanel() {
                     });
 
                     let allItems = [];
-
-                    // Fetch items for each device-model combination
                     for (const deviceId of selectedDevices) {
-                        // Find the actual device object from our devices array
                         const device = devices.find(d => d.id === deviceId);
                         const deviceName = device ? device.name : deviceId;
 
                         console.log(`Processing device: ${deviceId} -> ${deviceName}`);
 
                         for (const model of selectedModels) {
-                            // Check if this model belongs to this device
                             if (deviceModels[deviceId] && deviceModels[deviceId].includes(model)) {
                                 try {
                                     console.log(`Fetching parts for device: ${deviceName}, model: ${model}`);
-
-                                    // Pass the device NAME (not device ID) and model to the API
                                     const items = await getInventoryParts(deviceName, model);
 
                                     console.log(`Received ${items.length} parts from API for ${deviceName}/${model}`);
-
-                                    // If we got items back, add device/model info to them
                                     const itemsWithDetails = items.map(item => ({
                                         ...item,
                                         deviceId: deviceId,
@@ -1037,11 +816,8 @@ function AdminPanel() {
                     } else {
                         console.warn('No items found for the selected device/model combinations');
                     }
-
-                    // Set inventory items and trigger filtering
                     setInventoryItems(allItems);
                 } else {
-                    // Reset inventory items if devices or models are not fully selected
                     console.log("Not enough selections to fetch inventory", {
                         deviceCount: selectedDevices.length,
                         modelCount: selectedModels.length
@@ -1061,13 +837,10 @@ function AdminPanel() {
         debugLog("Device selection changed:", deviceId);
 
         if (selectedDevices.includes(deviceId)) {
-            // If already selected, remove it from selection
             const updatedDevices = selectedDevices.filter(d => d !== deviceId);
             debugLog("Removing device from selection:", deviceId);
             debugLog("New device selection:", updatedDevices);
             setSelectedDevices(updatedDevices);
-
-            // Also remove any models of this device from selected models
             const deviceModelsToRemove = deviceModels[deviceId] || [];
             debugLog("Models to potentially remove:", deviceModelsToRemove);
 
@@ -1080,7 +853,6 @@ function AdminPanel() {
             debugLog("New model selection after device removal:", updatedModels);
             setSelectedModels(updatedModels);
         } else {
-            // Add to selection
             const updatedDevices = [...selectedDevices, deviceId];
             debugLog("Adding device to selection:", deviceId);
             debugLog("New device selection:", updatedDevices);
@@ -1092,13 +864,11 @@ function AdminPanel() {
         debugLog("Model selection changed:", { model, deviceId });
 
         if (selectedModels.includes(model)) {
-            // If already selected, remove it
             debugLog("Removing model from selection:", model);
             const updatedModels = selectedModels.filter(m => m !== model);
             debugLog("New model selection:", updatedModels);
             setSelectedModels(updatedModels);
         } else {
-            // Add to selection
             debugLog("Adding model to selection:", model);
             const updatedModels = [...selectedModels, model];
             debugLog("New model selection:", updatedModels);
@@ -1131,8 +901,6 @@ function AdminPanel() {
         if (stockLevel <= reorderPoint) return '#ffc107'; // Warning - below reorder point
         return '#28a745'; // Good - above reorder point
     };
-
-    // Handler to open restock modal
     const handleRestockClick = (item) => {
         setRestockItem(item);
         setRestockQuantity(1);
@@ -1141,11 +909,8 @@ function AdminPanel() {
 
     const handleRestockSubmit = async () => {
         try {
-            // Call the dedicated restock API endpoint
             const updatedItem = await restockInventoryItem(restockItem.id, restockQuantity);
             console.log('Restock successful, received updated item:', updatedItem);
-
-            // Remove this item from the notified low stock items list
             const itemKeysToRemove = notifiedLowStockItems.filter(key =>
                 key.startsWith(`${restockItem.id}-`)
             );
@@ -1157,34 +922,23 @@ function AdminPanel() {
                 setNotifiedLowStockItems(updatedNotifiedItems);
                 localStorage.setItem('notifiedLowStockItems', JSON.stringify(updatedNotifiedItems));
             }
-
-            // Create a notification for the restock action
             await createNotification({
                 type: 'system',
                 message: `${updatedItem.name} for ${updatedItem.deviceType} ${updatedItem.modelType} has been restocked (+${restockQuantity} units).`,
                 time: 'just now'
             });
             window.dispatchEvent(new Event('notification-update'));
-
-            // Get fresh notifications
             const notificationsData = await getNotifications();
             setNotifications(notificationsData);
-
-            // IMPORTANT: Refresh inventory data based on current selections
-            // Refetch all inventory items for currently selected device/model
             if (selectedDevices.length > 0 && selectedModels.length > 0) {
                 let allItems = [];
 
                 for (const deviceId of selectedDevices) {
                     for (const model of selectedModels) {
-                        // Ensure the model belongs to the selected device
                         if (deviceModels[deviceId]?.includes(model)) {
                             try {
                                 console.log(`Refreshing inventory for ${deviceId} ${model}`);
-                                // Fetch fresh inventory data
                                 const items = await getInventoryParts(deviceId, model);
-
-                                // Add device and model information
                                 const itemsWithDetails = items.map(item => ({
                                     ...item,
                                     deviceId: deviceId,
@@ -1202,8 +956,6 @@ function AdminPanel() {
 
                 console.log('Refreshed inventory data with', allItems.length, 'items');
                 setInventoryItems(allItems);
-
-                // Also update filtered inventory
                 if (showLowStockOnly) {
                     const lowStockItems = allItems.filter(item =>
                         item.stockLevel <= item.reorderPoint
@@ -1213,18 +965,12 @@ function AdminPanel() {
                     setFilteredInventoryItems(allItems);
                 }
             }
-
-            // Reset UI state
             setIsRestockModalOpen(false);
             setRestockItem(null);
             setRestockQuantity(1);
-
-            // Show success message
             alert("Inventory item restocked successfully!");
         } catch (error) {
             console.error("Error restocking inventory item:", error);
-
-            // Enhanced error logging
             if (error.response) {
                 console.error('Response status:', error.response.status);
                 console.error('Response data:', error.response.data);
@@ -1233,13 +979,9 @@ function AdminPanel() {
             alert("Failed to restock inventory item. Please try again.");
         }
     };
-
-// Handler to delete an inventory item - updated for database persistence
     const markAllAsRead = async () => {
         try {
             console.log('Marking all notifications as read');
-
-            // Optimistically mark all as read locally
             const updatedNotifications = notifications.map(notif => ({
                 ...notif,
                 isRead: true
@@ -1247,25 +989,16 @@ function AdminPanel() {
 
             setNotifications(updatedNotifications);
             setUnreadNotifications(0);  // Set to 0 immediately
-
-            // Call API to mark all as read
             await markAllNotificationsAsRead();
-
-            // Refresh notifications to ensure consistency
             const freshNotifications = await getNotifications();
             setNotifications(freshNotifications);
-
-            // Update unread count
             const unreadCount = freshNotifications.filter(n => !n.isRead).length;
             console.log('Unread notifications count after marking all as read:', unreadCount);
             setUnreadNotifications(unreadCount);
-
-            // Dispatch notification update event
             window.dispatchEvent(new Event('notification-update'));
 
         } catch (error) {
             console.error('Error marking all notifications as read:', error);
-            // Revert to original state if API call fails
             const originalNotifications = await getNotifications();
             setNotifications(originalNotifications);
             const originalUnreadCount = originalNotifications.filter(n => !n.isRead).length;
@@ -1277,10 +1010,7 @@ function AdminPanel() {
 
         if (window.confirm("Are you sure you want to delete this inventory item? This action cannot be undone.")) {
             try {
-                // Call API to delete the item from the database
                 await deleteInventoryItem(itemId);
-
-                // Remove this item from the notified low stock items list
                 const itemKeysToRemove = notifiedLowStockItems.filter(key =>
                     key.startsWith(`${itemId}-`)
                 );
@@ -1292,18 +1022,12 @@ function AdminPanel() {
                     setNotifiedLowStockItems(updatedNotifiedItems);
                     localStorage.setItem('notifiedLowStockItems', JSON.stringify(updatedNotifiedItems));
                 }
-
-                // Update local state to remove the item
                 const updatedItems = inventoryItems.filter(item => item.id !== itemId);
                 setInventoryItems(updatedItems);
-
-                // If we're also showing filtered items, update those too
                 if (filteredInventoryItems.length > 0) {
                     const updatedFilteredItems = filteredInventoryItems.filter(item => item.id !== itemId);
                     setFilteredInventoryItems(updatedFilteredItems);
                 }
-
-                // Show success message
                 alert("Inventory item deleted successfully.");
             } catch (error) {
                 console.error("Error deleting inventory item:", error);
@@ -1311,24 +1035,16 @@ function AdminPanel() {
             }
         }
     };
-    // Function to export revenue report as CSV
     const exportRevenueReport = () => {
         try {
-            // Use the revenue data from state
             if (!revenueData) {
                 alert("Revenue data is still loading. Please try again in a moment.");
                 return;
             }
             const data = revenueData;
-
-            // Create CSV content
             let csvContent = "data:text/csv;charset=utf-8,";
-
-            // Add header and date
             csvContent += `iRevix Revenue Report - ${data.periodLabel}\r\n`;
             csvContent += `Generated on: ${new Date().toLocaleDateString()}\r\n\r\n`;
-
-            // Add revenue summary
             csvContent += "Revenue Summary\r\n";
             csvContent += "Period,Amount\r\n";
             csvContent += `Today's Revenue,$${data.today.toLocaleString()}\r\n`;
@@ -1336,41 +1052,29 @@ function AdminPanel() {
             csvContent += `This Month,$${data.thisMonth.toLocaleString()}\r\n`;
             csvContent += `Last Month,$${data.lastMonth.toLocaleString()}\r\n`;
             csvContent += `Repair to Sales Ratio,${data.repairSalesRatio}\r\n\r\n`;
-
-            // Add revenue by device type
             csvContent += "Revenue by Device Type\r\n";
             csvContent += "Device,Revenue,Percentage\r\n";
             data.deviceRevenue.forEach(item => {
                 csvContent += `${item.device},$${item.revenue.toLocaleString()},${item.percent}%\r\n`;
             });
             csvContent += "\r\n";
-
-            // Add popular repair services
             csvContent += "Popular Repair Services\r\n";
             csvContent += "Repair Type,Count,Revenue\r\n";
             data.repairsByType.forEach(item => {
                 csvContent += `${item.type},${item.count},$${item.revenue.toLocaleString()}\r\n`;
             });
             csvContent += "\r\n";
-
-            // Add daily revenue data
             csvContent += `Revenue Data (${data.periodLabel})\r\n`;
             csvContent += "Date,Sales Revenue,Repair Revenue,Total Revenue\r\n";
             data.dailyRevenue.forEach(day => {
                 csvContent += `${day.date},$${day.sales.toLocaleString()},$${day.repairs.toLocaleString()},$${day.total.toLocaleString()}\r\n`;
             });
-
-            // Create a download link and trigger it
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
             link.setAttribute("download", `iRevix_Revenue_Report_${revenuePeriod}.csv`);
             document.body.appendChild(link);
-
-            // Trigger download
             link.click();
-
-            // Clean up
             document.body.removeChild(link);
 
             alert("Revenue report has been downloaded successfully!");
@@ -1610,16 +1314,12 @@ function AdminPanel() {
         </div>
     );
     const loadInitialData = async () => {
-        // If data is already loaded, don't show loading
         if (notifications.length > 0 && repairOrders.length > 0) {
             return;
         }
 
         try {
-            // Minimal loading state
             setIsLoading(true);
-
-            // Parallel data fetching
             const [
                 notificationsData,
                 trafficData,
@@ -1633,16 +1333,12 @@ function AdminPanel() {
                 getSupportRequests(),
                 getRevenueData(revenuePeriod)
             ]);
-
-            // Update states
             setNotifications(notificationsData);
             setWebsiteTraffic(trafficData);
             setRepairOrders(repairsData);
             setSupportRequests(supportData);
             setUnreadSupportRequests(supportData.filter(req => !req.isRead).length);
             setRevenueData(revenueData);
-
-            // Dashboard specific calculations
             if (activeTab === 'dashboard') {
                 const stats = {
                     todayVisitors: trafficData[trafficData.length - 1]?.visitors || 0,
@@ -1659,14 +1355,10 @@ function AdminPanel() {
         } catch (error) {
             console.error('Error loading initial data:', error);
         } finally {
-            // Ensure loading state is always turned off
             setIsLoading(false);
         }
     };
-
-// Optimize useEffect for smoother tab switching
     useEffect(() => {
-        // Only load if data is not already present
         if (notifications.length === 0 || repairOrders.length === 0) {
             loadInitialData();
         }
@@ -1677,21 +1369,15 @@ function AdminPanel() {
             console.log('Refreshing notifications...');
             const notificationsData = await getNotifications();
             console.log('Refreshed notifications:', notificationsData.length, 'items');
-
-            // Ensure the isRead property is correctly set and processed
             const processedNotifications = notificationsData.map(notification => ({
                 ...notification,
                 isRead: notification.isRead === true  // Explicitly convert to boolean
             }));
-
-            // Sort notifications by date, most recent first
             const sortedNotifications = processedNotifications.sort((a, b) =>
                 new Date(b.date) - new Date(a.date)
             );
 
             setNotifications(sortedNotifications);
-
-            // Update the unread notifications count
             const unreadCount = sortedNotifications.filter(n => !n.isRead).length;
             console.log('Refreshed unread notifications count:', unreadCount);
             setUnreadNotifications(unreadCount);
@@ -1699,22 +1385,15 @@ function AdminPanel() {
             console.error('Error refreshing notifications:', error);
         }
     };
-    // In the fetchAndProcessNotifications function, change this:
     useEffect(() => {
         const fetchAndProcessNotifications = async () => {
             try {
                 console.log('Fetching and processing notifications...');
                 const notificationsData = await getNotifications();
-
-                // Sort notifications by date, most recent first
                 const sortedNotifications = notificationsData.sort((a, b) =>
                     new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)
                 );
-
-                // Update state with sorted notifications
                 setNotifications(sortedNotifications);
-
-                // Update unread notifications count
                 const unreadCount = sortedNotifications.filter(n => !n.isRead).length;
                 console.log('Updated unread notifications count:', unreadCount);
                 setUnreadNotifications(unreadCount); // IMPORTANT: Fixed this line
@@ -1723,31 +1402,21 @@ function AdminPanel() {
                 console.error('Error refreshing notifications:', error);
             }
         };
-
-        // Run on initial load and when switching to notifications tab
         if (!isLoading && (activeTab === 'notifications' || activeTab === 'dashboard')) {
             fetchAndProcessNotifications();
         }
     }, [activeTab, isLoading]);
 
     useEffect(() => {
-        // This useEffect runs when inventoryItems changes
         if (!isLoading && inventoryItems.length > 0) {
             const checkForNewLowStockItems = async () => {
                 try {
                     let newNotifications = false;
                     const updatedNotifiedItems = [...notifiedLowStockItems];
-
-                    // Check each inventory item
                     for (const item of inventoryItems) {
-                        // Only process items that are at or below their reorder point
                         if (item.stockLevel <= item.reorderPoint) {
-                            // Create a unique identifier for this item
                             const itemKey = `${item.id}-${item.stockLevel}`;
-
-                            // Check if we've already notified about this item at this stock level
                             if (!notifiedLowStockItems.includes(itemKey)) {
-                                // This is a new low stock condition
                                 if (item.stockLevel <= item.reorderPoint * 0.5) {
                                     await createNotification({
                                         type: 'alert',
@@ -1763,21 +1432,14 @@ function AdminPanel() {
                                     });
                                     newNotifications = true;
                                 }
-
-                                // Add this item to the notified items list
                                 updatedNotifiedItems.push(itemKey);
                             }
                         }
                     }
-
-                    // Update the list of notified items
                     if (updatedNotifiedItems.length !== notifiedLowStockItems.length) {
                         setNotifiedLowStockItems(updatedNotifiedItems);
-                        // Save to localStorage for persistence
                         localStorage.setItem('notifiedLowStockItems', JSON.stringify(updatedNotifiedItems));
                     }
-
-                    // Update the notifications in state only if we created new notifications
                     if (newNotifications) {
                         const notificationsData = await getNotifications();
                         setNotifications(notificationsData);
@@ -1786,8 +1448,6 @@ function AdminPanel() {
                     console.error('Error checking for new low stock items:', error);
                 }
             };
-
-            // Only run this when in the inventory tab to avoid excessive checks
             if (activeTab === 'inventory') {
                 checkForNewLowStockItems();
             }
@@ -1795,28 +1455,16 @@ function AdminPanel() {
     }, [inventoryItems, isLoading, activeTab]);
 
     useEffect(() => {
-        // Polling interval for checking notifications (in milliseconds)
         const POLLING_INTERVAL = 5000; // 5 seconds - shorter for more responsiveness
-
-        // Always poll regardless of current tab
         if (!isLoading) {
             console.log('Setting up notification polling...');
-
-            // Set up periodic polling
             const interval = setInterval(async () => {
                 try {
-                    // Fetch latest notifications
                     console.log('Polling for new notifications...');
                     const notificationsData = await getNotifications();
-
-                    // Calculate unread count
                     const unreadCount = notificationsData.filter(n => !n.isRead).length;
-
-                    // Always update to ensure state is fresh
                     console.log(`Current unread count: ${unreadCount}`);
                     setUnreadNotifications(unreadCount);
-
-                    // Also update the notifications array if different
                     if (JSON.stringify(notificationsData) !== JSON.stringify(notifications)) {
                         setNotifications(notificationsData);
                     }
@@ -1824,8 +1472,6 @@ function AdminPanel() {
                     console.error('Error polling for notifications:', error);
                 }
             }, POLLING_INTERVAL);
-
-            // Clean up interval on component unmount
             return () => {
                 console.log('Cleaning up notification polling...');
                 clearInterval(interval);
@@ -1834,7 +1480,6 @@ function AdminPanel() {
     }, [isLoading]);
 
     const renderTraffic = () => {
-        // Check if traffic data is loaded
         if (!websiteTraffic || websiteTraffic.length === 0) {
             return (
                 <div className="traffic-container">
@@ -1845,33 +1490,23 @@ function AdminPanel() {
                 </div>
             );
         }
-
-        // Calculate summary statistics from actual data
         const totalVisitors = websiteTraffic.reduce((sum, day) => sum + day.visitors, 0);
         const totalPageViews = websiteTraffic.reduce((sum, day) => sum + day.pageViews, 0);
         const totalConversions = websiteTraffic.reduce((sum, day) => sum + day.conversions, 0);
         const conversionRate = ((totalConversions / totalVisitors) * 100).toFixed(1);
-
-        // Calculate growth trends based on first vs last day
         const firstDay = websiteTraffic[0];
         const lastDay = websiteTraffic[websiteTraffic.length - 1];
 
         const visitorGrowth = ((lastDay.visitors - firstDay.visitors) / firstDay.visitors) * 100;
         const pageViewGrowth = ((lastDay.pageViews - firstDay.pageViews) / firstDay.pageViews) * 100;
         const conversionGrowth = ((lastDay.conversions - firstDay.conversions) / firstDay.conversions) * 100;
-
-        // Format growth percentages
         const formatGrowth = (growth) => {
             return growth >= 0 ? `+${growth.toFixed(1)}%` : `${growth.toFixed(1)}%`;
         };
-
-        // Calculate session duration
         const avgSessionSeconds = Math.floor((totalPageViews / totalVisitors) * 60);
         const avgSessionMinutes = Math.floor(avgSessionSeconds / 60);
         const avgSessionRemainingSeconds = avgSessionSeconds % 60;
         const formattedDuration = `${avgSessionMinutes}m ${avgSessionRemainingSeconds}s`;
-
-        // Create summary object with dynamic calculated values
         const summary = {
             visitors: totalVisitors,
             pageViews: totalPageViews,
@@ -1886,7 +1521,6 @@ function AdminPanel() {
         const handlePeriodChange = async (e) => {
             const newPeriod = e.target.value;
             setTrafficPeriod(newPeriod);
-            // Reset hovered bar when period changes
             setHoveredBar(null);
 
             try {
@@ -1899,8 +1533,6 @@ function AdminPanel() {
                 setIsLoading(false);
             }
         };
-
-        // Get the title based on period
         const getPeriodTitle = () => {
             switch (trafficPeriod) {
                 case '7days': return 'Last 7 Days';
@@ -2040,7 +1672,6 @@ function AdminPanel() {
     };
 
     const renderOrders = () => {
-        // Function to filter orders based on selected filter
         const getFilteredOrders = () => {
             if (orderFilter === 'all') return repairOrders;
             return repairOrders.filter(order =>
@@ -2240,8 +1871,6 @@ function AdminPanel() {
             </div>
         );
     };
-
-    // Inventory tab
     const renderInventory = () => (
         <div className="inventory-container">
             <div className="inventory-header">
@@ -2358,12 +1987,9 @@ function AdminPanel() {
                                 <td>{item.description}</td>
                                 <td>
                                     {(() => {
-                                        // Convert and log values for debugging
                                         const stockNum = Number(item.stockLevel);
                                         const reorderNum = Number(item.reorderPoint);
                                         console.log(`Item ${item.name}: Stock=${stockNum}, Reorder=${reorderNum}`);
-
-                                        // Show both elements side by side for diagnosis
                                         return (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                 {/* Original element */}
@@ -2471,15 +2097,10 @@ function AdminPanel() {
     const renderSupportRequests = () => {
         const markAsRead = async (id) => {
             try {
-                // Assuming you have an API endpoint for marking support requests as read
                 const updatedRequest = await updateSupportRequest(id, { isRead: true });
-
-                // Update in the state
                 setSupportRequests(supportRequests.map(req =>
                     req.id === id ? updatedRequest : req
                 ));
-
-                // Update unread count - only count support requests
                 const updatedUnreadCount = supportRequests
                     .filter(req => req.id !== id && !req.isRead)
                     .length;
@@ -2492,16 +2113,12 @@ function AdminPanel() {
         const markAllSupportAsRead = async () => {
             try {
                 console.log('Marking all support requests as read');
-
-                // Create a copy of all unread support requests
                 const unreadRequests = supportRequests.filter(req => !req.isRead);
 
                 if (unreadRequests.length === 0) {
                     console.log('No unread support requests to mark');
                     return;
                 }
-
-                // Optimistically update UI first
                 const updatedRequests = supportRequests.map(req => ({
                     ...req,
                     isRead: true
@@ -2509,8 +2126,6 @@ function AdminPanel() {
 
                 setSupportRequests(updatedRequests);
                 setUnreadSupportRequests(0);
-
-                // Now call the API to update each unread request
                 for (const req of unreadRequests) {
                     try {
                         await updateSupportRequest(req.id, { isRead: true });
@@ -2519,19 +2134,14 @@ function AdminPanel() {
                         console.error(`Failed to mark support request ${req.id} as read:`, error);
                     }
                 }
-
-                // Refresh the support requests to ensure data consistency
                 const freshRequests = await getSupportRequests();
                 setSupportRequests(freshRequests);
-
-                // Update unread count
                 const remainingUnread = freshRequests.filter(req => !req.isRead).length;
                 setUnreadSupportRequests(remainingUnread);
 
                 console.log('All support requests marked as read');
             } catch (error) {
                 console.error('Error marking all support requests as read:', error);
-                // If there's an error, refresh the data to make sure UI is consistent
                 try {
                     const freshRequests = await getSupportRequests();
                     setSupportRequests(freshRequests);
@@ -2545,22 +2155,15 @@ function AdminPanel() {
         const markAllAsRead = async () => {
             try {
                 console.log('Marking all notifications as read - function called');
-
-                // Call the API to update all notifications in the database
                 const updatedNotifications = await markAllNotificationsAsRead();
                 console.log('API call successful. Updated notifications:', updatedNotifications);
-
-                // Make sure we got a proper response
                 if (Array.isArray(updatedNotifications)) {
                     console.log(`Setting state with ${updatedNotifications.length} notifications`);
-                    // Update the state with the response from the server
                     setNotifications(updatedNotifications);
                 } else {
                     console.error('Invalid response format:', updatedNotifications);
                     throw new Error('Invalid response format from server');
                 }
-
-                // Force a refresh of notifications to ensure we have the latest data
                 setTimeout(() => {
                     refreshNotifications();
                 }, 500);
@@ -2570,7 +2173,6 @@ function AdminPanel() {
                 alert('There was an error marking all notifications as read. Please try again.');
             }
         };
-        // Status and priority badge helpers
         const getStatusBadgeClass = (status) => {
             switch (status.toLowerCase()) {
                 case 'open':
@@ -2596,8 +2198,6 @@ function AdminPanel() {
                     return '';
             }
         };
-
-        // Get filtered requests
         const getFilteredRequests = () => {
             if (supportFilter === 'all') {
                 return supportRequests;
@@ -2607,16 +2207,12 @@ function AdminPanel() {
                 request.status.toLowerCase() === supportFilter.toLowerCase()
             );
         };
-
-        // View request details
         const viewRequestDetails = (request) => {
             setSelectedRequest(request);
             if (!request.isRead) {
                 markAsRead(request.id);
             }
         };
-
-        // Close request details
         const closeRequestDetails = () => {
             setSelectedRequest(null);
         };
@@ -2632,32 +2228,20 @@ function AdminPanel() {
                     message: replyText,
                     date: new Date().toLocaleString()
                 };
-
-                // Add message to the request
                 const updatedMessages = [...selectedRequest.messages, newMessage];
-
-                // Update request with new message
                 const updatedRequest = await updateSupportRequest(selectedRequest.id, {
                     messages: updatedMessages
                 });
-
-                // Update in the state
                 setSupportRequests(supportRequests.map(req =>
                     req.id === updatedRequest.id ? updatedRequest : req
                 ));
-
-                // Update selected request
                 setSelectedRequest(updatedRequest);
-
-                // Clear reply text
                 setReplyText('');
             } catch (error) {
                 console.error('Error sending reply:', error);
                 alert('Failed to send reply. Please try again.');
             }
         };
-
-        // Render request details modal
         const renderRequestDetails = () => {
             if (!selectedRequest) return null;
 
@@ -2763,12 +2347,9 @@ function AdminPanel() {
                                             const updatedRequest = supportService.closeRequest(selectedRequest.id);
 
                                             if (updatedRequest) {
-                                                // Update in the state
                                                 setSupportRequests(supportRequests.map(req =>
                                                     req.id === updatedRequest.id ? updatedRequest : req
                                                 ));
-
-                                                // Update selected request
                                                 setSelectedRequest(updatedRequest);
                                             }
                                         }}
@@ -2866,7 +2447,6 @@ function AdminPanel() {
 
 
     const renderRevenue = () => {
-        // Check if data is still loading
         if (isLoading) {
             return (
                 <div className="revenue-container">
@@ -2877,8 +2457,6 @@ function AdminPanel() {
                 </div>
             );
         }
-
-        // Check if we have data structure but it's empty
         if (!revenueData || !revenueData.dailyRevenue || revenueData.dailyRevenue.length === 0) {
             return (
                 <div className="revenue-container">
@@ -2911,8 +2489,6 @@ function AdminPanel() {
                 </div>
             );
         }
-
-        // Destructure with fallback values
         const {
             dailyRevenue = [],
             deviceRevenue = [],
@@ -2926,12 +2502,9 @@ function AdminPanel() {
             weekChange = '0%',
             monthChange = '0%'
         } = revenueData;
-
-        // Handle period change
         const handleRevenuePeriodChange = async (e) => {
             const newPeriod = e.target.value;
             setRevenuePeriod(newPeriod);
-            // Reset hovered bar when period changes
             setHoveredRevenueBar(null);
 
             try {
@@ -3002,9 +2575,7 @@ function AdminPanel() {
                     <div className="revenue-chart" style={{ marginTop: '50px' }}>
                         <div className={`chart-bars ${revenuePeriod === 'today' ? 'single-day-chart' : ''}`}>
                             {(() => {
-                                // Calculate maximum value to determine scaling factor
                                 const maxTotal = Math.max(...dailyRevenue.map(day => day.total || 0));
-                                // Adjust scaling factor to ensure maximum height is around 220px
                                 const scalingFactor = Math.max(maxTotal / 220, 10);
 
                                 return revenueData.dailyRevenue.map((day, index) => (
@@ -3068,11 +2639,9 @@ function AdminPanel() {
                             </thead>
                             <tbody>
                             {(() => {
-                                // Calculate total revenue
                                 const totalRevenue = revenueData.deviceRevenue.reduce((sum, item) => sum + (item.revenue_amount || item.revenue || 0), 0);
 
                                 return revenueData.deviceRevenue.map((item, index) => {
-                                    // Calculate percentage for each device
                                     const percentage = totalRevenue > 0 ?
                                         (((item.revenue_amount || item.revenue || 0) / totalRevenue) * 100).toFixed(1) : "0.0";
 
@@ -3120,25 +2689,18 @@ function AdminPanel() {
         );
     };
     useEffect(() => {
-        // Create a function to handle notification updates
         const handleNotificationUpdate = async () => {
             console.log('Notification update event triggered');
             try {
                 const notificationsData = await getNotifications();
                 const unreadCount = notificationsData.filter(n => !n.isRead).length;
-
-                // Update states
                 setNotifications(notificationsData);
                 setUnreadNotifications(unreadCount);
             } catch (error) {
                 console.error('Error handling notification update:', error);
             }
         };
-
-        // Add the event listener
         window.addEventListener('notification-update', handleNotificationUpdate);
-
-        // Clean up
         return () => {
             window.removeEventListener('notification-update', handleNotificationUpdate);
         };

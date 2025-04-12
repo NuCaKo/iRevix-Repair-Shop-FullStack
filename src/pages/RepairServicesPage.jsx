@@ -7,16 +7,11 @@ import RepairShowcase from '../components/RepairShowcase';
 import '../css/mainPage.css';
 import '../css/repairServices.css';
 import { useCart } from '../CartContext'; // Import useCart hook
-
-// All icons will use FontAwesome icons
-
-// Import images for repair showcase
-import repairImage1 from '../images/repair1.jpg'; // MacBook repair
-import repairImage2 from '../images/repair2.jpg'; // Apple Watch repair
-import repairImage3 from '../images/repair3.jpg'; // iPad repair
-import repairImage4 from '../images/repair4.jpg'; // iPhone repair
-import repairImage5 from '../images/repair5.jpg'; // AirPods repair
-
+import repairImage1 from '../images/repair1.png'; // MacBook repair
+import repairImage2 from '../images/repair2.jpeg'; // Apple Watch repair
+import repairImage3 from '../images/repair3.png'; // iPad repair (corrected)
+import repairImage4 from '../images/repair4.png'; // iPhone repair
+import repairImage5 from '../images/repair5.png'; // AirPods repair
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faWrench,
@@ -111,42 +106,29 @@ function RepairServicesPage() {
     const [hasCalculatedPrice, setHasCalculatedPrice] = useState(false); // Track if price has been calculated
     const { addToCart } = useCart(); // Get addToCart from context
     const navigate = useNavigate(); // Add useNavigate hook
-
-    // Page load animation
     useEffect(() => {
         setIsVisible(true);
-        // Scroll to top when component mounts
         window.scrollTo(0, 0);
     }, []);
-
-    // Auto-calculate price when problem selection changes
     useEffect(() => {
-        // Reset validation errors first
         setValidationError('');
-
-        // If no problems selected, reset price and error message
         if (selectedProblems.length === 0) {
             setEstimatedPrice(null);
             setNumericPrice(0);
             setHasCalculatedPrice(false);
             return;
         }
-
-        // First check if any standard problem (not Other) is selected but missing sub-issue
         const standardProblemsWithoutSubIssues = selectedProblems.filter(problem => {
             return problem !== 'Other' && (!subProblems[problem] || subProblems[problem] === '');
         });
 
         if (standardProblemsWithoutSubIssues.length > 0) {
-            // If a standard dropdown shows "Select Issue", show more specific message
             setValidationError("Please choose the specific issue from the dropdown");
             setEstimatedPrice(null);
             setNumericPrice(0);
             setHasCalculatedPrice(false);
             return;
         }
-
-        // Then check for empty Other description
         const hasOtherSelected = selectedProblems.includes('Other');
         const isOtherDescriptionEmpty = hasOtherSelected && issueDescription.trim() === '';
 
@@ -157,22 +139,15 @@ function RepairServicesPage() {
             setHasCalculatedPrice(false);
             return;
         }
-
-        // All issues are complete, calculate price
         calculatePrice();
         setHasCalculatedPrice(true);
 
     }, [selectedProblems, subProblems, issueDescription]);
-
-    // Reset price when device or model changes
     useEffect(() => {
-        // Reset price when device or model changes
         setEstimatedPrice(null);
         setNumericPrice(0);
         setHasCalculatedPrice(false);
     }, [selectedDevice, selectedModel]);
-
-    // Animation variants
     const fadeInUp = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
@@ -187,14 +162,10 @@ function RepairServicesPage() {
             }
         }
     };
-
-    // Slide in from right animation
     const slideInRight = {
         hidden: { x: 100, opacity: 0 },
         visible: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
     };
-
-    // Device information with icons - all using FontAwesome icons
     const deviceIcons = {
         Mac: {
             icon: null,
@@ -241,7 +212,6 @@ function RepairServicesPage() {
 
     const handleModelSelection = (model) => {
         setSelectedModel(model);
-        // Reset price when model changes
         setEstimatedPrice(null);
         setNumericPrice(0);
         setHasCalculatedPrice(false);
@@ -252,7 +222,6 @@ function RepairServicesPage() {
             let newProblems;
             if (prevProblems.includes(problem)) {
                 newProblems = prevProblems.filter((p) => p !== problem);
-                // Also remove the subproblem when removing the problem
                 setSubProblems((prev) => {
                     const newSubProblems = { ...prev };
                     delete newSubProblems[problem];
@@ -273,19 +242,13 @@ function RepairServicesPage() {
     };
 
     const calculatePrice = () => {
-        // Don't calculate price if no problems are selected
         if (selectedProblems.length === 0) {
             setEstimatedPrice(null);
             setNumericPrice(0);
             setHasCalculatedPrice(false);
             return;
         }
-
-        // Special handling for "Other" issues - we don't require description for price calculation
-        // but we'll add a note if it's included
         const hasOtherSelected = selectedProblems.includes('Other');
-
-        // Check regular issues (non-Other)
         const regularProblems = selectedProblems.filter(problem => problem !== 'Other');
         const hasUnselectedRegularIssues = regularProblems.some(problem => {
             return !subProblems[problem] || subProblems[problem] === '';
@@ -296,8 +259,6 @@ function RepairServicesPage() {
             setNumericPrice(0);
             return;
         }
-
-        // Simulated pricing logic
         let basePrice = 0;
 
         if (selectedProblems.includes('Battery') && subProblems['Battery']) {
@@ -325,40 +286,26 @@ function RepairServicesPage() {
         if (selectedProblems.includes('Other') && issueDescription.trim() !== '') {
             basePrice += 45; // Base price for other issues
         }
-
-        // If no specific issues were found but problems are selected
         if (basePrice === 0 && selectedProblems.length > 0) {
             basePrice = 50; // Default base price
         }
-
-        // Set numeric price for cart
         setNumericPrice(basePrice);
         setEstimatedPrice(`$${basePrice} - $${basePrice + 50}`);
     };
-
-    // State to track validation error messages
     const [validationError, setValidationError] = useState('');
 
     const handleGetPrice = () => {
-        // Reset any previous validation errors
         setValidationError('');
-
-        // Don't calculate price if no problems are selected
         if (selectedProblems.length === 0) {
             setValidationError("Please select at least one problem to get a price estimate.");
             return;
         }
-
-        // Check if any selected problems are missing their sub-selection
         const hasIncompleteIssues = selectedProblems.some(problem => {
             if (problem === 'Other') {
-                // Allow any input for Other, even very short descriptions
                 return issueDescription.trim() === '';
             }
             return !subProblems[problem] || subProblems[problem] === '';
         });
-
-        // For any incomplete issues, show repair shop message
         if (hasIncompleteIssues) {
             setValidationError("For custom issues, the price will be calculated at the repair shop");
             return;
@@ -367,30 +314,21 @@ function RepairServicesPage() {
         calculatePrice();
         setHasCalculatedPrice(true);
     };
-
-    // Handle adding repair to cart and navigating to cart page
     const handleProceedWithRepair = () => {
-        // Don't proceed if no problems are selected
         if (selectedProblems.length === 0) {
             alert("Please select at least one problem before proceeding with repair.");
             return;
         }
-
-        // Ensure price has been calculated
         if (!hasCalculatedPrice || numericPrice === 0) {
             alert("Please get a price estimate before proceeding.");
             return;
         }
-
-        // Collect details for repair item description
         const problemDetails = selectedProblems.map(problem => {
             if (subProblems[problem]) {
                 return `${problem}: ${subProblems[problem]}`;
             }
             return problem;
         }).join(', ');
-
-        // Create repair service item
         const repairItem = {
             id: `repair-${Date.now()}`, // Unique ID using timestamp
             name: `${selectedDevice} ${selectedModel} Repair`,
@@ -400,23 +338,13 @@ function RepairServicesPage() {
             type: 'service',
             icon: deviceIcons[selectedDevice]?.faIcon || faWrench
         };
-
-        // Add to cart
         addToCart(repairItem);
-
-        // Show success message
         alert(`Added ${repairItem.name} to your cart!`);
-
-        // Navigate to cart page
         navigate('/cart');
     };
-
-    // Icon color indicator
     const getIconColor = (device) => {
         return selectedDevice === device ? "#28a745" : "currentColor"; // Green if selected
     };
-
-    // Get model options based on selected device
     const getModelOptions = (device) => {
         switch(device) {
             case 'Mac':

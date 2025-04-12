@@ -18,15 +18,10 @@ import {
 import '../css/FAQPage.css';
 
 const FAQPage = () => {
-    // Sayfa yüklendiğinde en üste kaydırma işlemi
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
-
-    // Active category state
     const [activeCategory, setActiveCategory] = useState('general');
-
-    // FAQ data organized by categories
     const faqData = {
         general: [
             {
@@ -155,11 +150,7 @@ const FAQPage = () => {
             }
         ]
     };
-
-    // State to track which questions are expanded
     const [expandedQuestions, setExpandedQuestions] = useState({});
-
-    // Toggle question expansion
     const toggleQuestion = (category, index) => {
         setExpandedQuestions(prev => ({
             ...prev,

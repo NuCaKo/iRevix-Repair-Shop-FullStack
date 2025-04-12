@@ -11,8 +11,6 @@ const ProfilePage = () => {
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
-
-    // User profile information
     const [userProfile, setUserProfile] = useState({
         firstName: '',
         lastName: '',
@@ -26,29 +24,20 @@ const ProfilePage = () => {
         certification: '',
         twoFactorEnabled: false
     });
-
-    // Password change form
     const [passwordForm, setPasswordForm] = useState({
         currentPassword: '',
         newPassword: '',
         confirmNewPassword: ''
     });
-
-    // Contact preferences
     const [contactPreferences, setContactPreferences] = useState({
         email: true,
         sms: true,
         marketing: false
     });
-
-    // Form errors
     const [errors, setErrors] = useState({});
-
-    // Profile information for editing
     const [editableProfile, setEditableProfile] = useState({...userProfile});
 
     useEffect(() => {
-        // Get user information from localStorage
         const storedUser = localStorage.getItem('currentUser');
 
         if (storedUser) {
@@ -79,7 +68,6 @@ const ProfilePage = () => {
                 certification: user.certification || ''
             });
         } else {
-            // If user is not logged in, redirect to login page
             navigate('/login');
         }
     }, [navigate]);
@@ -100,8 +88,6 @@ const ProfilePage = () => {
             ...editableProfile,
             [name]: type === 'checkbox' ? checked : value
         });
-
-        // Clear errors
         if (errors[name]) {
             setErrors({
                 ...errors,
@@ -157,13 +143,8 @@ const ProfilePage = () => {
         setIsSaving(true);
 
         try {
-            // Timeout for simulation
             await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Successful update - update profile information
             setUserProfile({...editableProfile});
-
-            // Update user information in localStorage
             const storedUser = JSON.parse(localStorage.getItem('currentUser'));
             const updatedUser = {
                 ...storedUser,
@@ -184,7 +165,6 @@ const ProfilePage = () => {
             setConfirmPassword('');
             setPasswordError('');
         } catch (error) {
-            // In case of error
             setPasswordError('Password verification failed or an error occurred.');
         } finally {
             setIsSaving(false);
@@ -197,8 +177,6 @@ const ProfilePage = () => {
             ...passwordForm,
             [name]: value
         });
-
-        // Clear errors
         if (errors[name]) {
             setErrors({
                 ...errors,
@@ -242,10 +220,7 @@ const ProfilePage = () => {
         setIsSaving(true);
 
         try {
-            // Timeout for simulation
             await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Successful password change
             setPasswordForm({
                 currentPassword: '',
                 newPassword: '',
@@ -253,11 +228,8 @@ const ProfilePage = () => {
             });
 
             setErrors({});
-
-            // Show information message
             alert('Your password has been successfully changed!');
         } catch (error) {
-            // In case of error
             setErrors({
                 passwordGeneral: 'An error occurred while changing the password. Please check your current password and try again.'
             });
@@ -274,17 +246,11 @@ const ProfilePage = () => {
         setIsSaving(true);
 
         try {
-            // Timeout for simulation
             await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Successful deletion - log out and redirect to login page
             alert('Your account has been successfully deleted!');
-
-            // Clear user information from localStorage and log out
             localStorage.removeItem('currentUser');
             navigate('/');
         } catch (error) {
-            // In case of error
             setPasswordError('Password verification failed or an error occurred.');
         } finally {
             setIsSaving(false);
@@ -293,11 +259,8 @@ const ProfilePage = () => {
 
     const handleContactPreferencesSubmit = (e) => {
         e.preventDefault();
-        // Save contact preferences here (for simulation)
         alert('Your contact preferences have been successfully updated!');
     };
-
-    // General Information View (for customer, admin, and technician)
     const renderGeneralInfoView = () => {
         if (isEditing) {
             return renderProfileEdit();
@@ -378,8 +341,6 @@ const ProfilePage = () => {
             </div>
         );
     };
-
-    // Profile Edit Form (for customer, admin, and technician)
     const renderProfileEdit = () => {
         return (
             <div className="profile-section">
@@ -558,8 +519,6 @@ const ProfilePage = () => {
             </div>
         );
     };
-
-    // Password Change Form
     const renderPasswordForm = () => {
         return (
             <div className="profile-section">
@@ -626,8 +585,6 @@ const ProfilePage = () => {
             </div>
         );
     };
-
-    // Contact Preferences
     const renderContactPreferences = () => {
         return (
             <div className="profile-section">
@@ -684,8 +641,6 @@ const ProfilePage = () => {
             </div>
         );
     };
-
-    // Account Deletion Section
     const renderAccountDeletion = () => {
         return (
             <div className="profile-section">
@@ -714,8 +669,6 @@ const ProfilePage = () => {
             </div>
         );
     };
-
-    // Password Confirmation Modal
     const renderPasswordConfirmationModal = () => {
         if (!showPasswordConfirmation) return null;
 
@@ -772,8 +725,6 @@ const ProfilePage = () => {
             </div>
         );
     };
-
-    // Account Deletion Confirmation Modal
     const renderDeleteConfirmationModal = () => {
         if (!showDeleteConfirmation) return null;
 

@@ -26,18 +26,12 @@ function CheckoutPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const { cartItems } = useCart(); // Get cart items from context
-
-    // Get the type from location state (parts or services)
     const orderType = location.state?.type || 'all';
-
-    // Filter items based on type
     const itemsToCheckout = orderType === 'all'
         ? cartItems
         : orderType === 'parts'
             ? cartItems.filter(item => item.type === 'part')
             : cartItems.filter(item => item.type === 'service');
-
-    // Form state
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -47,18 +41,13 @@ function CheckoutPage() {
         city: '',
         zipCode: '',
         paymentMethod: 'credit',
-        // For services only
         appointmentDate: '',
         appointmentTime: ''
     });
-
-    // Calculate totals
     const subtotal = itemsToCheckout.reduce((total, item) => total + (item.price * item.quantity), 0);
     const tax = subtotal * 0.0725; // 7.25% tax rate
     const shipping = subtotal > 100 ? 0 : 10; // Free shipping over $100
     const total = subtotal + tax + shipping;
-
-    // Handle form input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -66,18 +55,12 @@ function CheckoutPage() {
             [name]: value
         }));
     };
-
-    // Handle form submission
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        // Calculate totals for order data
         const subtotal = itemsToCheckout.reduce((total, item) => total + (item.price * item.quantity), 0);
         const tax = subtotal * 0.0725; // 7.25% tax rate
         const shipping = subtotal > 100 ? 0 : 10; // Free shipping over $100
         const total = subtotal + tax + shipping;
-
-        // Create order data object
         const orderData = {
             items: itemsToCheckout,
             subtotal,
@@ -86,14 +69,10 @@ function CheckoutPage() {
             total,
             formData
         };
-
-        // Handle different payment methods
         if (formData.paymentMethod === 'inStore') {
-            // For in-store payment, just show notification and redirect to home
             alert('Your order has been placed! Please visit our store to complete the payment.');
             navigate('/', { replace: true });
         } else {
-            // For credit card or PayPal, go to payment page
             navigate('/payment', {
                 state: {
                     orderData,
@@ -102,21 +81,14 @@ function CheckoutPage() {
             });
         }
     };
-
-    // Format price to USD
     const formatPrice = (price) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD'
         }).format(price);
     };
-
-    // Get icon based on item type
     const getItemIcon = (item) => {
-        // Use the item's icon if available
         if (item.icon) return item.icon;
-
-        // Otherwise assign based on item type
         if (item.type === 'service') {
             if (item.name.includes('iPhone')) return faMobileAlt;
             if (item.name.includes('MacBook') || item.name.includes('Mac')) return faLaptop;
@@ -125,7 +97,6 @@ function CheckoutPage() {
             if (item.name.includes('Watch')) return faClock;
             return faWrench;
         } else {
-            // Part type
             if (item.name.includes('Battery')) return faBatteryFull;
             if (item.name.includes('Screen')) return faTabletScreenButton;
             if (item.name.includes('Logic Board') || item.name.includes('Motherboard')) return faMicrochip;
@@ -133,8 +104,6 @@ function CheckoutPage() {
             return faTools;
         }
     };
-
-    // Check if there are items to checkout
     if (itemsToCheckout.length === 0) {
         return (
             <div className="checkout-page-container">

@@ -1,5 +1,3 @@
-// SupportService.js
-// A shared service for handling support requests between user and admin interfaces
 
 class SupportService {
     constructor() {
@@ -7,37 +5,24 @@ class SupportService {
     }
 
     init() {
-        // Initialize from localStorage if available
         const storedRequests = localStorage.getItem('supportRequests');
         this.supportRequests = storedRequests ? JSON.parse(storedRequests) : [];
-
-        // Initialize last ID
         this.lastId = this.supportRequests.length > 0
             ? Math.max(...this.supportRequests.map(req => req.id))
             : 0;
     }
-
-    // Save current state to localStorage
     saveToStorage() {
         localStorage.setItem('supportRequests', JSON.stringify(this.supportRequests));
     }
-
-    // Get all support requests
     getAllRequests() {
         return this.supportRequests;
     }
-
-    // Get requests for a specific user
     getUserRequests(userId) {
         return this.supportRequests.filter(req => req.userId === userId);
     }
-
-    // Get a specific request by ID
     getRequestById(id) {
         return this.supportRequests.find(req => req.id === id);
     }
-
-    // Create a new support request
     createRequest(userId, username, requestData) {
         const newId = ++this.lastId;
 
@@ -78,8 +63,6 @@ class SupportService {
 
         return newRequest;
     }
-
-    // Add a message to a request
     addMessage(requestId, senderType, senderName, messageText) {
         const request = this.getRequestById(requestId);
 
@@ -100,19 +83,13 @@ class SupportService {
                 hour12: true
             })
         };
-
-        // For agent messages, add the agent name
         if (senderType === "agent") {
             newMessage.agentName = senderName;
         }
-
-        // Update request status if it's not already closed
         if (request.status !== "Closed") {
             if (senderType === "agent") {
                 request.status = "In Progress";
             }
-
-            // Mark as unread for the other party
             if (senderType === "agent") {
                 request.isReadByCustomer = false;
             } else if (senderType === "customer") {
@@ -125,8 +102,6 @@ class SupportService {
 
         return request;
     }
-
-    // Mark a request as read by admin
     markAsReadByAdmin(requestId) {
         const request = this.getRequestById(requestId);
 
@@ -137,8 +112,6 @@ class SupportService {
 
         return request;
     }
-
-    // Mark a request as read by customer
     markAsReadByCustomer(requestId) {
         const request = this.getRequestById(requestId);
 
@@ -149,15 +122,11 @@ class SupportService {
 
         return request;
     }
-
-    // Close a support request
     closeRequest(requestId) {
         const request = this.getRequestById(requestId);
 
         if (request) {
             request.status = "Closed";
-
-            // Add a system message about closure
             request.messages.push({
                 id: request.messages.length + 1,
                 sender: "system",
@@ -177,21 +146,15 @@ class SupportService {
 
         return request;
     }
-
-    // Get unread count for admin
     getUnreadCountForAdmin() {
         return this.supportRequests.filter(req => !req.isRead).length;
     }
-
-    // Get unread count for a specific user
     getUnreadCountForUser(userId) {
         return this.supportRequests.filter(req =>
             req.userId === userId && !req.isReadByCustomer
         ).length;
     }
 }
-
-// Create a singleton instance
 const supportService = new SupportService();
 
 export default supportService;

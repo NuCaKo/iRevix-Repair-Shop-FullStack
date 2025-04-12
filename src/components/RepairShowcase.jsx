@@ -1,4 +1,3 @@
-// src/components/RepairShowcase.jsx
 
 import React from 'react';
 import '../css/repairShowcase.css';

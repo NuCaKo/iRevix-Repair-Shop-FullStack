@@ -7,12 +7,9 @@ import html2canvas from 'html2canvas';
 import '../css/ServicePage.css';
 import ServiceReport from '../components/ServiceReport';
 import axios from 'axios';
-
-// Define API base URL
 const API_BASE_URL = 'http://localhost:8080/api';
 
 const ServicePanel = () => {
-    // State declarations
     const [activeTab, setActiveTab] = useState('dashboard');
     const [repairs, setRepairs] = useState([]);
     const [selectedRepair, setSelectedRepair] = useState(null);
@@ -62,12 +59,8 @@ const ServicePanel = () => {
         status: 'Pending', // Using backend status format
         date: new Date().toISOString().split('T')[0]
     });
-
-    // Refs
     const reportRef = useRef(null);
     const articleSectionRef = useRef(null);
-
-    // Fetch data when component mounts
     useEffect(() => {
         fetchAllData();
     }, []);
@@ -88,16 +81,10 @@ const ServicePanel = () => {
 
             const repairsResponse = await axios.get(`${API_BASE_URL}/repair-orders`);
             setRepairs(repairsResponse.data || []);
-
-            // Fetch technicians
             const techniciansResponse = await axios.get(`${API_BASE_URL}/technicians`);
             setTechnicians(techniciansResponse.data || []);
-
-            // Fetch parts/inventory
             const partsResponse = await axios.get(`${API_BASE_URL}/inventory`);
             setParts(partsResponse.data || []);
-
-            // Fetch appointments
             const appointmentsResponse = await axios.get(`${API_BASE_URL}/appointments`);
             const transformedAppointments = (appointmentsResponse.data || []).map(apt => {
                 const dateTime = new Date(apt.appointmentDateTime);
@@ -118,8 +105,6 @@ const ServicePanel = () => {
 
 
             setAppointments(transformedAppointments);
-
-            // Fetch knowledge base articles
             const kbResponse = await axios.get(`${API_BASE_URL}/knowledge-base`);
             setKbArticles(kbResponse.data || []);
 
@@ -131,10 +116,6 @@ const ServicePanel = () => {
             setLoading(false);
         }
     };
-
-
-
-    // Calculate derived values based on repairs state
     const pendingRepairsCount = repairs.filter(r => r.status === "Pending").length;
     const inProgressRepairs = repairs.filter(r => r.status === "In Progress" || r.status === "Diagnosing").length;
     const completedRepairs = repairs.filter(r => r.status === "Completed").length;
@@ -155,19 +136,11 @@ const ServicePanel = () => {
         repair.status === "Awaiting Parts"
     );
 
-
-
-    // CRUD functions for repairs
-
     const handleAddRepair = async (e) => {
         e.preventDefault();
         try {
             const response = await axios.post(`${API_BASE_URL}/repair-orders`, newRepair);
-
-            // Refresh data after adding repair
             fetchAllData();
-
-            // Reset form and close modal
             setShowAddRepairModal(false);
             setNewRepair({
                 customer: '',
@@ -187,14 +160,10 @@ const ServicePanel = () => {
     const assignRepair = async (repair) => {
         try {
             console.log("🛠 Assigning repair:", repair);
-
-            // Step 1: Status güncellemesi
             const statusResponse = await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
                 status: "In Progress"
             });
             console.log("✅ Status updated:", statusResponse.status);
-
-            // Step 2: Teknisyen atama
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             console.log("👤 Current User from localStorage:", currentUser);
 
@@ -204,11 +173,7 @@ const ServicePanel = () => {
             } else {
                 console.warn("⚠️ No valid currentUser found in localStorage.");
             }
-
-            // Step 3: Verileri yenile
             await fetchAllData();
-
-            // Step 4: UI güncelle
             const updatedRepair = { ...repair, status: "IN_REPAIR" };
             setSelectedRepair(updatedRepair);
             setActiveTab('tasks');
@@ -222,12 +187,9 @@ const ServicePanel = () => {
 
     const rejectRepair = async (repair) => {
         try {
-            // You might want a specific status for rejected repairs
             await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
                 status: "Pending"
             });
-
-            // Refresh data
             fetchAllData();
 
             if (selectedRepair && selectedRepair.id === repair.id) {
@@ -241,17 +203,12 @@ const ServicePanel = () => {
 
     const updateStatus = async (id, newStatus) => {
         try {
-            // Convert frontend status to backend status if needed
             const backendStatus = newStatus; // This function assumes you're passing the correct backend status
 
             await axios.put(`${API_BASE_URL}/repair-orders/${id}/status`, {
                 status: backendStatus
             });
-
-            // Refresh data
             fetchAllData();
-
-            // Update selected repair if it's the one being modified
             if (selectedRepair && selectedRepair.id === id) {
                 setSelectedRepair({ ...selectedRepair, status: backendStatus });
             }
@@ -294,11 +251,7 @@ const ServicePanel = () => {
             };
 
             await axios.post(`${API_BASE_URL}/repair-orders/${repairId}/notes`, newNote);
-
-            // Refresh data
             fetchAllData();
-
-            // Update local state if needed
             const updatedRepair = repairs.find(repair => repair.id === repairId);
             if (selectedRepair && selectedRepair.id === repairId && updatedRepair) {
                 setSelectedRepair(updatedRepair);
@@ -311,20 +264,14 @@ const ServicePanel = () => {
         }
     };
 
-    // Image handling functions
-
     const handleImageUpload = async (repairId, e, imageType = 'during') => {
         const file = e.target.files[0];
         if (!file) return;
-
-        // Dosya boyutunu kontrol edelim (örneğin 20MB = 20 * 1024 * 1024)
         const maxSize = 20 * 1024 * 1024;
         if (file.size > maxSize) {
             alert("Dosya boyutu çok büyük! Lütfen 20MB'den küçük bir dosya seçin.");
             return;
         }
-
-        // Devam eden upload işlemi...
         try {
             const formData = new FormData();
             formData.append('image', file);
@@ -345,9 +292,6 @@ const ServicePanel = () => {
             alert("Failed to upload image. Please try again.");
         }
     };
-
-
-    // PDF generation
 
     const generatePDF = async () => {
         if (!reportRef.current || !selectedRepair?.id) return;
@@ -386,13 +330,9 @@ const ServicePanel = () => {
             const x = (pdf.internal.pageSize.getWidth() - canvas.width * ratio) / 2;
             const y = 30;
             pdf.addImage(imgData, 'PNG', x, y, canvas.width * ratio, canvas.height * ratio);
-
-            // PDF blob oluştur
             const pdfBlob = pdf.output('blob');
             const formData = new FormData();
             formData.append("file", pdfBlob, `service_report_${selectedRepair.id}.pdf`);
-
-            // Backend'e gönder
             const response = await fetch(`http://localhost:8080/api/repair-orders/${selectedRepair.id}/upload-pdf`, {
                 method: "POST",
                 body: formData,
@@ -409,11 +349,6 @@ const ServicePanel = () => {
             alert("Error uploading service report PDF.");
         }
     };
-
-
-
-
-    // Utility functions
 
     const requestPart = async (itemId) => {
         try {
@@ -456,10 +391,6 @@ const ServicePanel = () => {
         const aptDate = new Date(apt.appointmentDateTime);
         return aptDate.toISOString().slice(0, 10) === currentDate.toISOString().slice(0, 10);
     });
-
-    //console.log("💡 Today Appointments:", todayAppointments);
-    //console.log("📅 Current Date:", currentDate.toISOString().slice(0, 10));
-    //console.log("🗓️ All Appointment Dates:", appointments.map(a => a.appointmentDateTime));
 
     useEffect(() => {
         if (selectedRepair && selectedRepair.images) {
@@ -561,7 +492,6 @@ const ServicePanel = () => {
                     </div>
                 );
             case 'repair-requests':
-                // Determine which repairs to show based on showHistory flag
                 const repairsToShow = showHistory
                     ? repairs.filter(repair => repair.status === "Completed")
                     : pendingRepairs;
@@ -571,7 +501,6 @@ const ServicePanel = () => {
                         <h2>{showHistory ? "Completed Repairs" : "Repair Requests"}</h2>
 
                         {selectedRepair && showHistory ? (
-                            // Show repair details when a repair is selected from history
                             <div>
                                 <button
                                     className="back-btn"
@@ -738,9 +667,6 @@ const ServicePanel = () => {
 
                                 {/* Enlarged Image Modal */}
                                 {enlargedImage && (
-                                    // In the case 'repair-requests' section, update the image modal CSS and structure
-
-                                    // Update the image modal to be smaller in the history view
                                     <div
                                         className="image-modal-overlay"
                                         onClick={() => setEnlargedImage(null)}
@@ -771,7 +697,6 @@ const ServicePanel = () => {
                                 )}
                             </div>
                         ) : (
-                            // Show repair list when no repair is selected
                             <>
                                 <div className="filter-controls">
                                     <div className="search-box">
@@ -1223,9 +1148,6 @@ const ServicePanel = () => {
 
             case 'inventory':
                 return (() => {
-
-
-                    // Apple device categories
                     const categories = [
                         {id: 'all', name: 'All Parts'},
                         {id: 'iphone', name: 'iPhone Parts'},
@@ -1234,8 +1156,6 @@ const ServicePanel = () => {
                         {id: 'watch', name: 'Apple Watch Parts'},
                         {id: 'airpods', name: 'AirPods Parts'}
                     ];
-
-                    // Filter parts based on search, category and stock level
                     const filteredParts = parts.filter(part => {
                         const matchesSearch =
                             part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1252,14 +1172,10 @@ const ServicePanel = () => {
 
                         return matchesSearch && matchesCategory && matchesStock;
                     });
-
-                    // Request stock for out-of-stock or low stock items
                     const openStockRequest = (part) => {
                         setStockRequestItem(part);
                         setShowStockRequestModal(true);
                     };
-
-                    // Submit the stock request
                     const submitStockRequest = () => {
                         const quantity = document.getElementById('request-quantity').value;
                         const priority = document.getElementById('request-priority').value;
@@ -1421,11 +1337,9 @@ const ServicePanel = () => {
                 })();
 
             case 'schedule':
-                // Group appointments by hour for the chart
                 const hourlyAppointments = Array(24).fill(0).map(() => []);
 
                 todayAppointments.forEach(apt => {
-                    // Parse the time string to get the hour
                     let hour = 0;
                     if (apt.time) {
                         const timeParts = apt.time.match(/(\d+):(\d+)\s*([AP]M)/);
@@ -1471,7 +1385,6 @@ const ServicePanel = () => {
                                     return (
                                         <div key={i} className="hour-slot">
                                             {hourlyAppointments[hour].map(apt => {
-                                                // Calculate position
                                                 let minutes = 0;
                                                 if (apt.time) {
                                                     const timeParts = apt.time.match(/(\d+):(\d+)\s*([AP]M)/);
@@ -1534,7 +1447,6 @@ const ServicePanel = () => {
                     </div>
                 );
             case 'knowledge-base':
-                // Knowledge Base categories
                 const kbCategories = [
                     { id: 'all', name: 'All Articles' },
                     { id: 'iphone', name: 'iPhone Repair' },
@@ -1544,21 +1456,14 @@ const ServicePanel = () => {
                     { id: 'airpods', name: 'AirPods Repair' },
                     { id: 'general', name: 'General Information' }
                 ];
-
-                // Filter articles based on search term and category
                 const filteredArticles = kbArticles?.filter(article => {
                     const matchesSearch = article.title.toLowerCase().includes(kbSearchTerm.toLowerCase());
                     const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
                     return matchesSearch && matchesCategory;
                 }) || [];
-
-                // Get popular articles for featured section
                 const popularArticles = kbArticles?.filter(article => article.popular) || [];
-
-                // Function to handle article selection and scrolling
                 const selectAndScrollToArticle = (article) => {
                     setSelectedArticle(article);
-                    // Scroll to article section after selection
                     if (articleSectionRef.current) {
                         setTimeout(() => {
                             const yOffset = -140; // Add a 80px offset from the top
@@ -1622,9 +1527,7 @@ const ServicePanel = () => {
                         <div className="kb-categories">
                             {filteredArticles.length > 0 ? (
                                 selectedCategory === 'all' ? (
-                                    // Show all categories with their articles when "all" is selected
                                     kbCategories.filter(cat => cat.id !== 'all').map(category => {
-                                        // Only include articles that belong to this specific category
                                         const categoryArticles = kbArticles.filter(
                                             article => article.category === category.id &&
                                                 article.title.toLowerCase().includes(kbSearchTerm.toLowerCase())
@@ -1654,7 +1557,6 @@ const ServicePanel = () => {
                                         );
                                     })
                                 ) : (
-                                    // When a specific category is selected, only show that category
                                     <div className="kb-category">
                                         <h3>{kbCategories.find(cat => cat.id === selectedCategory)?.name}</h3>
                                         <ul className="kb-list">

@@ -11,16 +11,10 @@ const OrdersPage = () => {
         email: '',
         role: ''
     });
-
-    // Modal state for order details
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
-
-    // Modal state for invoice viewing
     const [showInvoiceModal, setShowInvoiceModal] = useState(false);
     const [invoiceOrder, setInvoiceOrder] = useState(null);
-
-    // Current orders (active repair services)
     const [currentOrders, setCurrentOrders] = useState([
         {
             id: 201,
@@ -41,8 +35,6 @@ const OrdersPage = () => {
             cost: 2800
         }
     ]);
-
-    // Past orders (completed repair services)
     const [pastOrders, setPastOrders] = useState([
         {
             id: 101,
@@ -67,13 +59,10 @@ const OrdersPage = () => {
     ]);
 
     useEffect(() => {
-        // Get user information from localStorage
         const storedUser = localStorage.getItem('currentUser');
 
         if (storedUser) {
             const user = JSON.parse(storedUser);
-
-            // Only customer users can see this page
             if (user.role !== 'customer') {
                 navigate('/');
                 return;
@@ -86,14 +75,10 @@ const OrdersPage = () => {
                 role: user.role || ''
             });
         } else {
-            // If user is not logged in, redirect to home page
             navigate('/');
         }
     }, [navigate]);
-
-    // Function to show order details
     const viewOrderDetails = (order, e) => {
-        // Stop event propagation (to avoid conflict with card click)
         if (e) {
             e.stopPropagation();
         }
@@ -101,34 +86,20 @@ const OrdersPage = () => {
         setSelectedOrder(order);
         setShowDetailsModal(true);
     };
-
-    // Function to close detail modal
     const closeDetailsModal = () => {
         setShowDetailsModal(false);
         setSelectedOrder(null);
     };
-
-    // Function to view invoice
     const downloadInvoice = (order, e) => {
-        // Stop event propagation (to avoid conflict with card click)
         if (e) {
             e.stopPropagation();
         }
-
-        // Open the invoice viewing modal
         setInvoiceOrder(order);
         setShowInvoiceModal(true);
     };
-
-    // Function to print invoice
     const printInvoice = () => {
-        // Create print window
         const printWindow = window.open('', '_blank');
-
-        // Get invoice content
         const invoiceContent = document.querySelector('.invoice-content').cloneNode(true);
-
-        // Fix brand name - update all headers and footers
         const headerH1 = invoiceContent.querySelector('.invoice-header h1');
         if (headerH1) {
             headerH1.textContent = 'iRevix Repair Shop';
@@ -138,8 +109,6 @@ const OrdersPage = () => {
         if (footerP && footerP.length > 1) {
             footerP[1].textContent = 'iRevix Repair Shop © 2024 - All Rights Reserved';
         }
-
-        // Make some style adjustments
         const style = document.createElement('style');
         style.textContent = `
             body { 
@@ -218,37 +187,25 @@ const OrdersPage = () => {
                 padding-top: 10px;
             }
         `;
-
-        // Add content to print window
         printWindow.document.write('<html><head><title>Invoice - iRevix Repair Shop</title></head><body>');
         printWindow.document.head.appendChild(style);
         printWindow.document.body.appendChild(invoiceContent);
         printWindow.document.write('</body></html>');
-
-        // Wait for content to load before printing
         printWindow.document.close();
         printWindow.focus();
-
-        // Print after content is loaded
         printWindow.addEventListener('load', () => {
             setTimeout(() => {
                 printWindow.print();
-                // Automatically close after printing
                 printWindow.addEventListener('afterprint', () => {
                     printWindow.close();
                 });
             }, 500);
         });
     };
-
-    // Function to request support
     const requestSupport = (orderId, e) => {
-        // Stop event propagation (to avoid conflict with card click)
         if (e) {
             e.stopPropagation();
         }
-
-        // Redirect to support page or support request form
         navigate(`/support?orderId=${orderId}`);
     };
 

@@ -17,8 +17,6 @@ const ForgotPasswordPage = () => {
             ...formData,
             [name]: value
         });
-
-        // Clear errors as user types
         if (errors[name]) {
             setErrors({
                 ...errors,
@@ -50,10 +48,7 @@ const ForgotPasswordPage = () => {
         setIsLoading(true);
 
         try {
-            // Simulate password reset process
             await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Password reset email sent successfully
             setEmailSent(true);
         } catch (error) {
             setErrors({

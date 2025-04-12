@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import '../css/PolicyPages.css';
 
 const PrivacyPolicyPage = () => {
-    // Sayfa yüklendiğinde en üste kaydırma işlemi
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
