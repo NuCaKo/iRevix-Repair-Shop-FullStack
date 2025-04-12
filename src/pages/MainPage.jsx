@@ -14,6 +14,7 @@ import repairImage2 from '../images/repair2.jpeg'; // Apple Watch repair
 import repairImage3 from '../images/repair3.png'; // iPad repair (corrected)
 import repairImage4 from '../images/repair4.png'; // iPhone repair
 import repairImage5 from '../images/repair5.png'; // AirPods repair
+import repairImage6 from '../images/repair6.jpeg'; // Repair shop interior
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -429,77 +430,22 @@ function MainPage() {
                     </motion.div>
                 </div>
 
-                <div
+                <motion.div
                     className="how-it-works-image-container"
                     onClick={navigateToRepairServices}
                     style={{ cursor: 'pointer' }}
                 >
-                    <svg
-                        className="how-it-works-image"
-                        viewBox="0 0 1200 600"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <defs>
-                            <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#0062E6" />
-                                <stop offset="100%" stopColor="#33A7FF" />
-                            </linearGradient>
-                            <linearGradient id="tableGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor="#4B5563" />
-                                <stop offset="100%" stopColor="#1F2937" />
-                            </linearGradient>
-                        </defs>
-
-                        {/* Background */}
-                        <rect width="100%" height="100%" fill="url(#bgGradient)" />
-
-                        {/* Repair Shop Interior */}
-                        <rect x="100" y="150" width="1000" height="400" rx="10" fill="#ffffff" opacity="0.9" />
-
-                        {/* Repair Table */}
-                        <rect x="150" y="200" width="450" height="300" rx="5" fill="url(#tableGradient)" />
-
-                        {/* Devices on Table */}
-                        <rect x="200" y="250" width="120" height="80" rx="5" fill="#111827" stroke="#4B5563" strokeWidth="2" /> {/* iPhone */}
-                        <rect x="360" y="240" width="180" height="120" rx="5" fill="#111827" stroke="#4B5563" strokeWidth="2" /> {/* MacBook */}
-                        <circle cx="480" cy="300" r="30" fill="#111827" stroke="#4B5563" strokeWidth="2" /> {/* Apple Watch */}
-
-                        {/* Tools */}
-                        <rect x="200" y="380" width="350" height="40" rx="5" fill="#374151" /> {/* Tools Organizer */}
-                        <circle cx="230" cy="400" r="10" fill="#FCD34D" /> {/* Tool 1 */}
-                        <circle cx="270" cy="400" r="10" fill="#FBBF24" /> {/* Tool 2 */}
-                        <circle cx="310" cy="400" r="10" fill="#F59E0B" /> {/* Tool 3 */}
-                        <circle cx="350" cy="400" r="10" fill="#D97706" /> {/* Tool 4 */}
-                        <circle cx="390" cy="400" r="10" fill="#B45309" /> {/* Tool 5 */}
-
-                        {/* Technician */}
-                        <circle cx="700" cy="320" r="70" fill="#6B7280" /> {/* Head */}
-                        <rect x="670" y="390" width="60" height="110" fill="#1E40AF" /> {/* Body */}
-                        <rect x="630" y="390" width="40" height="80" fill="#1E40AF" rx="10" /> {/* Left Arm */}
-                        <rect x="730" y="390" width="40" height="100" fill="#1E40AF" rx="10" /> {/* Right Arm */}
-
-                        {/* Magnifying Glass */}
-                        <circle cx="770" cy="490" r="25" fill="none" stroke="#CBD5E1" strokeWidth="3" />
-                        <line x1="785" y1="505" x2="810" y2="530" stroke="#CBD5E1" strokeWidth="5" />
-
-                        {/* Customer */}
-                        <circle cx="950" cy="320" r="60" fill="#9CA3AF" /> {/* Head */}
-                        <rect x="925" y="380" width="50" height="120" fill="#3B82F6" /> {/* Body */}
-
-                        {/* Device in customer's hand */}
-                        <rect x="880" y="420" width="45" height="70" rx="5" fill="#E5E7EB" />
-
-                        {/* Counter/Desk */}
-                        <rect x="650" y="500" width="400" height="50" rx="5" fill="#1F2937" />
-
-                        {/* Text labels - hidden in image but useful for identification */}
-                        <text x="600" y="580" fill="#ffffff" fontSize="24" opacity="0" fontFamily="Arial">iRevix Repair Shop</text>
-                    </svg>
-                    <div className="image-overlay">
-                        <h3>Expert Repairs for All Apple Devices</h3>
-                        <p>Our technicians have years of experience fixing iPhones, MacBooks, iPads, Apple Watches, and more</p>
+                    <div className="image-wrapper">
+                        <img src={repairImage6} alt="How it works visual" className="how-it-works-image" />
+                        <div className="image-overlay">
+                            <h3>Expert Repairs for All Apple Devices</h3>
+                            <p>
+                                Our technicians have years of experience fixing iPhones, MacBooks, iPads, Apple Watches, and more
+                            </p>
+                        </div>
                     </div>
-                </div>
+                </motion.div>
+
             </motion.div>
 
             <motion.div
