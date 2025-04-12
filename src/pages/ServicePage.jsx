@@ -59,7 +59,7 @@ const ServicePanel = () => {
         model: '',
         issue: '',
         priority: 'Medium',
-        status: 'PENDING', // Using backend status format
+        status: 'Pending', // Using backend status format
         date: new Date().toISOString().split('T')[0]
     });
 

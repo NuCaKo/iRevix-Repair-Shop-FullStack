@@ -186,15 +186,17 @@ public class RepairOrderController {
 
     @GetMapping("/{id}/service-report")
     public ResponseEntity<RepairOrder> getServiceReport(@PathVariable Long id) {
-        return repairOrderService.getRepairOrderById(id)
-                .map(repairOrder -> {
-                    if (repairOrder.getServiceReportUrl() != null) {
-                        return ResponseEntity.ok(repairOrder);
-                    } else {
-                        return ResponseEntity.notFound().build();
-                    }
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Optional<RepairOrder> repairOrderOptional = repairOrderService.getRepairOrderById(id);
+
+        if (repairOrderOptional.isPresent()) {
+            RepairOrder repairOrder = repairOrderOptional.get();
+            if (repairOrder.getServiceReportUrl() != null) {
+                return ResponseEntity.ok(repairOrder);
+            }
+        }
+
+        return ResponseEntity.notFound().build();
     }
+
 
 }
