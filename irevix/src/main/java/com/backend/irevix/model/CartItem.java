@@ -25,6 +25,7 @@ public class CartItem {
     private String type; // 'part' veya 'service'
     private String partNumber;
     private String imageUrl;
+    private String description;
 
     @ManyToOne
     @JoinColumn(name = "part_id", nullable = true)
@@ -96,5 +97,12 @@ public class CartItem {
 
     public void setPart(ReplacementPart part) {
         this.part = part;
+    }
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

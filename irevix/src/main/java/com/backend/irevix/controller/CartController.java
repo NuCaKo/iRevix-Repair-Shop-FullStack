@@ -30,8 +30,12 @@ public class CartController {
             @RequestParam String userId,
             @RequestParam Long partId,
             @RequestParam(defaultValue = "1") int quantity,
-            @RequestParam(defaultValue = "part") String type) {
-        return ResponseEntity.ok(cartService.addItem(userId, partId, quantity, type));
+            @RequestParam(defaultValue = "part") String type,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Double price,
+            @RequestParam(required = false) String description) {
+
+        return ResponseEntity.ok(cartService.addItem(userId, partId, quantity, type, name, price, description));
     }
 
     @DeleteMapping("/clear/{userId}")

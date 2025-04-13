@@ -30,6 +30,9 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsConditionsPage from './pages/TermsConditionsPage';
 import ShippingPolicyPage from './pages/ShippingPolicyPage';
 import ReturnsRefundsPage from './pages/ReturnsRefundsPage';
+import PublicCartPage from './pages/PublicCartPage';
+import PublicCheckoutPage from './pages/PublicCheckoutPage';
+import PublicPaymentPage from './pages/PublicPaymentPage';
 
 import './App.css';
 const clerkPubKey = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || 'pk_test_c3RpcnJpbmctY29icmEtNDAuY2xlcmsuYWNjb3VudHMuZGV2JA';
@@ -175,29 +178,45 @@ function App() {
                                 </SignedIn>
                             }
                         />
+                        <Route path="/cart" element={
+                            <>
+                                <SignedIn>
+                                    <CartPage />
+                                </SignedIn>
+                                <SignedOut>
+                                    <PublicCartPage />
+                                </SignedOut>
+                            </>
+                        } />
 
-                        {/* Customer Protected Routes */}
+                        <Route path="/checkout" element={
+                            <>
+                                <SignedIn>
+                                    <CheckoutPage />
+                                </SignedIn>
+                                <SignedOut>
+                                    <PublicCheckoutPage />
+                                </SignedOut>
+                            </>
+                        } />
+
+                        <Route path="/payment" element={
+                            <>
+                                <SignedIn>
+                                    <PaymentPage />
+                                </SignedIn>
+                                <SignedOut>
+                                    <PublicPaymentPage />
+                                </SignedOut>
+                            </>
+                        } />
+
+                        {/* These routes remain protected */}
                         <Route
                             path="/profile"
                             element={
                                 <SignedIn>
                                     <ProfilePage />
-                                </SignedIn>
-                            }
-                        />
-                        <Route
-                            path="/cart"
-                            element={
-                                <SignedIn>
-                                    <CartPage />
-                                </SignedIn>
-                            }
-                        />
-                        <Route
-                            path="/checkout"
-                            element={
-                                <SignedIn>
-                                    <CheckoutPage />
                                 </SignedIn>
                             }
                         />

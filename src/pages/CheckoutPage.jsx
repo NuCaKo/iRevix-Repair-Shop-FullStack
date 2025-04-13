@@ -25,7 +25,9 @@ import { useCart } from '../CartContext'; // Import useCart hook
 function CheckoutPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { cartItems } = useCart(); // Get cart items from context
+    const { cartItems, isLoading } = useCart();
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [userRole, setUserRole] = useState('');
     const orderType = location.state?.type || 'all';
     const itemsToCheckout = orderType === 'all'
         ? cartItems
@@ -55,27 +57,49 @@ function CheckoutPage() {
             [name]: value
         }));
     };
+    useEffect(() => {
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            setIsLoggedIn(true);
+            setUserRole(user.role);
+        } else {
+            setIsLoggedIn(false);
+            setUserRole('');
+        }
+    }, []);
     const handleSubmit = (e) => {
         e.preventDefault();
-        const subtotal = itemsToCheckout.reduce((total, item) => total + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.0725; // 7.25% tax rate
-        const shipping = subtotal > 100 ? 0 : 10; // Free shipping over $100
-        const total = subtotal + tax + shipping;
+
+        // Calculate all values again to ensure they're current
+        const calculatedSubtotal = itemsToCheckout.reduce((total, item) => total + (item.price * item.quantity), 0);
+        const calculatedTax = calculatedSubtotal * 0.0725; // 7.25% tax rate
+        const calculatedShipping = calculatedSubtotal > 100 ? 0 : 10; // Free shipping over $100
+        const calculatedTotal = calculatedSubtotal + calculatedTax + calculatedShipping;
+
         const orderData = {
             items: itemsToCheckout,
-            subtotal,
-            tax,
-            shipping,
-            total,
-            formData
+            subtotal: calculatedSubtotal,
+            tax: calculatedTax,
+            shipping: calculatedShipping,
+            total: calculatedTotal,
+            formData: {...formData}
         };
+
         if (formData.paymentMethod === 'inStore') {
             alert('Your order has been placed! Please visit our store to complete the payment.');
             navigate('/', { replace: true });
         } else {
+            // Log the data being passed to make sure it's correct
+            console.log("Navigating to payment with data:", {
+                orderData,
+                paymentMethod: formData.paymentMethod
+            });
+
+            // Use navigate with state data
             navigate('/payment', {
                 state: {
-                    orderData,
+                    orderData: orderData,
                     paymentMethod: formData.paymentMethod
                 }
             });
@@ -104,6 +128,57 @@ function CheckoutPage() {
             return faTools;
         }
     };
+    if (!isLoggedIn) {
+        return (
+            <div className="checkout-page-container">
+                <div className="checkout-header">
+                    <h1>Checkout</h1>
+                </div>
+                <div className="empty-checkout">
+                    <h2>Please Log In to Continue</h2>
+                    <p>You need to be logged in as a customer to access the checkout page.</p>
+                    <button
+                        className="back-to-cart-btn"
+                        onClick={() => navigate('/login')}
+                    >
+                        Go to Login
+                    </button>
+                </div>
+            </div>
+        );
+    }
+    if (userRole !== 'customer') {
+        return (
+            <div className="checkout-page-container">
+                <div className="checkout-header">
+                    <h1>Checkout</h1>
+                </div>
+                <div className="empty-checkout">
+                    <h2>Access Restricted</h2>
+                    <p>Only customer accounts can access the checkout page.</p>
+                    <button
+                        className="back-to-cart-btn"
+                        onClick={() => navigate('/')}
+                    >
+                        Return to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
+    if (isLoading) {
+        return (
+            <div className="checkout-page-container">
+                <div className="checkout-header">
+                    <h1>Checkout</h1>
+                </div>
+                <div className="loading-checkout">
+                    <h2>Loading your cart...</h2>
+                    <p>Please wait while we fetch your cart items.</p>
+                </div>
+            </div>
+        );
+    }
     if (itemsToCheckout.length === 0) {
         return (
             <div className="checkout-page-container">

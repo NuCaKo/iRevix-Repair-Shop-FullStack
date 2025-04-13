@@ -23,7 +23,8 @@ function Navbar() {
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
-    const { getCartCount } = useCart(); // Get cart count from context
+    const { getCartCount, isLoading } = useCart();
+    const [cartCount, setCartCount] = useState(0);
     const { isSignedIn, user: clerkUser } = useUser();
     const { signOut: clerkSignOut } = useClerk();
     const [userData, setUserData] = useState({
@@ -32,6 +33,7 @@ function Navbar() {
         avatar: null
     });
     const [forceUpdate, setForceUpdate] = useState(0);
+
     const normalizeRole = (role) => {
         if (!role) return 'customer';
         if (role === 'technician') return 'tamirci';
@@ -39,12 +41,44 @@ function Navbar() {
         if (role === 'admin') return 'admin';
         return 'customer';
     };
+
     useEffect(() => {
         if (isLoggedIn && userData.role === 'tamirci' && location.pathname !== '/service' && location.pathname !== '/service/') {
-
             navigate('/service');
         }
     }, [isLoggedIn, userData.role, location.pathname, navigate]);
+
+    useEffect(() => {
+        // Initial count
+        setCartCount(getCartCount());
+
+        // Create a more robust handler
+        const handleCartUpdate = () => {
+            console.log("Cart updated event received in Navbar");
+            // Force immediate state update with the latest count
+            const newCount = getCartCount();
+            console.log("New cart count:", newCount);
+            setCartCount(newCount);
+        };
+
+        // Add event listener
+        document.addEventListener('cartUpdated', handleCartUpdate);
+
+        // Also add a regular polling interval (backup)
+        const interval = setInterval(() => {
+            const currentCount = getCartCount();
+            if (currentCount !== cartCount) {
+                console.log("Cart count changed via polling", cartCount, "->", currentCount);
+                setCartCount(currentCount);
+            }
+        }, 1000);
+
+        return () => {
+            document.removeEventListener('cartUpdated', handleCartUpdate);
+            clearInterval(interval);
+        };
+    }, [getCartCount, cartCount]);
+
     useEffect(() => {
         const checkLoggedInStatus = () => {
             if (isSignedIn && clerkUser) {
@@ -52,13 +86,14 @@ function Navbar() {
                 const appRole = clerkUser?.publicMetadata?.appRole;
                 const normalizedRole = appRole || normalizeRole(clerkRole);
 
-
                 setIsLoggedIn(true);
                 setUserData({
                     name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`,
                     role: normalizedRole,
                     avatar: clerkUser.imageUrl || null
                 });
+
+                // Store user information in localStorage
                 localStorage.setItem('currentUser', JSON.stringify({
                     id: clerkUser.id,
                     firstName: clerkUser.firstName || '',
@@ -66,6 +101,10 @@ function Navbar() {
                     email: clerkUser.primaryEmailAddress?.emailAddress || '',
                     role: normalizedRole
                 }));
+
+                // Add this line to broadcast user state change
+                const userStateChanged = new CustomEvent('userStateChanged');
+                document.dispatchEvent(userStateChanged);
             }
             else {
                 setIsLoggedIn(false);
@@ -76,12 +115,17 @@ function Navbar() {
                 });
                 setDropdownOpen(false);
                 localStorage.removeItem('currentUser');
+
+                // Also dispatch the event when user logs out
+                const userStateChanged = new CustomEvent('userStateChanged');
+                document.dispatchEvent(userStateChanged);
             }
         };
 
         checkLoggedInStatus();
         setForceUpdate(prev => prev + 1);
     }, [isSignedIn, clerkUser, location.pathname]); // Check when auth state or location changes
+
     useEffect(() => {
         const handleStorageChange = (e) => {
             if (e.key === 'iRevixCart') {
@@ -97,6 +141,7 @@ function Navbar() {
 
     const handleClick = () => setClick(!click);
     const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -109,6 +154,7 @@ function Navbar() {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
     const handleLogout = async () => {
         setDropdownOpen(false);
 
@@ -122,7 +168,6 @@ function Navbar() {
             });
             setForceUpdate(prev => prev + 1);
             if (isSignedIn) {
-
                 try {
                     if (process.env.NODE_ENV === 'development') {
                         await clerkSignOut();
@@ -141,6 +186,7 @@ function Navbar() {
             navigate('/');
         }
     };
+
     const handleHomeClick = (e) => {
         if (isLoggedIn && userData.role === 'tamirci') {
             e.preventDefault();
@@ -156,10 +202,11 @@ function Navbar() {
         }
         setClick(false); // Close mobile menu
     };
+
     const isTechnician = isLoggedIn && userData.role === 'tamirci';
     const isAdmin = isLoggedIn && userData.role === 'admin';
     const isCustomer = isLoggedIn && userData.role === 'customer';
-    const cartCount = getCartCount();
+    // REMOVE THIS LINE: const cartCount = getCartCount();
 
     return (
         <>

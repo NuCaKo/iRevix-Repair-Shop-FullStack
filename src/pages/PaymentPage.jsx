@@ -17,13 +17,37 @@ import '../css/PaymentPage.css';
 function PaymentPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const orderData = location.state?.orderData;
-    const paymentMethod = location.state?.paymentMethod;
+    const [orderData, setOrderData] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState('credit');
+
     useEffect(() => {
-        if (!orderData) {
-            navigate('/checkout');
+        console.log("Location state:", location.state);
+
+        if (location.state && location.state.orderData) {
+            console.log("Order data received:", location.state.orderData);
+            setOrderData(location.state.orderData);
+            setPaymentMethod(location.state.paymentMethod || 'credit');
+        } else {
+            console.error("No order data found in location state");
+
+            // Show a message before redirecting
+            alert("Payment information missing. Redirecting to checkout page.");
+
+            // Redirect to checkout with a delay to allow the alert to be seen
+            const timer = setTimeout(() => {
+                navigate('/checkout');
+            }, 500);
+
+            return () => clearTimeout(timer);
         }
-    }, [orderData, navigate]);
+    }, [location, navigate]);
+
+    useEffect(() => {
+        // This will help detect if orderData becomes null after being set
+        if (orderData === null) {
+            console.error("orderData became null after being set");
+        }
+    }, [orderData]);
 
     const [paymentData, setPaymentData] = useState({
         cardNumber: '',
@@ -45,12 +69,58 @@ function PaymentPage() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        // Get current user
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+        // Create an order record (you could save this to the backend)
+        const finalOrder = {
+            items: orderData?.items || [],
+            total: orderData?.total || 0,
+            customer: {
+                id: user.id,
+                name: `${user.firstName} ${user.lastName}`,
+                email: user.email
+            },
+            paymentMethod: paymentMethod,
+            paymentDetails: paymentMethod === 'credit' ? paymentData : { email: paypalEmail },
+            orderDate: new Date().toISOString()
+        };
+
+        console.log("Order completed:", finalOrder);
+
+        // Clear the cart (optional)
+        try {
+            if (user.id) {
+                fetch(`http://localhost:8080/api/cart/clear/${user.id}`, { method: "DELETE" });
+            }
+        } catch (err) {
+            console.error("Error clearing cart:", err);
+        }
+
         alert('Payment processed successfully!');
         navigate('/', { replace: true });
     };
 
+    // Show loading while waiting for data
     if (!orderData) {
-        return <div className="loading">Loading...</div>;
+        return (
+            <div className="payment-page-container">
+                <div className="payment-header">
+                    <h1>Payment Processing</h1>
+                </div>
+                <div className="loading-payment">
+                    <div className="spinner"></div>
+                    <p>Loading payment information...</p>
+                    <button
+                        className="back-btn"
+                        onClick={() => navigate('/checkout')}
+                    >
+                        ← Return to Checkout
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     const formatPrice = (price) => {

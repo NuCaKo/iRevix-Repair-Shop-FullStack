@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useCart } from '../CartContext';
 import {
     faTrash, faPlus, faMinus, faArrowLeft, faTools, faMicrochip,
     faTabletScreenButton, faSignInAlt
@@ -17,7 +18,9 @@ function CartPage() {
     const [cartItems, setCartItems] = useState([]);
     const [couponCode, setCouponCode] = useState('');
     const [discount, setDiscount] = useState(0);
+    const { refreshCart, isLoading } = useCart();
 
+    // Initial setup - check if user is logged in
     useEffect(() => {
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
@@ -28,26 +31,45 @@ function CartPage() {
         } else {
             setIsLoggedIn(false);
             setUserRole('');
+            setUserId(null);
         }
     }, []);
 
+    // Fetch cart data
     const fetchCart = async () => {
         if (isLoggedIn && userRole === 'customer' && userId) {
             try {
                 const res = await fetch(`http://localhost:8080/api/cart?userId=${encodeURIComponent(userId)}`);
-                const data = await res.json();
-                setCart(data);
-                setCartItems(data.items || []);
+                if (res.ok) {
+                    const data = await res.json();
+                    setCart(data);
+                    setCartItems(data.items || []);
+                } else {
+                    console.error("Error response fetching cart:", res.status);
+                    setCartItems([]);
+                }
             } catch (err) {
                 console.error("Error fetching cart:", err);
+                setCartItems([]);
             }
         }
     };
 
+    // Call fetchCart when component mounts and user is logged in
     useEffect(() => {
-        fetchCart();
+        let isMounted = true;
+
+        if (isLoggedIn && userRole === 'customer' && userId && isMounted) {
+            fetchCart();
+            // Don't call refreshCart here to avoid double fetching
+        }
+
+        return () => {
+            isMounted = false; // Cleanup to prevent state updates on unmounted component
+        };
     }, [isLoggedIn, userRole, userId]);
 
+    // Update item quantity
     const updateQuantity = async (itemId, newQty) => {
         if (!itemId || newQty < 1) return;
         try {
@@ -58,11 +80,17 @@ function CartPage() {
             const data = await res.json();
             setCart(data);
             setCartItems(data.items || []);
+
+            // Wait a moment before refreshing to avoid quick successive updates
+            setTimeout(() => {
+                fetchCart();
+            }, 300);
         } catch (err) {
             console.error("Error updating quantity:", err);
         }
     };
 
+    // Remove item from cart
     const removeFromCart = async (itemId) => {
         if (!itemId) return;
         try {
@@ -73,19 +101,27 @@ function CartPage() {
             const updatedCart = await res.json();
             setCart(updatedCart);
             setCartItems(updatedCart.items || []);
+
+            // Wait a moment before refreshing to avoid quick successive updates
+            setTimeout(() => {
+                fetchCart();
+            }, 300);
         } catch (err) {
             console.error("Error removing item:", err);
         }
     };
 
-
-
-
+    // Clear entire cart
     const clearCart = async () => {
+        if (!userId) return;
+
         if (window.confirm('Are you sure you want to empty your cart? This cannot be undone.')) {
             try {
-                await fetch(`http://localhost:8080/api/cart/clear/${userId}`, { method: "DELETE" });
-                setCartItems([]);
+                const res = await fetch(`http://localhost:8080/api/cart/clear/${userId}`, { method: "DELETE" });
+                if (res.ok) {
+                    setCartItems([]);
+                    // No need to immediately refresh after clearing
+                }
             } catch (err) {
                 console.error("Error clearing cart:", err);
             }
@@ -117,6 +153,22 @@ function CartPage() {
         }).format(price);
     };
 
+    // Loading state
+    if (isLoggedIn && userRole === 'customer' && isLoading) {
+        return (
+            <div className="cart-page-container">
+                <div className="cart-page-header">
+                    <h1>Your Cart</h1>
+                    <p>Loading your cart items...</p>
+                </div>
+                <div className="empty-cart">
+                    <h2>Loading Cart</h2>
+                    <p>Please wait while we retrieve your cart items.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="cart-page-container">
             <div className="cart-page-header">
@@ -129,7 +181,7 @@ function CartPage() {
             {!isLoggedIn ? (
                 <div className="empty-cart">
                     <h2>Please Log In to View Your Cart</h2>
-                    <p>You need to be logged in to see your cart items.</p>
+                    <p>You need to be logged in as a customer to see your cart items.</p>
                     <Link to="/login" className="continue-shopping-btn">
                         <FontAwesomeIcon icon={faSignInAlt} /> Log In
                     </Link>
@@ -192,14 +244,12 @@ function CartPage() {
                                             <div className="cart-item-actions">
                                                 <div className="quantity-control">
                                                     <button onClick={() => {
-                                                        console.log("➖ Decreasing:", item.id);
                                                         updateQuantity(item.id, item.quantity - 1);
                                                     }} disabled={item.quantity <= 1}>
                                                         <FontAwesomeIcon icon={faMinus} />
                                                     </button>
                                                     <span>{item.quantity}</span>
                                                     <button onClick={() => {
-                                                        console.log("➕ Increasing:", item.id);
                                                         updateQuantity(item.id, item.quantity + 1);
                                                     }}>
                                                         <FontAwesomeIcon icon={faPlus} />
@@ -208,7 +258,6 @@ function CartPage() {
                                                 <button
                                                     className="remove-item-btn"
                                                     onClick={() => {
-                                                        console.log("🗑️ Removing item with ID:", item.id);
                                                         removeFromCart(item.id);
                                                     }}
                                                 >
