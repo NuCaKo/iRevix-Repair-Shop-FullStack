@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 
 const CartContext = createContext();
 
@@ -8,7 +8,27 @@ export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [loggedInUserId, setLoggedInUserId] = useState(null);
-    const [lastFetchTime, setLastFetchTime] = useState(0); // Track last fetch time to prevent loops
+    const alertTimeoutRef = useRef(null);
+    const lastAlertMessageRef = useRef('');
+
+    // Debounced alert to prevent multiple notifications
+    const showDebouncedAlert = useCallback((message) => {
+        // Clear any existing timeout
+        if (alertTimeoutRef.current) {
+            clearTimeout(alertTimeoutRef.current);
+        }
+
+        // Prevent duplicate alerts in quick succession
+        if (message === lastAlertMessageRef.current) {
+            return;
+        }
+
+        // Set a new timeout
+        alertTimeoutRef.current = setTimeout(() => {
+            alert(message);
+            lastAlertMessageRef.current = message;
+        }, 300);
+    }, []);
 
     // Check if user is logged in and update userId state
     useEffect(() => {
@@ -18,14 +38,15 @@ export const CartProvider = ({ children }) => {
                 const user = JSON.parse(storedUser);
                 if (user.id && user.role === 'customer') {
                     setLoggedInUserId(user.id);
-                    return;
+                    return user.id;
                 }
             }
             setLoggedInUserId(null);
             setCartItems([]);
+            return null;
         };
 
-        checkUserLogin();
+        const userId = checkUserLogin();
 
         // Listen for changes in localStorage (user login/logout)
         const handleStorageChange = (e) => {
@@ -57,68 +78,76 @@ export const CartProvider = ({ children }) => {
     const fetchCartFromBackend = async (userId) => {
         if (!userId) return;
 
-        // Prevent rapid re-fetching (add a debounce)
-        const now = Date.now();
-        if (now - lastFetchTime < 500) { // 500ms debounce
-            return;
-        }
-        setLastFetchTime(now);
-
         try {
             setIsLoading(true);
-            console.log("Fetching cart for user:", userId);
             const response = await fetch(`http://localhost:8080/api/cart?userId=${encodeURIComponent(userId)}`);
 
             if (response.ok) {
                 const cartData = await response.json();
-                console.log("Cart data received:", cartData);
-                setCartItems(cartData.items || []);
-                notifyCartChange();
+                const newItems = cartData.items || [];
+
+                // Update state and notify only if items actually changed
+                setCartItems(prevItems => {
+                    const hasChanged = JSON.stringify(prevItems) !== JSON.stringify(newItems);
+                    if (hasChanged) {
+                        notifyCartChange(newItems.length);
+                        return newItems;
+                    }
+                    return prevItems;
+                });
             } else {
                 console.error("Failed to fetch cart:", response.status);
                 setCartItems([]);
+                notifyCartChange(0);
             }
         } catch (error) {
             console.error("Error fetching cart from backend:", error);
             setCartItems([]);
+            notifyCartChange(0);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const notifyCartChange = () => {
-        console.log("🔔 Notifying cart change event, current items:", cartItems.length);
-        // Create new event with the cart count as detail
+    // Improved cart change notification
+    const notifyCartChange = useCallback((count) => {
+        const finalCount = count !== undefined ? count : getCartCount();
+
+        // Dispatch custom event
         const event = new CustomEvent('cartUpdated', {
-            detail: { count: getCartCount() }
+            detail: { count: finalCount }
         });
         document.dispatchEvent(event);
-    };
+
+        // Update localStorage for cross-tab sync
+        localStorage.setItem('iRevixCart', JSON.stringify({
+            count: finalCount,
+            timestamp: Date.now()
+        }));
+    }, []);
 
     // Add item to cart
     const addToCart = async (item) => {
         const storedUser = localStorage.getItem('currentUser');
         if (!storedUser) {
-            alert("Please log in as a customer to add items to your cart.");
+            showDebouncedAlert("Please log in as a customer to add items to your cart.");
             return false;
         }
 
         const user = JSON.parse(storedUser);
         if (user.role !== 'customer') {
-            alert("Only customers can add items to cart.");
+            showDebouncedAlert("Only customers can add items to cart.");
             return false;
         }
 
         try {
-            console.log("Adding to cart:", item);
-            let apiUrl = 'http://localhost:8080/api/cart/add';
             const formData = new URLSearchParams();
             formData.append('userId', user.id);
             formData.append('quantity', item.quantity || 1);
 
             if (item.id.toString().startsWith('repair-')) {
                 // Custom service item
-                formData.append('partId', -1); // Placeholder ID for services
+                formData.append('partId', -1);
                 formData.append('type', 'service');
                 formData.append('name', item.name);
                 formData.append('price', item.price);
@@ -129,7 +158,7 @@ export const CartProvider = ({ children }) => {
                 formData.append('type', item.type || 'part');
             }
 
-            const response = await fetch(apiUrl, {
+            const response = await fetch('http://localhost:8080/api/cart/add', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded"
@@ -138,8 +167,12 @@ export const CartProvider = ({ children }) => {
             });
 
             if (response.ok) {
-                // Avoid infinite loop by not immediately calling fetchCartFromBackend
-                setTimeout(() => fetchCartFromBackend(user.id), 300);
+                // Fetch updated cart data
+                await fetchCartFromBackend(user.id);
+
+                // Show alert after fetch to ensure single notification
+                showDebouncedAlert(`Added ${item.name} to cart!`);
+
                 return true;
             } else {
                 console.error("Failed to add to cart:", response.status);
@@ -151,41 +184,27 @@ export const CartProvider = ({ children }) => {
         }
     };
 
+    // Remove item from cart
     const removeFromCart = async (id) => {
         if (!id) return false;
 
         try {
-            console.log("📦 Removing item:", id);
-
-            // 1. Update local state FIRST
-            setCartItems(prevItems => {
-                const newItems = prevItems.filter(item => item.id !== id);
-                console.log("New cart items after removal:", newItems.length);
-                return newItems;
-            });
-
-            // 2. Notify immediately
-            setTimeout(() => notifyCartChange(), 10);
-
-            // 3. Then call the API
             const response = await fetch(`http://localhost:8080/api/cart/item/${id}`, {
                 method: "DELETE"
             });
 
             if (response.ok) {
-                // 4. Get updated data from backend
-                setTimeout(() => fetchCartFromBackend(loggedInUserId), 300);
+                // Fetch updated cart data to ensure consistency
+                await fetchCartFromBackend(loggedInUserId);
                 return true;
             } else {
                 console.error("Failed to remove from cart:", response.status);
-                // Revert local state if API call failed
-                fetchCartFromBackend(loggedInUserId);
+                await fetchCartFromBackend(loggedInUserId);
                 return false;
             }
         } catch (error) {
             console.error("Error removing from cart:", error);
-            // Revert local state if API call failed
-            fetchCartFromBackend(loggedInUserId);
+            await fetchCartFromBackend(loggedInUserId);
             return false;
         }
     };
@@ -195,14 +214,13 @@ export const CartProvider = ({ children }) => {
         if (quantity < 1) return false;
 
         try {
-            console.log("Updating quantity for item:", id, "to", quantity);
             const response = await fetch(`http://localhost:8080/api/cart/quantity/${id}?quantity=${quantity}`, {
                 method: "PUT"
             });
 
             if (response.ok) {
-                // Avoid infinite loop by not immediately calling fetchCartFromBackend
-                setTimeout(() => fetchCartFromBackend(loggedInUserId), 300);
+                // Fetch updated cart data
+                await fetchCartFromBackend(loggedInUserId);
                 return true;
             } else {
                 console.error("Failed to update quantity:", response.status);
@@ -219,14 +237,13 @@ export const CartProvider = ({ children }) => {
         if (!loggedInUserId) return false;
 
         try {
-            console.log("Clearing cart for user:", loggedInUserId);
             const response = await fetch(`http://localhost:8080/api/cart/clear/${loggedInUserId}`, {
                 method: "DELETE"
             });
 
             if (response.ok) {
-                setCartItems([]);
-                notifyCartChange();
+                // Fetch updated cart data to ensure consistency
+                await fetchCartFromBackend(loggedInUserId);
                 return true;
             } else {
                 console.error("Failed to clear cart:", response.status);
@@ -240,8 +257,7 @@ export const CartProvider = ({ children }) => {
 
     // Get total number of items in cart
     const getCartCount = () => {
-        const count = cartItems.reduce((total, item) => total + item.quantity, 0);
-        return count;
+        return cartItems.reduce((total, item) => total + item.quantity, 0);
     };
 
     // Get total price of items in cart
@@ -260,11 +276,7 @@ export const CartProvider = ({ children }) => {
         isLoading,
         refreshCart: () => {
             if (loggedInUserId) {
-                // Use debounce to prevent multiple calls
-                const now = Date.now();
-                if (now - lastFetchTime > 1000) { // 1 second debounce for manual refresh
-                    fetchCartFromBackend(loggedInUserId);
-                }
+                fetchCartFromBackend(loggedInUserId);
             }
         }
     };

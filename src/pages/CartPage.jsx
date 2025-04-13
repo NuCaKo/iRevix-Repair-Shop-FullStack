@@ -61,7 +61,6 @@ function CartPage() {
 
         if (isLoggedIn && userRole === 'customer' && userId && isMounted) {
             fetchCart();
-            // Don't call refreshCart here to avoid double fetching
         }
 
         return () => {
@@ -77,14 +76,9 @@ function CartPage() {
                 method: "PUT"
             });
             if (!res.ok) throw new Error("Quantity update failed");
-            const data = await res.json();
-            setCart(data);
-            setCartItems(data.items || []);
 
-            // Wait a moment before refreshing to avoid quick successive updates
-            setTimeout(() => {
-                fetchCart();
-            }, 300);
+            // After successful update, reload the page to ensure accurate cart count
+            window.location.reload();
         } catch (err) {
             console.error("Error updating quantity:", err);
         }
@@ -98,14 +92,9 @@ function CartPage() {
                 method: "DELETE"
             });
             if (!res.ok) throw new Error("Remove failed");
-            const updatedCart = await res.json();
-            setCart(updatedCart);
-            setCartItems(updatedCart.items || []);
 
-            // Wait a moment before refreshing to avoid quick successive updates
-            setTimeout(() => {
-                fetchCart();
-            }, 300);
+            // After successful removal, reload the page to ensure accurate cart count
+            window.location.reload();
         } catch (err) {
             console.error("Error removing item:", err);
         }
@@ -119,8 +108,8 @@ function CartPage() {
             try {
                 const res = await fetch(`http://localhost:8080/api/cart/clear/${userId}`, { method: "DELETE" });
                 if (res.ok) {
-                    setCartItems([]);
-                    // No need to immediately refresh after clearing
+                    // Reload the page after clearing cart
+                    window.location.reload();
                 }
             } catch (err) {
                 console.error("Error clearing cart:", err);
@@ -201,7 +190,7 @@ function CartPage() {
                 <div className="empty-cart">
                     <h2>Your cart is empty</h2>
                     <p>Looks like you haven't added any items to your cart yet.</p>
-                    <Link to="/parts" className="continue-shopping-btn">
+                    <Link to="/" className="continue-shopping-btn">
                         <FontAwesomeIcon icon={faArrowLeft} /> Continue Shopping
                     </Link>
                 </div>

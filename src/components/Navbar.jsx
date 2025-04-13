@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import '../css/navbar.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { faLock, faTools, faWrench } from '@fortawesome/free-solid-svg-icons';
-import { useCart } from '../CartContext'; // Import the cart context
+import { useCart } from '../CartContext';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import {
     faUser,
@@ -23,7 +23,7 @@ function Navbar() {
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
-    const { getCartCount, isLoading } = useCart();
+    const { getCartCount } = useCart();
     const [cartCount, setCartCount] = useState(0);
     const { isSignedIn, user: clerkUser } = useUser();
     const { signOut: clerkSignOut } = useClerk();
@@ -32,53 +32,63 @@ function Navbar() {
         role: "",
         avatar: null
     });
-    const [forceUpdate, setForceUpdate] = useState(0);
 
-    const normalizeRole = (role) => {
+    // Normalize user role
+    const normalizeRole = useCallback((role) => {
         if (!role) return 'customer';
         if (role === 'technician') return 'tamirci';
         if (role === 'tamirci') return 'tamirci';
         if (role === 'admin') return 'admin';
         return 'customer';
-    };
+    }, []);
 
+    // Handle navigation for technician
     useEffect(() => {
-        if (isLoggedIn && userData.role === 'tamirci' && location.pathname !== '/service' && location.pathname !== '/service/') {
+        if (isLoggedIn && userData.role === 'tamirci' &&
+            location.pathname !== '/service' &&
+            location.pathname !== '/service/') {
             navigate('/service');
         }
     }, [isLoggedIn, userData.role, location.pathname, navigate]);
 
+    // Cart count synchronization
     useEffect(() => {
         // Initial count
-        setCartCount(getCartCount());
+        const initialCount = getCartCount();
+        setCartCount(initialCount);
 
-        // Create a more robust handler
-        const handleCartUpdate = () => {
-            console.log("Cart updated event received in Navbar");
-            // Force immediate state update with the latest count
-            const newCount = getCartCount();
-            console.log("New cart count:", newCount);
-            setCartCount(newCount);
+        // Cart update event handler
+        const handleCartUpdate = (event) => {
+            const count = event.detail?.count ?? 0;
+            console.log("Cart updated, new count:", count);
+            setCartCount(count);
         };
 
-        // Add event listener
-        document.addEventListener('cartUpdated', handleCartUpdate);
-
-        // Also add a regular polling interval (backup)
-        const interval = setInterval(() => {
-            const currentCount = getCartCount();
-            if (currentCount !== cartCount) {
-                console.log("Cart count changed via polling", cartCount, "->", currentCount);
-                setCartCount(currentCount);
+        // Storage change handler for cross-tab sync
+        const handleStorageChange = (e) => {
+            if (e.key === 'iRevixCart') {
+                try {
+                    const cartData = JSON.parse(e.newValue);
+                    if (cartData && cartData.count !== undefined) {
+                        setCartCount(cartData.count);
+                    }
+                } catch (error) {
+                    console.error("Error parsing cart data:", error);
+                }
             }
-        }, 1000);
+        };
+
+        // Add event listeners
+        document.addEventListener('cartUpdated', handleCartUpdate);
+        window.addEventListener('storage', handleStorageChange);
 
         return () => {
             document.removeEventListener('cartUpdated', handleCartUpdate);
-            clearInterval(interval);
+            window.removeEventListener('storage', handleStorageChange);
         };
-    }, [getCartCount, cartCount]);
+    }, [getCartCount]);
 
+    // User authentication and role management
     useEffect(() => {
         const checkLoggedInStatus = () => {
             if (isSignedIn && clerkUser) {
@@ -102,11 +112,10 @@ function Navbar() {
                     role: normalizedRole
                 }));
 
-                // Add this line to broadcast user state change
+                // Broadcast user state change
                 const userStateChanged = new CustomEvent('userStateChanged');
                 document.dispatchEvent(userStateChanged);
-            }
-            else {
+            } else {
                 setIsLoggedIn(false);
                 setUserData({
                     name: "Test User",
@@ -116,32 +125,16 @@ function Navbar() {
                 setDropdownOpen(false);
                 localStorage.removeItem('currentUser');
 
-                // Also dispatch the event when user logs out
+                // Broadcast logout
                 const userStateChanged = new CustomEvent('userStateChanged');
                 document.dispatchEvent(userStateChanged);
             }
         };
 
         checkLoggedInStatus();
-        setForceUpdate(prev => prev + 1);
-    }, [isSignedIn, clerkUser, location.pathname]); // Check when auth state or location changes
+    }, [isSignedIn, clerkUser, location.pathname, normalizeRole]);
 
-    useEffect(() => {
-        const handleStorageChange = (e) => {
-            if (e.key === 'iRevixCart') {
-                setForceUpdate(prev => prev + 1);
-            }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, []);
-
-    const handleClick = () => setClick(!click);
-    const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
-
+    // Dropdown click outside handler
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -155,6 +148,7 @@ function Navbar() {
         };
     }, []);
 
+    // Logout handler
     const handleLogout = async () => {
         setDropdownOpen(false);
 
@@ -166,7 +160,7 @@ function Navbar() {
                 role: "",
                 avatar: null
             });
-            setForceUpdate(prev => prev + 1);
+
             if (isSignedIn) {
                 try {
                     if (process.env.NODE_ENV === 'development') {
@@ -187,6 +181,7 @@ function Navbar() {
         }
     };
 
+    // Home click handler
     const handleHomeClick = (e) => {
         if (isLoggedIn && userData.role === 'tamirci') {
             e.preventDefault();
@@ -194,92 +189,95 @@ function Navbar() {
             return;
         }
         if (location.pathname === '/') {
-            e.preventDefault(); // Prevent default link behavior
+            e.preventDefault();
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
         }
-        setClick(false); // Close mobile menu
+        setClick(false);
     };
 
+    // Toggle mobile menu
+    const handleClick = () => setClick(!click);
+    const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
+
+    // Determine user type
     const isTechnician = isLoggedIn && userData.role === 'tamirci';
     const isAdmin = isLoggedIn && userData.role === 'admin';
     const isCustomer = isLoggedIn && userData.role === 'customer';
-    // REMOVE THIS LINE: const cartCount = getCartCount();
 
     return (
-        <>
-            <nav className="navbar">
-                <div className="navbar-content">
-                    {/* Logo - always show */}
-                    <Link
-                        to={isTechnician ? "/ServicePage" : "/"}
-                        className="navbar-logo"
-                        onClick={handleHomeClick}
-                    >
-                        <span className="brand-text">iRevix</span>
-                    </Link>
+        <nav className="navbar">
+            <div className="navbar-content">
+                {/* Logo */}
+                <Link
+                    to={isTechnician ? "/ServicePage" : "/"}
+                    className="navbar-logo"
+                    onClick={handleHomeClick}
+                >
+                    <span className="brand-text">iRevix</span>
+                </Link>
 
-                    {/* Hamburger menu icon - only show if not technician or on mobile view */}
-                    {!isTechnician && (
-                        <div className="menu-icon" onClick={handleClick}>
-                            <FontAwesomeIcon icon={click ? faTimes : faBars} />
+                {/* Mobile Menu Toggle */}
+                {!isTechnician && (
+                    <div className="menu-icon" onClick={handleClick}>
+                        <FontAwesomeIcon icon={click ? faTimes : faBars} />
+                    </div>
+                )}
+
+                {/* Navigation Menu */}
+                {!isTechnician && (
+                    <ul className={click ? 'nav-menu active' : 'nav-menu'}>
+                        <li><Link to="/services"><FontAwesomeIcon icon={faWrench} /> Repair</Link></li>
+                        <li><Link to="/parts"><FontAwesomeIcon icon={faTools} /> Parts</Link></li>
+                        <li><Link to="/contact"><FontAwesomeIcon icon={faEnvelope} /> Contact</Link></li>
+                        {isAdmin && (
+                            <li><Link to="/admin"><FontAwesomeIcon icon={faLock} /> Admin</Link></li>
+                        )}
+                    </ul>
+                )}
+
+                {/* Right Side - Cart and User */}
+                <div className="navbar-right">
+                    {/* Shopping Cart */}
+                    {!isTechnician && !isAdmin && (
+                        <div className="cart-container">
+                            <Link to="/cart" className="cart-icon">
+                                <FontAwesomeIcon icon={faShoppingCart} />
+                                {isCustomer && cartCount > 0 && (
+                                    <span className="cart-badge">{cartCount}</span>
+                                )}
+                            </Link>
                         </div>
                     )}
 
-                    {/* Menu items - only show if not a technician */}
-                    {!isTechnician && (
-                        <ul className={click ? 'nav-menu active' : 'nav-menu'}>
-                            <li><Link to="/services"><FontAwesomeIcon icon={faWrench} /> Repair</Link></li>
-                            <li><Link to="/parts"><FontAwesomeIcon icon={faTools} /> Parts</Link></li>
-                            <li><Link to="/contact"><FontAwesomeIcon icon={faEnvelope} /> Contact</Link></li>
-                            {/* Admin panel only shown to admin role */}
-                            {isAdmin && (
-                                <li><Link to="/admin"><FontAwesomeIcon icon={faLock} /> Admin</Link></li>
-                            )}
-                        </ul>
-                    )}
-
-                    <div className="navbar-right">
-                        {/* Shopping Cart - not shown to technicians or admins */}
-                        {!isTechnician && !isAdmin && (
-                            <div className="cart-container">
-                                <Link to="/cart" className="cart-icon">
-                                    <FontAwesomeIcon icon={faShoppingCart} />
-                                    {isCustomer && cartCount > 0 && (
-                                        <span className="cart-badge">{cartCount}</span>
+                    {/* User Section */}
+                    <div className="user-container" ref={dropdownRef}>
+                        {isLoggedIn ? (
+                            <div className="logged-in-container">
+                                <div className="user-profile" onClick={toggleDropdown}>
+                                    {userData.avatar && userData.avatar !== 'null' && userData.avatar !== '' ? (
+                                        <img src={userData.avatar} alt="User" className="user-avatar" />
+                                    ) : (
+                                        <FontAwesomeIcon icon={faUser} className="user-icon" />
                                     )}
-                                </Link>
-                            </div>
-                        )}
+                                    <span className="user-name">{userData.name}</span>
+                                </div>
 
-                        {/* User Section - completely separated login/logout states */}
-                        <div className="user-container" ref={dropdownRef}>
-                            {isLoggedIn ? (
-                                <div className="logged-in-container">
-                                    <div className="user-profile" onClick={toggleDropdown}>
-                                        {userData.avatar && userData.avatar !== 'null' && userData.avatar !== '' ? (
-                                            <img src={userData.avatar} alt="User" className="user-avatar" />
-                                        ) : (
-                                            <FontAwesomeIcon icon={faUser} className="user-icon" />
-                                        )}
-                                        <span className="user-name">{userData.name}</span>
-                                    </div>
+                                {dropdownOpen && (
+                                    <div className="user-dropdown">
+                                        <Link
+                                            to="/profile"
+                                            className="dropdown-item"
+                                            onClick={() => setDropdownOpen(false)}
+                                        >
+                                            <FontAwesomeIcon icon={faUser} />
+                                            <span>Profile</span>
+                                        </Link>
 
-                                    {dropdownOpen && (
-                                        <div className="user-dropdown">
-                                            <Link
-                                                to="/profile"
-                                                className="dropdown-item"
-                                                onClick={() => setDropdownOpen(false)}
-                                            >
-                                                <FontAwesomeIcon icon={faUser} />
-                                                <span>Profile</span>
-                                            </Link>
-
-                                            {/* My Orders only for customers */}
-                                            {isCustomer && (
+                                        {isCustomer && (
+                                            <>
                                                 <Link
                                                     to="/orders"
                                                     className="dropdown-item"
@@ -288,10 +286,6 @@ function Navbar() {
                                                     <FontAwesomeIcon icon={faClipboardList} />
                                                     <span>My Orders</span>
                                                 </Link>
-                                            )}
-
-                                            {/* Support Requests only for customers */}
-                                            {isCustomer && (
                                                 <Link
                                                     to="/support"
                                                     className="dropdown-item"
@@ -300,31 +294,31 @@ function Navbar() {
                                                     <FontAwesomeIcon icon={faHeadset} />
                                                     <span>Support Requests</span>
                                                 </Link>
-                                            )}
+                                            </>
+                                        )}
 
-                                            <div className="dropdown-divider"></div>
+                                        <div className="dropdown-divider"></div>
 
-                                            <button
-                                                className="dropdown-item logout-button"
-                                                onClick={handleLogout}
-                                            >
-                                                <FontAwesomeIcon icon={faSignOutAlt} />
-                                                <span>Logout</span>
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <Link to="/login" className="login-button">
-                                    <FontAwesomeIcon icon={faSignInAlt} />
-                                    <span>Login</span>
-                                </Link>
-                            )}
-                        </div>
+                                        <button
+                                            className="dropdown-item logout-button"
+                                            onClick={handleLogout}
+                                        >
+                                            <FontAwesomeIcon icon={faSignOutAlt} />
+                                            <span>Logout</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <Link to="/login" className="login-button">
+                                <FontAwesomeIcon icon={faSignInAlt} />
+                                <span>Login</span>
+                            </Link>
+                        )}
                     </div>
                 </div>
-            </nav>
-        </>
+            </div>
+        </nav>
     );
 }
 

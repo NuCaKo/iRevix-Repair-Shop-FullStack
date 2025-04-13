@@ -339,8 +339,6 @@ function RepairServicesPage() {
             icon: deviceIcons[selectedDevice]?.faIcon || faWrench
         };
         addToCart(repairItem);
-        alert(`Added ${repairItem.name} to your cart!`);
-        navigate('/cart');
     };
     const getIconColor = (device) => {
         return selectedDevice === device ? "#28a745" : "currentColor"; // Green if selected
