@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/OrdersPage.css';
+import Navbar from '../components/Navbar';
 
 const OrdersPage = () => {
     const navigate = useNavigate();
@@ -78,6 +79,7 @@ const OrdersPage = () => {
             navigate('/');
         }
     }, [navigate]);
+
     const viewOrderDetails = (order, e) => {
         if (e) {
             e.stopPropagation();
@@ -86,10 +88,12 @@ const OrdersPage = () => {
         setSelectedOrder(order);
         setShowDetailsModal(true);
     };
+
     const closeDetailsModal = () => {
         setShowDetailsModal(false);
         setSelectedOrder(null);
     };
+
     const downloadInvoice = (order, e) => {
         if (e) {
             e.stopPropagation();
@@ -97,6 +101,7 @@ const OrdersPage = () => {
         setInvoiceOrder(order);
         setShowInvoiceModal(true);
     };
+
     const printInvoice = () => {
         const printWindow = window.open('', '_blank');
         const invoiceContent = document.querySelector('.invoice-content').cloneNode(true);
@@ -202,6 +207,7 @@ const OrdersPage = () => {
             }, 500);
         });
     };
+
     const requestSupport = (orderId, e) => {
         if (e) {
             e.stopPropagation();
@@ -227,345 +233,347 @@ const OrdersPage = () => {
     };
 
     return (
-        <div className="orders-container">
-            <div className="orders-header">
-                <h1>My Orders</h1>
-                <p>You can track your repair services and order history here.</p>
-            </div>
-
-            <div className="orders-tabs">
-                <div
-                    className={`orders-tab ${activeTab === 'current' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('current')}
-                >
-                    Current Orders
-                    {currentOrders.length > 0 && (
-                        <span className="orders-count">{currentOrders.length}</span>
-                    )}
+        <div className="orders-page">
+            <Navbar />
+            <div className="orders-container">
+                <div className="orders-header">
+                    <h1>My Orders</h1>
+                    <p>You can track your repair services and order history here.</p>
                 </div>
-                <div
-                    className={`orders-tab ${activeTab === 'past' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('past')}
-                >
-                    Order History
-                    {pastOrders.length > 0 && (
-                        <span className="orders-count">{pastOrders.length}</span>
-                    )}
-                </div>
-            </div>
 
-            <div className="orders-content">
-                {activeTab === 'current' && (
-                    <div className="orders-section">
-                        {currentOrders.length > 0 ? (
-                            <div className="orders-list">
-                                {currentOrders.map(order => (
-                                    <div key={order.id} className="order-card" onClick={() => viewOrderDetails(order)}>
-                                        <div className="order-header">
-                                            <div className="order-id">Order #{order.id}</div>
-                                            <div className={`order-status ${getStatusClass(order.status)}`}>
-                                                {order.status}
-                                            </div>
-                                        </div>
-                                        <div className="order-details">
-                                            <div className="order-info">
-                                                <div className="order-device">{order.deviceType}</div>
-                                                <div className="order-issue">{order.issue}</div>
-                                            </div>
-                                            <div className="order-dates">
-                                                <div className="order-date">
-                                                    <span>Order Date:</span> {order.date}
-                                                </div>
-                                                <div className="completion-date">
-                                                    <span>Estimated Completion:</span> {order.estimatedCompletion}
-                                                </div>
-                                            </div>
-                                            <div className="order-cost">
-                                                <span>Amount:</span> ${order.cost}
-                                            </div>
-                                        </div>
-                                        <div className="order-actions">
-                                            <button
-                                                className="view-details-button"
-                                                onClick={(e) => viewOrderDetails(order, e)}
-                                            >
-                                                View Details
-                                            </button>
-                                            <button
-                                                className="contact-support-button"
-                                                onClick={(e) => requestSupport(order.id, e)}
-                                            >
-                                                Request Support
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="no-orders">
-                                <p>You don't have any active orders at the moment.</p>
-                                <button className="create-order-button" onClick={() => navigate('/services')}>
-                                    Get New Repair Service
-                                </button>
-                            </div>
+                <div className="orders-tabs">
+                    <div
+                        className={`orders-tab ${activeTab === 'current' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('current')}
+                    >
+                        Current Orders
+                        {currentOrders.length > 0 && (
+                            <span className="orders-count">{currentOrders.length}</span>
                         )}
                     </div>
-                )}
-
-                {activeTab === 'past' && (
-                    <div className="orders-section">
-                        {pastOrders.length > 0 ? (
-                            <div className="orders-list">
-                                {pastOrders.map(order => (
-                                    <div key={order.id} className="order-card" onClick={() => viewOrderDetails(order)}>
-                                        <div className="order-header">
-                                            <div className="order-id">Order #{order.id}</div>
-                                            <div className={`order-status ${getStatusClass(order.status)}`}>
-                                                {order.status}
-                                            </div>
-                                        </div>
-                                        <div className="order-details">
-                                            <div className="order-info">
-                                                <div className="order-device">{order.deviceType}</div>
-                                                <div className="order-issue">{order.issue}</div>
-                                            </div>
-                                            <div className="order-dates">
-                                                <div className="order-date">
-                                                    <span>Order Date:</span> {order.date}
-                                                </div>
-                                                <div className="completion-date">
-                                                    <span>Completion Date:</span> {order.completionDate}
-                                                </div>
-                                            </div>
-                                            <div className="order-cost">
-                                                <span>Amount:</span> ${order.cost}
-                                            </div>
-                                            <div className="invoice-no">
-                                                <span>Invoice No:</span> {order.invoiceNo}
-                                            </div>
-                                        </div>
-                                        <div className="order-actions">
-                                            <button
-                                                className="view-details-button"
-                                                onClick={(e) => viewOrderDetails(order, e)}
-                                            >
-                                                View Details
-                                            </button>
-                                            <button
-                                                className="download-invoice-button"
-                                                onClick={(e) => downloadInvoice(order, e)}
-                                            >
-                                                Download Invoice
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="no-orders">
-                                <p>You don't have any completed orders yet.</p>
-                            </div>
+                    <div
+                        className={`orders-tab ${activeTab === 'past' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('past')}
+                    >
+                        Order History
+                        {pastOrders.length > 0 && (
+                            <span className="orders-count">{pastOrders.length}</span>
                         )}
                     </div>
-                )}
-            </div>
+                </div>
 
-            {/* Order Details Modal */}
-            {showDetailsModal && selectedOrder && (
-                <div className="modal-overlay" onClick={closeDetailsModal}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Order Details - #{selectedOrder.id}</h2>
-                            <button className="modal-close" onClick={closeDetailsModal}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="detail-section">
-                                <h3>Device Information</h3>
-                                <div className="detail-row">
-                                    <span className="detail-label">Device:</span>
-                                    <span className="detail-value">{selectedOrder.deviceType}</span>
+                <div className="orders-content">
+                    {activeTab === 'current' && (
+                        <div className="orders-section">
+                            {currentOrders.length > 0 ? (
+                                <div className="orders-list">
+                                    {currentOrders.map(order => (
+                                        <div key={order.id} className="order-card" onClick={() => viewOrderDetails(order)}>
+                                            <div className="order-header">
+                                                <div className="order-id">Order #{order.id}</div>
+                                                <div className={`order-status ${getStatusClass(order.status)}`}>
+                                                    {order.status}
+                                                </div>
+                                            </div>
+                                            <div className="order-details">
+                                                <div className="order-info">
+                                                    <div className="order-device">{order.deviceType}</div>
+                                                    <div className="order-issue">{order.issue}</div>
+                                                </div>
+                                                <div className="order-dates">
+                                                    <div className="order-date">
+                                                        <span>Order Date:</span> {order.date}
+                                                    </div>
+                                                    <div className="completion-date">
+                                                        <span>Estimated Completion:</span> {order.estimatedCompletion}
+                                                    </div>
+                                                </div>
+                                                <div className="order-cost">
+                                                    <span>Amount:</span> ${order.cost}
+                                                </div>
+                                            </div>
+                                            <div className="order-actions">
+                                                <button
+                                                    className="view-details-button"
+                                                    onClick={(e) => viewOrderDetails(order, e)}
+                                                >
+                                                    View Details
+                                                </button>
+                                                <button
+                                                    className="contact-support-button"
+                                                    onClick={(e) => requestSupport(order.id, e)}
+                                                >
+                                                    Request Support
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Service:</span>
-                                    <span className="detail-value">{selectedOrder.issue}</span>
-                                </div>
-                            </div>
-
-                            <div className="detail-section">
-                                <h3>Order Information</h3>
-                                <div className="detail-row">
-                                    <span className="detail-label">Status:</span>
-                                    <span className={`detail-value status-pill ${getStatusClass(selectedOrder.status)}`}>
-                                        {selectedOrder.status}
-                                    </span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Order Date:</span>
-                                    <span className="detail-value">{selectedOrder.date}</span>
-                                </div>
-                                {selectedOrder.completionDate ? (
-                                    <div className="detail-row">
-                                        <span className="detail-label">Completion Date:</span>
-                                        <span className="detail-value">{selectedOrder.completionDate}</span>
-                                    </div>
-                                ) : (
-                                    <div className="detail-row">
-                                        <span className="detail-label">Estimated Completion:</span>
-                                        <span className="detail-value">{selectedOrder.estimatedCompletion}</span>
-                                    </div>
-                                )}
-                                {selectedOrder.invoiceNo && (
-                                    <div className="detail-row">
-                                        <span className="detail-label">Invoice No:</span>
-                                        <span className="detail-value">{selectedOrder.invoiceNo}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="detail-section">
-                                <h3>Payment Information</h3>
-                                <div className="detail-row">
-                                    <span className="detail-label">Total Amount:</span>
-                                    <span className="detail-value price">${selectedOrder.cost}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Payment Status:</span>
-                                    <span className="detail-value status-pill completed">Paid</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            {selectedOrder.status === 'Completed' ? (
-                                <button
-                                    className="download-invoice-button"
-                                    onClick={() => downloadInvoice(selectedOrder)}
-                                >
-                                    Download Invoice
-                                </button>
                             ) : (
-                                <button
-                                    className="contact-support-button"
-                                    onClick={() => requestSupport(selectedOrder.id)}
-                                >
-                                    Request Support
-                                </button>
+                                <div className="no-orders">
+                                    <p>You don't have any active orders at the moment.</p>
+                                    <button className="create-order-button" onClick={() => navigate('/services')}>
+                                        Get New Repair Service
+                                    </button>
+                                </div>
                             )}
-                            <button className="modal-close-button" onClick={closeDetailsModal}>Close</button>
                         </div>
-                    </div>
+                    )}
+
+                    {activeTab === 'past' && (
+                        <div className="orders-section">
+                            {pastOrders.length > 0 ? (
+                                <div className="orders-list">
+                                    {pastOrders.map(order => (
+                                        <div key={order.id} className="order-card" onClick={() => viewOrderDetails(order)}>
+                                            <div className="order-header">
+                                                <div className="order-id">Order #{order.id}</div>
+                                                <div className={`order-status ${getStatusClass(order.status)}`}>
+                                                    {order.status}
+                                                </div>
+                                            </div>
+                                            <div className="order-details">
+                                                <div className="order-info">
+                                                    <div className="order-device">{order.deviceType}</div>
+                                                    <div className="order-issue">{order.issue}</div>
+                                                </div>
+                                                <div className="order-dates">
+                                                    <div className="order-date">
+                                                        <span>Order Date:</span> {order.date}
+                                                    </div>
+                                                    <div className="completion-date">
+                                                        <span>Completion Date:</span> {order.completionDate}
+                                                    </div>
+                                                </div>
+                                                <div className="order-cost">
+                                                    <span>Amount:</span> ${order.cost}
+                                                </div>
+                                                <div className="invoice-no">
+                                                    <span>Invoice No:</span> {order.invoiceNo}
+                                                </div>
+                                            </div>
+                                            <div className="order-actions">
+                                                <button
+                                                    className="view-details-button"
+                                                    onClick={(e) => viewOrderDetails(order, e)}
+                                                >
+                                                    View Details
+                                                </button>
+                                                <button
+                                                    className="download-invoice-button"
+                                                    onClick={(e) => downloadInvoice(order, e)}
+                                                >
+                                                    Download Invoice
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="no-orders">
+                                    <p>You don't have any completed orders yet.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
-            )}
 
-            {/* Invoice Viewing Modal */}
-            {showInvoiceModal && invoiceOrder && (
-                <div className="modal-overlay" onClick={() => setShowInvoiceModal(false)}>
-                    <div className="modal-content invoice-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Invoice - #{invoiceOrder.id}</h2>
-                            <button className="modal-close" onClick={() => setShowInvoiceModal(false)}>×</button>
-                        </div>
-                        <div className="modal-body invoice-content">
-                            {/* Print-only header */}
-                            <div className="print-only-header">
-                                <p className="print-date">{new Date().toLocaleDateString('en-US')}</p>
+                {/* Order Details Modal */}
+                {showDetailsModal && selectedOrder && (
+                    <div className="modal-overlay" onClick={closeDetailsModal}>
+                        <div className="modal-content" onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h2>Order Details - #{selectedOrder.id}</h2>
+                                <button className="modal-close" onClick={closeDetailsModal}>×</button>
                             </div>
-
-                            <div className="invoice-header">
-                                <h1>iRevix Repair Shop</h1>
-                                <div className="invoice-number">Invoice No: {invoiceOrder.invoiceNo}</div>
-                            </div>
-
-                            <div className="invoice-details">
-                                <div className="invoice-section">
-                                    <h3>Invoice Information</h3>
-                                    <div className="detail-row">
-                                        <span className="detail-label">Date:</span>
-                                        <span className="detail-value">{invoiceOrder.completionDate || invoiceOrder.date}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="detail-label">Order No:</span>
-                                        <span className="detail-value">#{invoiceOrder.id}</span>
-                                    </div>
-                                </div>
-
-                                <div className="invoice-section">
-                                    <h3>Customer Information</h3>
-                                    <div className="detail-row">
-                                        <span className="detail-label">Name:</span>
-                                        <span className="detail-value">{userProfile.firstName} {userProfile.lastName}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="detail-label">Email:</span>
-                                        <span className="detail-value">{userProfile.email}</span>
-                                    </div>
-                                </div>
-
-                                <div className="invoice-section">
+                            <div className="modal-body">
+                                <div className="detail-section">
                                     <h3>Device Information</h3>
                                     <div className="detail-row">
                                         <span className="detail-label">Device:</span>
-                                        <span className="detail-value">{invoiceOrder.deviceType}</span>
+                                        <span className="detail-value">{selectedOrder.deviceType}</span>
                                     </div>
                                     <div className="detail-row">
                                         <span className="detail-label">Service:</span>
-                                        <span className="detail-value">{invoiceOrder.issue}</span>
+                                        <span className="detail-value">{selectedOrder.issue}</span>
                                     </div>
                                 </div>
 
-                                <div className="invoice-table">
-                                    <h3>Payment Details</h3>
-                                    <table>
-                                        <thead>
-                                        <tr>
-                                            <th>Description</th>
-                                            <th>Quantity</th>
-                                            <th>Unit Price</th>
-                                            <th>Total</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                            <td>{invoiceOrder.issue}</td>
-                                            <td>1</td>
-                                            <td>${invoiceOrder.cost}</td>
-                                            <td>${invoiceOrder.cost}</td>
-                                        </tr>
-                                        </tbody>
-                                        <tfoot>
-                                        <tr>
-                                            <td colSpan="3" className="text-right">Subtotal:</td>
-                                            <td>${invoiceOrder.cost}</td>
-                                        </tr>
-                                        <tr>
-                                            <td colSpan="3" className="text-right">Tax (18%):</td>
-                                            <td>${(invoiceOrder.cost * 0.18).toFixed(2)}</td>
-                                        </tr>
-                                        <tr className="total-row">
-                                            <td colSpan="3" className="text-right">Grand Total:</td>
-                                            <td>${(invoiceOrder.cost * 1.18).toFixed(2)}</td>
-                                        </tr>
-                                        </tfoot>
-                                    </table>
+                                <div className="detail-section">
+                                    <h3>Order Information</h3>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Status:</span>
+                                        <span className={`detail-value status-pill ${getStatusClass(selectedOrder.status)}`}>
+                                            {selectedOrder.status}
+                                        </span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Order Date:</span>
+                                        <span className="detail-value">{selectedOrder.date}</span>
+                                    </div>
+                                    {selectedOrder.completionDate ? (
+                                        <div className="detail-row"><span className="detail-label">Completion Date:</span>
+                                            <span className="detail-value">{selectedOrder.completionDate}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="detail-row">
+                                            <span className="detail-label">Estimated Completion:</span>
+                                            <span className="detail-value">{selectedOrder.estimatedCompletion}</span>
+                                        </div>
+                                    )}
+                                    {selectedOrder.invoiceNo && (
+                                        <div className="detail-row">
+                                            <span className="detail-label">Invoice No:</span>
+                                            <span className="detail-value">{selectedOrder.invoiceNo}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="detail-section">
+                                    <h3>Payment Information</h3>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Total Amount:</span>
+                                        <span className="detail-value price">${selectedOrder.cost}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Payment Status:</span>
+                                        <span className="detail-value status-pill completed">Paid</span>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="invoice-footer">
-                                <p>This invoice was computer generated and does not require a signature.</p>
-                                <p>iRevix Repair Shop © 2024 - All Rights Reserved</p>
+                            <div className="modal-footer">
+                                {selectedOrder.status === 'Completed' ? (
+                                    <button
+                                        className="download-invoice-button"
+                                        onClick={() => downloadInvoice(selectedOrder)}
+                                    >
+                                        Download Invoice
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="contact-support-button"
+                                        onClick={() => requestSupport(selectedOrder.id)}
+                                    >
+                                        Request Support
+                                    </button>
+                                )}
+                                <button className="modal-close-button" onClick={closeDetailsModal}>Close</button>
                             </div>
                         </div>
-                        <div className="modal-footer">
-                            <button
-                                className="print-invoice-button"
-                                onClick={printInvoice}
-                            >
-                                Print
-                            </button>
-                            <button className="modal-close-button" onClick={() => setShowInvoiceModal(false)}>Close</button>
+                    </div>
+                )}
+
+                {/* Invoice Viewing Modal */}
+                {showInvoiceModal && invoiceOrder && (
+                    <div className="modal-overlay" onClick={() => setShowInvoiceModal(false)}>
+                        <div className="modal-content invoice-modal" onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h2>Invoice - #{invoiceOrder.id}</h2>
+                                <button className="modal-close" onClick={() => setShowInvoiceModal(false)}>×</button>
+                            </div>
+                            <div className="modal-body invoice-content">
+                                {/* Print-only header */}
+                                <div className="print-only-header">
+                                    <p className="print-date">{new Date().toLocaleDateString('en-US')}</p>
+                                </div>
+
+                                <div className="invoice-header">
+                                    <h1>iRevix Repair Shop</h1>
+                                    <div className="invoice-number">Invoice No: {invoiceOrder.invoiceNo}</div>
+                                </div>
+
+                                <div className="invoice-details">
+                                    <div className="invoice-section">
+                                        <h3>Invoice Information</h3>
+                                        <div className="detail-row">
+                                            <span className="detail-label">Date:</span>
+                                            <span className="detail-value">{invoiceOrder.completionDate || invoiceOrder.date}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="detail-label">Order No:</span>
+                                            <span className="detail-value">#{invoiceOrder.id}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="invoice-section">
+                                        <h3>Customer Information</h3>
+                                        <div className="detail-row">
+                                            <span className="detail-label">Name:</span>
+                                            <span className="detail-value">{userProfile.firstName} {userProfile.lastName}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="detail-label">Email:</span>
+                                            <span className="detail-value">{userProfile.email}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="invoice-section">
+                                        <h3>Device Information</h3>
+                                        <div className="detail-row">
+                                            <span className="detail-label">Device:</span>
+                                            <span className="detail-value">{invoiceOrder.deviceType}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="detail-label">Service:</span>
+                                            <span className="detail-value">{invoiceOrder.issue}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="invoice-table">
+                                        <h3>Payment Details</h3>
+                                        <table>
+                                            <thead>
+                                            <tr>
+                                                <th>Description</th>
+                                                <th>Quantity</th>
+                                                <th>Unit Price</th>
+                                                <th>Total</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr>
+                                                <td>{invoiceOrder.issue}</td>
+                                                <td>1</td>
+                                                <td>${invoiceOrder.cost}</td>
+                                                <td>${invoiceOrder.cost}</td>
+                                            </tr>
+                                            </tbody>
+                                            <tfoot>
+                                            <tr>
+                                                <td colSpan="3" className="text-right">Subtotal:</td>
+                                                <td>${invoiceOrder.cost}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colSpan="3" className="text-right">Tax (18%):</td>
+                                                <td>${(invoiceOrder.cost * 0.18).toFixed(2)}</td>
+                                            </tr>
+                                            <tr className="total-row">
+                                                <td colSpan="3" className="text-right">Grand Total:</td>
+                                                <td>${(invoiceOrder.cost * 1.18).toFixed(2)}</td>
+                                            </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="invoice-footer">
+                                    <p>This invoice was computer generated and does not require a signature.</p>
+                                    <p>iRevix Repair Shop © 2024 - All Rights Reserved</p>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    className="print-invoice-button"
+                                    onClick={printInvoice}
+                                >
+                                    Print
+                                </button>
+                                <button className="modal-close-button" onClick={() => setShowInvoiceModal(false)}>Close</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

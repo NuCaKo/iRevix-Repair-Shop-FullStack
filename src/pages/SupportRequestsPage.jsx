@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/SupportRequestsPage.css';
+import Navbar from '../components/Navbar';
 import supportService from '../services/SupportService';
 
 const SupportRequestsPage = () => {
@@ -35,6 +36,7 @@ const SupportRequestsPage = () => {
             navigate('/login');
         }
     }, [navigate]);
+
     useEffect(() => {
         if (!currentUser) return;
 
@@ -54,8 +56,9 @@ const SupportRequestsPage = () => {
 
         setIsLoading(false);
     };
+
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         setNewRequest({
             ...newRequest,
             [name]: value
@@ -67,6 +70,7 @@ const SupportRequestsPage = () => {
             });
         }
     };
+
     const validateForm = () => {
         const errors = {};
 
@@ -83,6 +87,7 @@ const SupportRequestsPage = () => {
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -103,6 +108,7 @@ const SupportRequestsPage = () => {
         });
         setShowNewRequestForm(false);
     };
+
     const getFilteredRequests = () => {
         if (filter === 'all') {
             return supportRequests;
@@ -112,6 +118,7 @@ const SupportRequestsPage = () => {
             request.status.toLowerCase() === filter.toLowerCase()
         );
     };
+
     const getStatusBadgeClass = (status) => {
         switch (status.toLowerCase()) {
             case 'open':
@@ -124,6 +131,7 @@ const SupportRequestsPage = () => {
                 return '';
         }
     };
+
     const getPriorityBadgeClass = (priority) => {
         switch (priority.toLowerCase()) {
             case 'high':
@@ -136,6 +144,7 @@ const SupportRequestsPage = () => {
                 return '';
         }
     };
+
     const viewRequestDetails = (request) => {
         setSelectedRequest(request);
         if (!request.isReadByCustomer) {
@@ -146,10 +155,12 @@ const SupportRequestsPage = () => {
             setUnreadCount(prev => Math.max(0, prev - 1));
         }
     };
+
     const closeRequestDetails = () => {
         setSelectedRequest(null);
         setReplyText('');
     };
+
     const sendReply = () => {
         if (!replyText.trim() || !selectedRequest) return;
 
@@ -168,14 +179,17 @@ const SupportRequestsPage = () => {
             setReplyText('');
         }
     };
+
     const hasUnreadMessages = (request) => {
         return !request.isReadByCustomer;
     };
+
     const renderRequestDetails = () => {
         if (!selectedRequest) return null;
 
         return (
             <div className="request-details-overlay">
+                <Navbar/>
                 <div className="request-details-modal">
                     <div className="request-details-header">
                         <h2>{selectedRequest.title}</h2>
@@ -265,6 +279,7 @@ const SupportRequestsPage = () => {
             </div>
         );
     };
+
     const renderNewRequestForm = () => {
         return (
             <div className="new-request-container">
@@ -353,8 +368,10 @@ const SupportRequestsPage = () => {
             </div>
         );
     };
+
     return (
         <div className="support-page">
+            <Navbar />
             <div className="support-container">
                 {selectedRequest && renderRequestDetails()}
 
@@ -415,7 +432,8 @@ const SupportRequestsPage = () => {
                                         <div className="request-header">
                                             <h3 className="request-title">
                                                 {hasUnreadMessages(request) && (
-                                                    <span className="new-message-indicator" title="New messages">•</span>
+                                                    <span className="new-message-indicator"
+                                                          title="New messages">•</span>
                                                 )}
                                                 {request.title}
                                             </h3>
@@ -426,7 +444,8 @@ const SupportRequestsPage = () => {
 
                                         <div className="request-meta">
                                             <div className="request-date">{request.date}</div>
-                                            <div className={`priority-badge ${getPriorityBadgeClass(request.priority)}`}>
+                                            <div
+                                                className={`priority-badge ${getPriorityBadgeClass(request.priority)}`}>
                                                 {request.priority} Priority
                                             </div>
                                             <div className="request-category">{request.category}</div>
@@ -436,19 +455,17 @@ const SupportRequestsPage = () => {
                                             {request.description.length > 100
                                                 ? `${request.description.substring(0, 100)}...`
                                                 : request.description}
-                                        </p>
-
-                                        <div className="request-footer">
+                                        </p><div className="request-footer">
                                             <span className="message-count">
                                                 {request.messages.length} message{request.messages.length !== 1 ? 's' : ''}
                                             </span>
-                                            <button
-                                                className="view-details-button"
-                                                onClick={() => viewRequestDetails(request)}
-                                            >
-                                                View Details
-                                            </button>
-                                        </div>
+                                        <button
+                                            className="view-details-button"
+                                            onClick={() => viewRequestDetails(request)}
+                                        >
+                                            View Details
+                                        </button>
+                                    </div>
                                     </div>
                                 ))}
                             </div>

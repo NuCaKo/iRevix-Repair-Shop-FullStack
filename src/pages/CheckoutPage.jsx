@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Navbar from '../components/Navbar';
 import {
     faArrowLeft,
     faUser,
@@ -201,6 +202,7 @@ function CheckoutPage() {
 
     return (
         <div className="checkout-page-container">
+            <Navbar />
             <div className="checkout-header">
                 <h1>{orderType === 'parts' ? 'Parts Order' : orderType === 'services' ? 'Service Booking' : 'Checkout'}</h1>
                 <p>{itemsToCheckout.length} {itemsToCheckout.length === 1 ? 'item' : 'items'}</p>

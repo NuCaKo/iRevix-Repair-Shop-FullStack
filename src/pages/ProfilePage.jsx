@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import '../css/ProfilePage.css';
 
 const ProfilePage = () => {
@@ -784,6 +785,7 @@ const ProfilePage = () => {
 
     return (
         <div className="profile-container">
+            <Navbar />
             <div className="profile-content">
                 <div className="profile-header">
                     <div className="profile-avatar">

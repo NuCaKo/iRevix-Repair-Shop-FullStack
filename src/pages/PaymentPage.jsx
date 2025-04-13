@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCreditCard,
@@ -132,6 +133,7 @@ function PaymentPage() {
 
     return (
         <div className="payment-page-container">
+            <Navbar />
             <div className="payment-header">
                 <h1>Complete Your Payment</h1>
                 <p>Please enter your payment details to complete your order</p>

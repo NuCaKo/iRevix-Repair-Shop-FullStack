@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useCart } from '../CartContext';
+import Navbar from '../components/Navbar';
 import {
     faTrash, faPlus, faMinus, faArrowLeft, faTools, faMicrochip,
     faTabletScreenButton, faSignInAlt
@@ -160,6 +161,7 @@ function CartPage() {
 
     return (
         <div className="cart-page-container">
+            <Navbar />
             <div className="cart-page-header">
                 <h1>Your Cart</h1>
                 {isLoggedIn && userRole === 'customer' && (
