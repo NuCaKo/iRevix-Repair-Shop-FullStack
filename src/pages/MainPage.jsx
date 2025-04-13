@@ -184,7 +184,7 @@ function MainPage() {
         };
     }, []);
     const navigateToRepairServices = () => {
-        navigate('/repair-services');
+        navigate('/services');
     };
     const fadeInUp = {
         hidden: { opacity: 0, y: 20 },

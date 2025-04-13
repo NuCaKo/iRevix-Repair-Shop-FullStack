@@ -160,21 +160,46 @@ const ServicePanel = () => {
     const assignRepair = async (repair) => {
         try {
             console.log("🛠 Assigning repair:", repair);
+
+            // First update the status to "In Progress"
             const statusResponse = await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/status`, {
                 status: "In Progress"
             });
             console.log("✅ Status updated:", statusResponse.status);
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            console.log("👤 Current User from localStorage:", currentUser);
 
-            if (currentUser && currentUser.id) {
-                const techResponse = await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/technician/${currentUser.id}`);
-                console.log("✅ Technician assigned:", techResponse.status);
-            } else {
-                console.warn("⚠️ No valid currentUser found in localStorage.");
+            // Hard-code a technician ID for testing purposes if no user is found in localStorage
+            // This is temporary to debug the issue
+            let technicianId = 1; // Default technician ID for testing
+
+            // Try to get the current user from localStorage
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                console.log("👤 Current User from localStorage:", currentUser);
+
+                if (currentUser && currentUser.id) {
+                    technicianId = currentUser.id;
+                } else {
+                    console.warn("⚠️ No valid currentUser found in localStorage. Using default technician ID:", technicianId);
+                }
+            } catch (error) {
+                console.error("❌ Error retrieving currentUser:", error);
             }
+
+            // Assign the technician to the repair
+            try {
+                console.log(`🔄 Assigning technician ID ${technicianId} to repair ${repair.id}`);
+                const techResponse = await axios.put(`${API_BASE_URL}/repair-orders/${repair.id}/technician/${technicianId}`);
+                console.log("✅ Technician assigned:", techResponse.status);
+            } catch (techError) {
+                console.error("❌ Error assigning technician:", techError);
+                // Continue even if technician assignment fails
+            }
+
+            // Fetch updated data and navigate to tasks tab
             await fetchAllData();
-            const updatedRepair = { ...repair, status: "IN_REPAIR" };
+
+            // Get the updated repair with its new status
+            const updatedRepair = { ...repair, status: "In Progress" };
             setSelectedRepair(updatedRepair);
             setActiveTab('tasks');
 
