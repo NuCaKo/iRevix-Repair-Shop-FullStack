@@ -6,12 +6,13 @@ import ScrollToTop from '../components/ScrollToTop';
 import RepairShowcase from '../components/RepairShowcase';
 import '../css/mainPage.css';
 import '../css/repairServices.css';
-import { useCart } from '../CartContext'; // Import useCart hook
-import repairImage1 from '../images/repair1.png'; // MacBook repair
-import repairImage2 from '../images/repair2.jpeg'; // Apple Watch repair
-import repairImage3 from '../images/repair3.png'; // iPad repair (corrected)
-import repairImage4 from '../images/repair4.png'; // iPhone repair
-import repairImage5 from '../images/repair5.png'; // AirPods repair
+import { useCart } from '../CartContext';
+import { getDevicesAndModels } from '../services/api';
+import repairImage1 from '../images/repair1.png';
+import repairImage2 from '../images/repair2.jpeg';
+import repairImage3 from '../images/repair3.png';
+import repairImage4 from '../images/repair4.png';
+import repairImage5 from '../images/repair5.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faWrench,
@@ -102,14 +103,166 @@ function RepairServicesPage() {
     const [estimatedPrice, setEstimatedPrice] = useState(null);
     const [isVisible, setIsVisible] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
-    const [numericPrice, setNumericPrice] = useState(0); // Store numeric price for adding to cart
-    const [hasCalculatedPrice, setHasCalculatedPrice] = useState(false); // Track if price has been calculated
-    const { addToCart } = useCart(); // Get addToCart from context
-    const navigate = useNavigate(); // Add useNavigate hook
+    const [numericPrice, setNumericPrice] = useState(0);
+    const [hasCalculatedPrice, setHasCalculatedPrice] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [devices, setDevices] = useState([]);
+    const [deviceModels, setDeviceModels] = useState({});
+    const [validationError, setValidationError] = useState('');
+    const { addToCart } = useCart();
+    const navigate = useNavigate();
+
     useEffect(() => {
         setIsVisible(true);
         window.scrollTo(0, 0);
     }, []);
+
+    // Fetch devices and models from backend
+    useEffect(() => {
+        const fetchDevicesAndModels = async () => {
+            try {
+                setIsLoading(true);
+                const response = await getDevicesAndModels();
+
+                console.log('Fetched devices and models:', response);
+
+                // Map the devices with icons
+                const deviceIconMapping = {
+                    'iPhone': faMobileAlt,
+                    'iPad': faTabletScreenButton,
+                    'MacBook': faLaptop,
+                    'AirPods': faHeadphones,
+                    'Apple Watch': faClock
+                };
+
+                // Format the devices for the UI
+                const formattedDevices = response.devices.map(device => {
+                    return {
+                        id: device.id,
+                        name: device.name,
+                        icon: deviceIconMapping[device.name] || device.icon || faMobileAlt,
+                        style: device.name === 'MacBook' ? 'horizontal-device' : 'square-device',
+                        displayName: device.name,
+                        faIcon: deviceIconMapping[device.name] || faMobileAlt
+                    };
+                });
+
+                setDevices(formattedDevices);
+                setDeviceModels(response.deviceModels);
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Error fetching devices and models:', error);
+                setIsLoading(false);
+
+                // Fallback to static data if API fails
+                const fallbackDevices = [
+                    {
+                        id: 'Mac',
+                        name: 'Mac',
+                        icon: null,
+                        style: "horizontal-device",
+                        displayName: "MacBook",
+                        faIcon: faLaptop
+                    },
+                    {
+                        id: 'iPhone',
+                        name: 'iPhone',
+                        icon: null,
+                        style: "square-device",
+                        displayName: "iPhone",
+                        faIcon: faMobileAlt
+                    },
+                    {
+                        id: 'AirPods',
+                        name: 'AirPods',
+                        icon: null,
+                        style: "square-device",
+                        displayName: "AirPods",
+                        faIcon: faHeadphones
+                    },
+                    {
+                        id: 'Apple Watch',
+                        name: 'Apple Watch',
+                        icon: null,
+                        style: "square-device",
+                        displayName: "Apple Watch",
+                        faIcon: faClock
+                    },
+                    {
+                        id: 'iPad',
+                        name: 'iPad',
+                        icon: null,
+                        style: "square-device",
+                        displayName: "iPad",
+                        faIcon: faTabletScreenButton
+                    }
+                ];
+
+                setDevices(fallbackDevices);
+
+                const fallbackModels = {
+                    'Mac': [
+                        { value: "MacBook Pro 14\" (2023)", label: "MacBook Pro 14\" (2023)" },
+                        { value: "MacBook Pro 16\" (2023)", label: "MacBook Pro 16\" (2023)" },
+                        { value: "MacBook Air M2 (2022)", label: "MacBook Air M2 (2022)" },
+                        { value: "MacBook Air M1 (2020)", label: "MacBook Air M1 (2020)" },
+                        { value: "MacBook Pro 13\" (2020)", label: "MacBook Pro 13\" (2020)" },
+                        { value: "iMac 24\" (2021)", label: "iMac 24\" (2021)" },
+                        { value: "Mac Mini (2023)", label: "Mac Mini (2023)" },
+                        { value: "Other Mac", label: "Other Mac" }
+                    ],
+                    'iPhone': [
+                        { value: "iPhone 15 Pro Max", label: "iPhone 15 Pro Max" },
+                        { value: "iPhone 15 Pro", label: "iPhone 15 Pro" },
+                        { value: "iPhone 15 Plus", label: "iPhone 15 Plus" },
+                        { value: "iPhone 15", label: "iPhone 15" },
+                        { value: "iPhone 14 Pro Max", label: "iPhone 14 Pro Max" },
+                        { value: "iPhone 14 Pro", label: "iPhone 14 Pro" },
+                        { value: "iPhone 14 Plus", label: "iPhone 14 Plus" },
+                        { value: "iPhone 14", label: "iPhone 14" },
+                        { value: "iPhone 13", label: "iPhone 13" },
+                        { value: "iPhone 12", label: "iPhone 12" },
+                        { value: "iPhone 11", label: "iPhone 11" },
+                        { value: "iPhone XR", label: "iPhone XR" },
+                        { value: "iPhone SE", label: "iPhone SE" },
+                        { value: "Other iPhone", label: "Other iPhone" }
+                    ],
+                    'iPad': [
+                        { value: "iPad Pro 12.9\" (2022)", label: "iPad Pro 12.9\" (2022)" },
+                        { value: "iPad Pro 11\" (2022)", label: "iPad Pro 11\" (2022)" },
+                        { value: "iPad Air (2022)", label: "iPad Air (2022)" },
+                        { value: "iPad 10th gen", label: "iPad 10th gen" },
+                        { value: "iPad Mini 6th gen", label: "iPad Mini 6th gen" },
+                        { value: "iPad 9th gen", label: "iPad 9th gen" },
+                        { value: "Other iPad", label: "Other iPad" }
+                    ],
+                    'Apple Watch': [
+                        { value: "Apple Watch Ultra 2", label: "Apple Watch Ultra 2" },
+                        { value: "Apple Watch Series 9", label: "Apple Watch Series 9" },
+                        { value: "Apple Watch Series 8", label: "Apple Watch Series 8" },
+                        { value: "Apple Watch SE (2nd gen)", label: "Apple Watch SE (2nd gen)" },
+                        { value: "Apple Watch Series 7", label: "Apple Watch Series 7" },
+                        { value: "Apple Watch Series 6", label: "Apple Watch Series 6" },
+                        { value: "Apple Watch SE (1st gen)", label: "Apple Watch SE (1st gen)" },
+                        { value: "Other Apple Watch", label: "Other Apple Watch" }
+                    ],
+                    'AirPods': [
+                        { value: "AirPods Pro (2nd gen)", label: "AirPods Pro (2nd gen)" },
+                        { value: "AirPods Pro (1st gen)", label: "AirPods Pro (1st gen)" },
+                        { value: "AirPods (3rd gen)", label: "AirPods (3rd gen)" },
+                        { value: "AirPods (2nd gen)", label: "AirPods (2nd gen)" },
+                        { value: "AirPods Max", label: "AirPods Max" },
+                        { value: "Other AirPods", label: "Other AirPods" }
+                    ]
+                };
+
+                setDeviceModels(fallbackModels);
+            }
+        };
+
+        fetchDevicesAndModels();
+    }, []);
+
     useEffect(() => {
         setValidationError('');
         if (selectedProblems.length === 0) {
@@ -143,11 +296,13 @@ function RepairServicesPage() {
         setHasCalculatedPrice(true);
 
     }, [selectedProblems, subProblems, issueDescription]);
+
     useEffect(() => {
         setEstimatedPrice(null);
         setNumericPrice(0);
         setHasCalculatedPrice(false);
     }, [selectedDevice, selectedModel]);
+
     const fadeInUp = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
@@ -162,41 +317,10 @@ function RepairServicesPage() {
             }
         }
     };
+
     const slideInRight = {
         hidden: { x: 100, opacity: 0 },
         visible: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
-    };
-    const deviceIcons = {
-        Mac: {
-            icon: null,
-            style: "horizontal-device",
-            displayName: "MacBook",
-            faIcon: faLaptop
-        },
-        iPhone: {
-            icon: null,
-            style: "square-device",
-            displayName: "iPhone",
-            faIcon: faMobileAlt
-        },
-        AirPods: {
-            icon: null,
-            style: "square-device",
-            displayName: "AirPods",
-            faIcon: faHeadphones
-        },
-        "Apple Watch": {
-            icon: null,
-            style: "square-device",
-            displayName: "Apple Watch",
-            faIcon: faClock
-        },
-        iPad: {
-            icon: null,
-            style: "square-device",
-            displayName: "iPad",
-            faIcon: faTabletScreenButton
-        }
     };
 
     const handleDeviceSelection = (device) => {
@@ -292,7 +416,6 @@ function RepairServicesPage() {
         setNumericPrice(basePrice);
         setEstimatedPrice(`$${basePrice} - $${basePrice + 50}`);
     };
-    const [validationError, setValidationError] = useState('');
 
     const handleGetPrice = () => {
         setValidationError('');
@@ -314,6 +437,7 @@ function RepairServicesPage() {
         calculatePrice();
         setHasCalculatedPrice(true);
     };
+
     const handleProceedWithRepair = () => {
         if (selectedProblems.length === 0) {
             alert("Please select at least one problem before proceeding with repair.");
@@ -329,6 +453,11 @@ function RepairServicesPage() {
             }
             return problem;
         }).join(', ');
+
+        // Get the device icon
+        const deviceInfo = devices.find(d => d.id === selectedDevice);
+        const deviceIcon = deviceInfo ? deviceInfo.faIcon : faWrench;
+
         const repairItem = {
             id: `repair-${Date.now()}`, // Unique ID using timestamp
             name: `${selectedDevice} ${selectedModel} Repair`,
@@ -336,75 +465,30 @@ function RepairServicesPage() {
             price: numericPrice,
             quantity: 1,
             type: 'service',
-            icon: deviceIcons[selectedDevice]?.faIcon || faWrench
+            icon: deviceIcon
         };
         addToCart(repairItem);
     };
+
     const getIconColor = (device) => {
         return selectedDevice === device ? "#28a745" : "currentColor"; // Green if selected
     };
+
     const getModelOptions = (device) => {
-        switch(device) {
-            case 'Mac':
-                return [
-                    { value: "MacBook Pro 14\" (2023)", label: "MacBook Pro 14\" (2023)" },
-                    { value: "MacBook Pro 16\" (2023)", label: "MacBook Pro 16\" (2023)" },
-                    { value: "MacBook Air M2 (2022)", label: "MacBook Air M2 (2022)" },
-                    { value: "MacBook Air M1 (2020)", label: "MacBook Air M1 (2020)" },
-                    { value: "MacBook Pro 13\" (2020)", label: "MacBook Pro 13\" (2020)" },
-                    { value: "iMac 24\" (2021)", label: "iMac 24\" (2021)" },
-                    { value: "Mac Mini (2023)", label: "Mac Mini (2023)" },
-                    { value: "Other Mac", label: "Other Mac" }
-                ];
-            case 'iPhone':
-                return [
-                    { value: "iPhone 15 Pro Max", label: "iPhone 15 Pro Max" },
-                    { value: "iPhone 15 Pro", label: "iPhone 15 Pro" },
-                    { value: "iPhone 15 Plus", label: "iPhone 15 Plus" },
-                    { value: "iPhone 15", label: "iPhone 15" },
-                    { value: "iPhone 14 Pro Max", label: "iPhone 14 Pro Max" },
-                    { value: "iPhone 14 Pro", label: "iPhone 14 Pro" },
-                    { value: "iPhone 14 Plus", label: "iPhone 14 Plus" },
-                    { value: "iPhone 14", label: "iPhone 14" },
-                    { value: "iPhone 13", label: "iPhone 13" },
-                    { value: "iPhone 12", label: "iPhone 12" },
-                    { value: "iPhone 11", label: "iPhone 11" },
-                    { value: "iPhone XR", label: "iPhone XR" },
-                    { value: "iPhone SE", label: "iPhone SE" },
-                    { value: "Other iPhone", label: "Other iPhone" }
-                ];
-            case 'iPad':
-                return [
-                    { value: "iPad Pro 12.9\" (2022)", label: "iPad Pro 12.9\" (2022)" },
-                    { value: "iPad Pro 11\" (2022)", label: "iPad Pro 11\" (2022)" },
-                    { value: "iPad Air (2022)", label: "iPad Air (2022)" },
-                    { value: "iPad 10th gen", label: "iPad 10th gen" },
-                    { value: "iPad Mini 6th gen", label: "iPad Mini 6th gen" },
-                    { value: "iPad 9th gen", label: "iPad 9th gen" },
-                    { value: "Other iPad", label: "Other iPad" }
-                ];
-            case 'Apple Watch':
-                return [
-                    { value: "Apple Watch Ultra 2", label: "Apple Watch Ultra 2" },
-                    { value: "Apple Watch Series 9", label: "Apple Watch Series 9" },
-                    { value: "Apple Watch Series 8", label: "Apple Watch Series 8" },
-                    { value: "Apple Watch SE (2nd gen)", label: "Apple Watch SE (2nd gen)" },
-                    { value: "Apple Watch Series 7", label: "Apple Watch Series 7" },
-                    { value: "Apple Watch Series 6", label: "Apple Watch Series 6" },
-                    { value: "Apple Watch SE (1st gen)", label: "Apple Watch SE (1st gen)" },
-                    { value: "Other Apple Watch", label: "Other Apple Watch" }
-                ];
-            case 'AirPods':
-                return [
-                    { value: "AirPods Pro (2nd gen)", label: "AirPods Pro (2nd gen)" },
-                    { value: "AirPods Pro (1st gen)", label: "AirPods Pro (1st gen)" },
-                    { value: "AirPods (3rd gen)", label: "AirPods (3rd gen)" },
-                    { value: "AirPods (2nd gen)", label: "AirPods (2nd gen)" },
-                    { value: "AirPods Max", label: "AirPods Max" },
-                    { value: "Other AirPods", label: "Other AirPods" }
-                ];
-            default:
-                return [];
+        if (!deviceModels[device]) {
+            return [];
+        }
+
+        // Check if deviceModels[device] is an array of objects or strings
+        if (typeof deviceModels[device][0] === 'object') {
+            // If it's an array of objects with value/label properties
+            return deviceModels[device];
+        } else {
+            // If it's an array of strings, convert to value/label objects
+            return deviceModels[device].map(model => ({
+                value: model,
+                label: model
+            }));
         }
     };
 
@@ -421,71 +505,77 @@ function RepairServicesPage() {
 
             {/* DEVICE SELECTION SECTION (NOW AT THE TOP) */}
             <div className="device-selection-section">
-                <motion.div
-                    className="device-selection-container"
-                    initial="hidden"
-                    animate={isVisible ? "visible" : "hidden"}
-                    variants={fadeInUp}
-                >
-                    <h2>Get a Repair Quote</h2>
-                    <p className="section-subtitle">Select your device and issue to get a quick price estimate</p>
-
-                    <div className="device-selection-grid">
-                        {/* Create device selection items dynamically */}
-                        {Object.keys(deviceIcons).map((device) => (
-                            <motion.div
-                                key={device}
-                                className={`device-item ${deviceIcons[device].style} ${selectedDevice === device ? 'selected-device' : ''}`}
-                                onClick={() => handleDeviceSelection(device)}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                <div
-                                    className="device-placeholder"
-                                    onMouseEnter={() => setIsHovered(true)}
-                                    onMouseLeave={() => setIsHovered(false)}
-                                >
-                                    <FontAwesomeIcon
-                                        icon={deviceIcons[device].faIcon}
-                                        beat={isHovered && device === "Apple Watch"}
-                                        className="placeholder-icon"
-                                        color={getIconColor(device)}
-                                    />
-                                    <span>{deviceIcons[device].displayName}</span>
-                                </div>
-                            </motion.div>
-                        ))}
+                {isLoading ? (
+                    <div className="loading-indicator">
+                        <div className="spinner"></div>
+                        <p>Loading device information...</p>
                     </div>
+                ) : (
+                    <motion.div
+                        className="device-selection-container"
+                        initial="hidden"
+                        animate={isVisible ? "visible" : "hidden"}
+                        variants={fadeInUp}
+                    >
+                        <h2>Get a Repair Quote</h2>
+                        <p className="section-subtitle">Select your device and issue to get a quick price estimate</p>
 
-                    <AnimatePresence>
-                        {selectedDevice && (
-                            <motion.div
-                                className="model-selection-container"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <div className="model-selection">
-                                    <h3>Select Your {selectedDevice} Model</h3>
-                                    <p className="model-instruction">Choose your specific model for an accurate repair quote</p>
-                                    <select
-                                        value={selectedModel}
-                                        onChange={(e) => handleModelSelection(e.target.value)}
-                                        className="model-select"
+                        <div className="device-selection-grid">
+                            {devices.map((device) => (
+                                <motion.div
+                                    key={device.id}
+                                    className={`device-item ${device.style} ${selectedDevice === device.id ? 'selected-device' : ''}`}
+                                    onClick={() => handleDeviceSelection(device.id)}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    <div
+                                        className="device-placeholder"
+                                        onMouseEnter={() => setIsHovered(true)}
+                                        onMouseLeave={() => setIsHovered(false)}
                                     >
-                                        <option value="">-- Select a Model --</option>
-                                        {getModelOptions(selectedDevice).map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </motion.div>
+                                        <FontAwesomeIcon
+                                            icon={device.faIcon}
+                                            beat={isHovered && device.id === "Apple Watch"}
+                                            className="placeholder-icon"
+                                            color={getIconColor(device.id)}
+                                        />
+                                        <span>{device.displayName}</span>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        <AnimatePresence>
+                            {selectedDevice && (
+                                <motion.div
+                                    className="model-selection-container"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <div className="model-selection">
+                                        <h3>Select Your {selectedDevice} Model</h3>
+                                        <p className="model-instruction">Choose your specific model for an accurate repair quote</p>
+                                        <select
+                                            value={selectedModel}
+                                            onChange={(e) => handleModelSelection(e.target.value)}
+                                            className="model-select"
+                                        >
+                                            <option value="">-- Select a Model --</option>
+                                            {getModelOptions(selectedDevice).map(option => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+                )}
 
                 <AnimatePresence>
                     {selectedModel && (
@@ -626,7 +716,6 @@ function RepairServicesPage() {
                                     )}
                                 </AnimatePresence>
 
-                                {/* Get Price button removed as requested */}
                                 {validationError && (
                                     <div className="validation-error">
                                         {validationError}

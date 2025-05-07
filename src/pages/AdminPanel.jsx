@@ -18,7 +18,9 @@ import {
     deleteInventoryItem,
     fetchLowStockItems,
     createNotification,
-    restockInventoryItem
+    restockInventoryItem,
+    createInventoryItem,
+    adjustInventoryItemPrice
 } from '../services/api';
 import {
     BrowserRouter as Router,
@@ -93,6 +95,22 @@ function AdminPanel() {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [notifiedLowStockItems, setNotifiedLowStockItems] = useState([]);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
+    const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+    const [isPriceAdjustModalOpen, setIsPriceAdjustModalOpen] = useState(false);
+    const [priceAdjustItem, setPriceAdjustItem] = useState(null);
+    const [newPrice, setNewPrice] = useState(0);
+    const [newItemData, setNewItemData] = useState({
+        name: '',
+        partNumber: '',
+        description: '',
+        stockLevel: 0,
+        reorderPoint: 5,
+        price: 0,
+        supplier: '',
+        deviceType: '',
+        modelType: '',
+        lastRestocked: new Date().toISOString().split('T')[0]
+    });
     useEffect(() => {
         const storedUser = localStorage.getItem('currentUser');
 
@@ -1035,6 +1053,137 @@ function AdminPanel() {
             }
         }
     };
+    const handleOpenPriceAdjustModal = (item) => {
+        setPriceAdjustItem(item);
+        setNewPrice(item.price);
+        setIsPriceAdjustModalOpen(true);
+    };
+
+    const handleSavePriceAdjustment = async () => {
+        try {
+            // Validate the new price
+            const numericPrice = parseFloat(newPrice);
+            if (isNaN(numericPrice) || numericPrice < 0) {
+                alert('Please enter a valid price value.');
+                return;
+            }
+
+            console.log('Sending price adjustment request for item:', priceAdjustItem.id);
+            console.log('New price:', numericPrice);
+
+            const updatedItem = await adjustInventoryItemPrice(priceAdjustItem.id, numericPrice);
+
+            console.log('Received updated item:', updatedItem);
+
+            // Update the item in the inventory items list
+            const updatedItems = inventoryItems.map(item =>
+                item.id === updatedItem.id ? updatedItem : item
+            );
+
+            setInventoryItems(updatedItems);
+            setFilteredInventoryItems(updatedItems);
+            setIsPriceAdjustModalOpen(false);
+
+            alert(`Price for ${updatedItem.name} has been updated to $${updatedItem.price.toFixed(2)}.`);
+        } catch (error) {
+            console.error('Error in handleSavePriceAdjustment:', error);
+            alert(`Failed to adjust price: ${error.message || 'Unknown error'}`);
+        }
+    };
+
+    const handleNewItemInputChange = (e) => {
+        const { name, value } = e.target;
+        // Special handling for deviceType to reset modelType when device changes
+        if (name === 'deviceType') {
+            setNewItemData({ ...newItemData, deviceType: value, modelType: '' });
+        } else {
+            setNewItemData({ ...newItemData, [name]: value });
+        }
+    };
+
+    const handleAddItemSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            // Format the data for the API
+            const itemData = {
+                ...newItemData,
+                stockLevel: parseInt(newItemData.stockLevel),
+                reorderPoint: parseInt(newItemData.reorderPoint),
+                price: parseFloat(newItemData.price),
+                deviceType: newItemData.deviceType.toLowerCase() // Ensure lowercase for consistency
+            };
+
+            // Send data to the API
+            await createInventoryItem(itemData);
+
+            // Show success message
+            alert("New inventory item added successfully!");
+
+            // Close the modal and reset form
+            setIsAddItemModalOpen(false);
+            setNewItemData({
+                name: '',
+                partNumber: '',
+                description: '',
+                stockLevel: 0,
+                reorderPoint: 5,
+                price: 0,
+                supplier: '',
+                deviceType: '',
+                modelType: '',
+                lastRestocked: new Date().toISOString().split('T')[0]
+            });
+
+            // Refresh inventory data if appropriate selections are made
+            if (selectedDevices.length > 0 && selectedModels.length > 0) {
+                let deviceFound = false;
+                let modelFound = false;
+
+                // Check if the newly added item matches the current selection
+                selectedDevices.forEach(deviceId => {
+                    const device = devices.find(d => d.id === deviceId);
+                    if (device && device.name.toLowerCase() === itemData.deviceType.toLowerCase()) {
+                        deviceFound = true;
+                    }
+                });
+
+                if (selectedModels.includes(itemData.modelType)) {
+                    modelFound = true;
+                }
+
+                // If the new item matches the current selection, refresh the inventory
+                if (deviceFound && modelFound) {
+                    let allItems = [];
+                    for (const deviceId of selectedDevices) {
+                        for (const model of selectedModels) {
+                            if (deviceModels[deviceId]?.includes(model)) {
+                                try {
+                                    const items = await getInventoryParts(deviceId, model);
+                                    const itemsWithDetails = items.map(item => ({
+                                        ...item,
+                                        deviceId: deviceId,
+                                        deviceType: devices.find(d => d.id === deviceId)?.name || deviceId,
+                                        modelType: model
+                                    }));
+                                    allItems = [...allItems, ...itemsWithDetails];
+                                } catch (error) {
+                                    console.error(`Error refreshing items for ${deviceId} ${model}:`, error);
+                                }
+                            }
+                        }
+                    }
+                    setInventoryItems(allItems);
+                    setFilteredInventoryItems(
+                        showLowStockOnly ? allItems.filter(item => item.stockLevel <= item.reorderPoint) : allItems
+                    );
+                }
+            }
+        } catch (error) {
+            console.error("Error adding inventory item:", error);
+            alert("Failed to add inventory item. Please try again.");
+        }
+    };
+
     const exportRevenueReport = () => {
         try {
             if (!revenueData) {
@@ -1879,9 +2028,12 @@ function AdminPanel() {
                     <button className="action-btn" onClick={exportInventoryReport}>
                         <FontAwesomeIcon icon={faListAlt} /> Generate Inventory Report
                     </button>
+                    <button className="action-btn" onClick={() => setIsAddItemModalOpen(true)}>
+                        <FontAwesomeIcon icon={faMicrochip} /> Add New Item
+                    </button>
                     <button
                         className={`action-btn ${showLowStockOnly ? 'low-stock-active' : ''}`}
-                        onClick={handleLowStockToggle} // Use the new function instead
+                        onClick={handleLowStockToggle}
                     >
                         <FontAwesomeIcon icon={faClipboardList} /> Check Low Stock
                     </button>
@@ -2033,6 +2185,12 @@ function AdminPanel() {
                                             Restock
                                         </button>
                                         <button
+                                            className="adjust-price-btn green-btn"
+                                            onClick={() => handleOpenPriceAdjustModal(item)}
+                                        >
+                                            <FontAwesomeIcon icon={faMoneyBillWave} /> Adjust Price
+                                        </button>
+                                        <button
                                             className="action-btn delete-btn"
                                             onClick={(e) => handleDeleteItem(item.id, e)}
                                         >
@@ -2088,6 +2246,200 @@ function AdminPanel() {
                                     Confirm Restock
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Price Adjustment Modal */}
+            {isPriceAdjustModalOpen && priceAdjustItem && (
+                <div className="modal-overlay">
+                    <div className="price-adjust-modal">
+                        <div className="modal-header">
+                            <h2>
+                                <FontAwesomeIcon icon={faMoneyBillWave} /> Adjust Price
+                            </h2>
+                        </div>
+
+                        <div className="modal-content">
+                            <div className="item-details">
+                                <p><strong>Item:</strong> {priceAdjustItem.name}</p>
+                                <p><strong>Part Number:</strong> {priceAdjustItem.partNumber}</p>
+                                <p><strong>Current Price:</strong> ${priceAdjustItem.price.toFixed(2)}</p>
+                            </div>
+
+                            <div className="price-input-group">
+                                <label htmlFor="new-price">Enter New Price:</label>
+                                <div className="price-input-wrapper">
+                                    <input
+                                        id="new-price"
+                                        className="price-input"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        value={newPrice}
+                                        onChange={(e) => setNewPrice(parseFloat(e.target.value) || 0)}
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Simple Price Difference Display */}
+                            {newPrice !== priceAdjustItem.price && (
+                                <div className={`price-difference ${newPrice > priceAdjustItem.price ? 'price-increase' : 'price-decrease'}`}>
+                                    <p className="difference-text">
+                                        Difference with current price is {newPrice > priceAdjustItem.price ? '+' : '-'}$
+                                        {Math.abs(newPrice - priceAdjustItem.price).toFixed(2)}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="modal-footer">
+                            <button
+                                className="cancel-btn"
+                                onClick={() => setIsPriceAdjustModalOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="save-btn"
+                                onClick={handleSavePriceAdjustment}
+                                disabled={newPrice === priceAdjustItem.price}
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {isAddItemModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-container">
+                        <div className="modal-header">
+                            <h2>Add New Inventory Item</h2>
+                            <button className="close-button" onClick={() => setIsAddItemModalOpen(false)}>×</button>
+                        </div>
+                        <div className="modal-content">
+                            <form onSubmit={handleAddItemSubmit}>
+                                <div className="form-group">
+                                    <label>Part Name</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={newItemData.name}
+                                        onChange={handleNewItemInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Part Number</label>
+                                    <input
+                                        type="text"
+                                        name="partNumber"
+                                        value={newItemData.partNumber}
+                                        onChange={handleNewItemInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Description</label>
+                                    <textarea
+                                        name="description"
+                                        value={newItemData.description}
+                                        onChange={handleNewItemInputChange}
+                                        rows="3"
+                                    ></textarea>
+                                </div>
+                                <div className="form-row">
+                                    <div className="form-group half">
+                                        <label>Stock Level</label>
+                                        <input
+                                            type="number"
+                                            name="stockLevel"
+                                            value={newItemData.stockLevel}
+                                            onChange={handleNewItemInputChange}
+                                            min="0"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group half">
+                                        <label>Reorder Point</label>
+                                        <input
+                                            type="number"
+                                            name="reorderPoint"
+                                            value={newItemData.reorderPoint}
+                                            onChange={handleNewItemInputChange}
+                                            min="1"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label>Price ($)</label>
+                                    <input
+                                        type="number"
+                                        name="price"
+                                        value={newItemData.price}
+                                        onChange={handleNewItemInputChange}
+                                        step="1"
+                                        min="0"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Supplier</label>
+                                    <input
+                                        type="text"
+                                        name="supplier"
+                                        value={newItemData.supplier}
+                                        onChange={handleNewItemInputChange}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Device Type</label>
+                                    <select
+                                        name="deviceType"
+                                        value={newItemData.deviceType}
+                                        onChange={handleNewItemInputChange}
+                                        required
+                                    >
+                                        <option value="">Select Device Type</option>
+                                        {devices.map(device => (
+                                            <option key={device.id} value={device.name.toLowerCase()}>
+                                                {device.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Model Type</label>
+                                    <select
+                                        name="modelType"
+                                        value={newItemData.modelType}
+                                        onChange={handleNewItemInputChange}
+                                        disabled={!newItemData.deviceType}
+                                        required
+                                    >
+                                        <option value="">Select Model Type</option>
+                                        {newItemData.deviceType && deviceModels[newItemData.deviceType] &&
+                                            deviceModels[newItemData.deviceType].map(model => (
+                                                <option key={model} value={model}>
+                                                    {model}
+                                                </option>
+                                            ))
+                                        }
+                                    </select>
+                                </div>
+
+                                <div className="modal-footer">
+                                    <button type="button" className="modal-button secondary" onClick={() => setIsAddItemModalOpen(false)}>
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="modal-button primary">
+                                        Add Item
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>

@@ -20,120 +20,125 @@ import {
     faVolumeUp
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
+import { getDevicesAndModels, getInventoryParts } from '../services/api';
 
 function ReplacementParts() {
     const [selectedDevice, setSelectedDevice] = useState('');
     const [selectedModel, setSelectedModel] = useState('');
     const [partsData, setPartsData] = useState([]);
+    const [devices, setDevices] = useState([]);
+    const [deviceModels, setDeviceModels] = useState({});
+    const [isLoading, setIsLoading] = useState(true);
     const { addToCart } = useCart();
     const location = useLocation();
-    const devices = [
-        { id: 'iphone', name: 'iPhone', icon: faMobileAlt },
-        { id: 'ipad', name: 'iPad', icon: faTabletScreenButton },
-        { id: 'macbook', name: 'MacBook', icon: faLaptop },
-        { id: 'airpods', name: 'AirPods', icon: faHeadphones },
-        { id: 'applewatch', name: 'Apple Watch', icon: faClock }
-    ];
-    const deviceModels = {
-        iphone: ['iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 15', 'iPhone 14 Pro', 'iPhone 14', 'iPhone 13 Pro', 'iPhone 13', 'iPhone 12 Pro', 'iPhone 12', 'iPhone 11 Pro', 'iPhone 11'],
-        ipad: ['iPad Pro 12.9"', 'iPad Pro 11"', 'iPad Air', 'iPad Mini', 'iPad'],
-        macbook: ['MacBook Pro 16"', 'MacBook Pro 14"', 'MacBook Pro 13"', 'MacBook Air M2', 'MacBook Air M1'],
-        airpods: ['AirPods Pro 2nd Gen', 'AirPods Pro', 'AirPods 3rd Gen', 'AirPods 2nd Gen', 'AirPods Max'],
-        applewatch: ['Apple Watch Ultra 2', 'Apple Watch Series 9', 'Apple Watch Series 8', 'Apple Watch SE 2nd Gen', 'Apple Watch Series 7']
-    };
-    const commonParts = {
-        iphone: [
-            { icon: faScrewdriver, category: 'Screen Assembly', prefix: 'iPhone' },
-            { icon: faBatteryFull, category: 'Battery', prefix: 'iPhone' },
-            { icon: faVolumeUp, category: 'Speaker Assembly', prefix: 'iPhone' },
-            { icon: faCamera, category: 'Camera Module', prefix: 'iPhone' },
-            { icon: faMicrochip, category: 'Logic Board', prefix: 'iPhone' }
-        ],
-        ipad: [
-            { icon: faScrewdriver, category: 'Screen Assembly', prefix: 'iPad' },
-            { icon: faBatteryFull, category: 'Battery', prefix: 'iPad' },
-            { icon: faVolumeUp, category: 'Speaker Assembly', prefix: 'iPad' },
-            { icon: faCamera, category: 'Camera Module', prefix: 'iPad' },
-            { icon: faMicrochip, category: 'Logic Board', prefix: 'iPad' }
-        ],
-        macbook: [
-            { icon: faScrewdriver, category: 'Display Assembly', prefix: 'MacBook' },
-            { icon: faBatteryFull, category: 'Battery', prefix: 'MacBook' },
-            { icon: faMicrochip, category: 'Logic Board', prefix: 'MacBook' },
-            { icon: faVolumeUp, category: 'Speaker Assembly', prefix: 'MacBook' },
-            { icon: faLaptop, category: 'Keyboard', prefix: 'MacBook' }
-        ],
-        airpods: [
-            { icon: faBatteryFull, category: 'Battery', prefix: 'AirPods' },
-            { icon: faVolumeUp, category: 'Speaker Driver', prefix: 'AirPods' },
-            { icon: faMicrochip, category: 'Charging Case', prefix: 'AirPods' }
-        ],
-        applewatch: [
-            { icon: faScrewdriver, category: 'Screen Assembly', prefix: 'Apple Watch' },
-            { icon: faBatteryFull, category: 'Battery', prefix: 'Apple Watch' },
-            { icon: faMicrochip, category: 'Logic Board', prefix: 'Apple Watch' },
-            { icon: faClock, category: 'Heart Rate Sensor', prefix: 'Apple Watch' }
-        ]
-    };
-    const generateReplacementParts = (device, model) => {
-        if (!device || !model || !commonParts[device]) return [];
-        const getPriceForPart = (device, model, category) => {
-            const basePrices = {
-                iphone: { 'Screen Assembly': 149, 'Battery': 69, 'Speaker Assembly': 39, 'Camera Module': 89, 'Logic Board': 199 },
-                ipad: { 'Screen Assembly': 199, 'Battery': 89, 'Speaker Assembly': 49, 'Camera Module': 79, 'Logic Board': 249 },
-                macbook: { 'Display Assembly': 349, 'Battery': 129, 'Logic Board': 399, 'Speaker Assembly': 69, 'Keyboard': 149 },
-                airpods: { 'Battery': 49, 'Speaker Driver': 39, 'Charging Case': 69 },
-                applewatch: { 'Screen Assembly': 119, 'Battery': 49, 'Logic Board': 149, 'Heart Rate Sensor': 59 }
-            };
-            const isPremium = model.toLowerCase().includes('pro') || model.toLowerCase().includes('max');
-            const modelIndex = deviceModels[device].indexOf(model);
-            const isNewerModel = modelIndex < deviceModels[device].length / 2;
 
-            let basePrice = basePrices[device][category] || 99;
-            if (isPremium) basePrice *= 1.3;
-            if (isNewerModel) basePrice *= 1.2;
+    // Category to icon mapping for parts
+    const categoryToIcon = {
+        'Screen Assembly': faScrewdriver,
+        'Battery': faBatteryFull,
+        'Speaker Assembly': faVolumeUp,
+        'Camera Module': faCamera,
+        'Logic Board': faMicrochip,
+        'Display Assembly': faScrewdriver,
+        'Keyboard': faLaptop,
+        'Speaker Driver': faVolumeUp,
+        'Charging Case': faHeadphones,
+        'Heart Rate Sensor': faClock
+    };
 
-            return Math.round(basePrice * 100) / 100;
+    // Fetch devices and models from backend
+    useEffect(() => {
+        const fetchDevicesAndModels = async () => {
+            try {
+                setIsLoading(true);
+                const response = await getDevicesAndModels();
+
+                console.log('Fetched devices and models:', response);
+
+                setDevices(response.devices);
+                setDeviceModels(response.deviceModels);
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Error fetching devices and models:', error);
+                setIsLoading(false);
+                // Fallback to static data if API fails
+                setDevices([
+                    { id: 'iphone', name: 'iPhone', icon: faMobileAlt },
+                    { id: 'ipad', name: 'iPad', icon: faTabletScreenButton },
+                    { id: 'macbook', name: 'MacBook', icon: faLaptop },
+                    { id: 'airpods', name: 'AirPods', icon: faHeadphones },
+                    { id: 'applewatch', name: 'Apple Watch', icon: faClock }
+                ]);
+                setDeviceModels({
+                    iphone: ['iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 15', 'iPhone 14 Pro', 'iPhone 14', 'iPhone 13 Pro', 'iPhone 13', 'iPhone 12 Pro', 'iPhone 12', 'iPhone 11 Pro', 'iPhone 11'],
+                    ipad: ['iPad Pro 12.9"', 'iPad Pro 11"', 'iPad Air', 'iPad Mini', 'iPad'],
+                    macbook: ['MacBook Pro 16"', 'MacBook Pro 14"', 'MacBook Pro 13"', 'MacBook Air M2', 'MacBook Air M1'],
+                    airpods: ['AirPods Pro 2nd Gen', 'AirPods Pro', 'AirPods 3rd Gen', 'AirPods 2nd Gen', 'AirPods Max'],
+                    applewatch: ['Apple Watch Ultra 2', 'Apple Watch Series 9', 'Apple Watch Series 8', 'Apple Watch SE 2nd Gen', 'Apple Watch Series 7']
+                });
+            }
         };
-        return commonParts[device].map((part, index) => {
-            const price = getPriceForPart(device, model, part.category);
-            const modelPrefix = model.replace(/"/g, ''); // Remove quotes from model name
 
-            return {
-                id: `${device}-${index}-${Math.floor(Math.random() * 1000)}`,
-                name: `${part.category} for ${modelPrefix}`,
-                price: price,
-                icon: part.icon,
-                description: `Genuine replacement ${part.category.toLowerCase()} for your ${modelPrefix}. Compatible with ${modelPrefix} models.`,
-                compatibility: [model],
-                partNumber: `${part.prefix}-${part.category.replace(/\s/g, '')}-${Math.floor(Math.random() * 10000)}`
-            };
-        });
-    };
+        fetchDevicesAndModels();
+    }, []);
+
+    // Fetch parts data when device and model are selected
     useEffect(() => {
         if (selectedDevice && selectedModel) {
-            fetch(`http://localhost:8080/api/replacement-parts/model?model=${encodeURIComponent(selectedModel)}`)
-                .then(res => res.json())
-                .then(data => {
-                    const formattedParts = data.map((part, index) => ({
-                        id: part.id || `${selectedDevice}-${index}-${Math.random() * 1000}`,
-                        name: part.name,
-                        price: part.price,
-                        icon: faScrewdriver, // varsayılan ikon ya da kategoriye göre seçilebilir
-                        description: part.description,
-                        compatibility: [part.modelName],
-                        partNumber: part.partNumber,
-                        image: part.imageUrl || `https://source.unsplash.com/random/100x100/?${part.name}`
-                    }));
+            const fetchParts = async () => {
+                try {
+                    setIsLoading(true);
+                    console.log(`Fetching parts for ${selectedDevice} ${selectedModel}`);
+
+                    // Get the device name from the selected device id
+                    const deviceObject = devices.find(d => d.id === selectedDevice);
+                    const deviceName = deviceObject ? deviceObject.name : selectedDevice;
+
+                    // Fetch parts from backend using the device name and selected model
+                    const parts = await getInventoryParts(deviceName, selectedModel);
+
+                    console.log('Fetched parts:', parts);
+
+                    // Format parts data with icons based on categories
+                    const formattedParts = parts.map(part => {
+                        // Determine icon based on part category or name
+                        let icon = faScrewdriver; // Default icon
+
+                        // Try to match part name with category
+                        for (const [category, categoryIcon] of Object.entries(categoryToIcon)) {
+                            if (part.name.toLowerCase().includes(category.toLowerCase())) {
+                                icon = categoryIcon;
+                                break;
+                            }
+                        }
+
+                        return {
+                            id: part.id,
+                            name: part.name,
+                            price: part.price,
+                            icon: icon,
+                            description: part.description || `Genuine replacement part for your ${selectedModel}. Original quality with warranty.`,
+                            compatibility: [selectedModel],
+                            partNumber: part.partNumber,
+                            stockLevel: part.stockLevel,
+                            image: part.imageUrl || `https://source.unsplash.com/random/100x100/?${part.name}`
+                        };
+                    });
 
                     setPartsData(formattedParts);
-                })
-                .catch(err => console.error("Error fetching parts:", err));
+                    setIsLoading(false);
+                } catch (error) {
+                    console.error('Error fetching parts:', error);
+                    setIsLoading(false);
+                    setPartsData([]); // Clear parts data on error
+                }
+            };
+
+            fetchParts();
         } else {
             setPartsData([]);
         }
-    }, [selectedDevice, selectedModel]);
-
+    }, [selectedDevice, selectedModel, devices]);
 
     const handleDeviceSelect = (deviceId) => {
         setSelectedDevice(deviceId);
@@ -179,6 +184,7 @@ function ReplacementParts() {
             alert("Failed to add item to cart.");
         }
     };
+
     const fadeIn = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
@@ -197,100 +203,113 @@ function ReplacementParts() {
             </div>
 
             <div className="parts-container">
-                <div className="selection-flow">
-                    {/* Step 1: Device Selection */}
-                    <motion.div
-                        className="selection-section"
-                        initial="hidden"
-                        animate="visible"
-                        variants={fadeIn}
-                    >
-                        <h2>Select Your Device</h2>
-                        <div className="device-grid">
-                            {devices.map(device => (
-                                <div
-                                    key={device.id}
-                                    className={`device-card ${selectedDevice === device.id ? 'selected' : ''}`}
-                                    onClick={() => handleDeviceSelect(device.id)}
-                                >
-                                    <FontAwesomeIcon icon={device.icon} className="device-icon" />
-                                    <h3>{device.name}</h3>
-                                    {selectedDevice === device.id && (
-                                        <div className="selected-check"></div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </motion.div>
-
-                    {/* Step 2: Model Selection */}
-                    {selectedDevice && (
+                {isLoading ? (
+                    <div className="loading-indicator">
+                        <div className="spinner"></div>
+                        <p>Loading...</p>
+                    </div>
+                ) : (
+                    <div className="selection-flow">
+                        {/* Step 1: Device Selection */}
                         <motion.div
                             className="selection-section"
                             initial="hidden"
                             animate="visible"
                             variants={fadeIn}
                         >
-                            <h2>Select Your Model</h2>
-                            <div className="model-grid">
-                                {deviceModels[selectedDevice]?.map(model => (
+                            <h2>Select Your Device</h2>
+                            <div className="device-grid">
+                                {devices.map(device => (
                                     <div
-                                        key={model}
-                                        className={`model-card ${selectedModel === model ? 'selected' : ''}`}
-                                        onClick={() => handleModelSelect(model)}
+                                        key={device.id}
+                                        className={`device-card ${selectedDevice === device.id ? 'selected' : ''}`}
+                                        onClick={() => handleDeviceSelect(device.id)}
                                     >
-                                        <h3>{model}</h3>
-                                        <FontAwesomeIcon icon={faChevronRight} className="arrow-icon" />
+                                        <FontAwesomeIcon icon={device.icon} className="device-icon" />
+                                        <h3>{device.name}</h3>
+                                        {selectedDevice === device.id && (
+                                            <div className="selected-check"></div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         </motion.div>
-                    )}
 
-                    {/* Step 3: Parts Selection */}
-                    {selectedModel && (
-                        <motion.div
-                            className="selection-section"
-                            initial="hidden"
-                            animate="visible"
-                            variants={fadeIn}
-                        >
-                            <h2>Available Replacement Parts for {selectedModel}</h2>
-                            <div className="parts-grid">
-                                {partsData.length > 0 ? (
-                                    partsData.map(part => (
-                                        <div key={part.id} className="part-card">
-                                            <div className="part-image">
-                                                <div className="placeholder-image">
-                                                    <FontAwesomeIcon icon={part.icon || faMobileAlt} className="placeholder-producst-icon" />
-                                                </div>
-                                            </div>
-                                            <div className="part-details">
-                                                <h3>{part.name}</h3>
-                                                <p className="part-number">Part #: {part.partNumber}</p>
-                                                <p className="part-description">{part.description}</p>
-                                                <div className="part-price-row">
-                                                    <span className="part-price">${part.price.toFixed(2)}</span>
-                                                    <button
-                                                        className="add-to-cart-btn"
-                                                        onClick={() => handleAddToCart(part)}
-                                                    >
-                                                        <FontAwesomeIcon icon={faShoppingCart} />
-                                                        Add to Cart
-                                                    </button>
-                                                </div>
-                                            </div>
+                        {/* Step 2: Model Selection */}
+                        {selectedDevice && (
+                            <motion.div
+                                className="selection-section"
+                                initial="hidden"
+                                animate="visible"
+                                variants={fadeIn}
+                            >
+                                <h2>Select Your Model</h2>
+                                <div className="model-grid">
+                                    {deviceModels[selectedDevice]?.map(model => (
+                                        <div
+                                            key={model}
+                                            className={`model-card ${selectedModel === model ? 'selected' : ''}`}
+                                            onClick={() => handleModelSelect(model)}
+                                        >
+                                            <h3>{model}</h3>
+                                            <FontAwesomeIcon icon={faChevronRight} className="arrow-icon" />
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="no-parts">
-                                        <p>No replacement parts available for this model.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* Step 3: Parts Selection */}
+                        {selectedModel && (
+                            <motion.div
+                                className="selection-section"
+                                initial="hidden"
+                                animate="visible"
+                                variants={fadeIn}
+                            >
+                                <h2>Available Replacement Parts for {selectedModel}</h2>
+                                <div className="parts-grid">
+                                    {partsData.length > 0 ? (
+                                        partsData.map(part => (
+                                            <div key={part.id} className="part-card">
+                                                <div className="part-image">
+                                                    <div className="placeholder-image">
+                                                        <FontAwesomeIcon icon={part.icon || faMobileAlt} className="placeholder-producst-icon" />
+                                                    </div>
+                                                </div>
+                                                <div className="part-details">
+                                                    <h3>{part.name}</h3>
+                                                    <p className="part-number">Part #: {part.partNumber}</p>
+                                                    <p className="part-description">{part.description}</p>
+                                                    <div className="part-inventory-status">
+                                                        <span className={`stock-status ${part.stockLevel > 5 ? 'in-stock' : part.stockLevel > 0 ? 'low-stock' : 'out-of-stock'}`}>
+                                                            {part.stockLevel > 5 ? 'In Stock' : part.stockLevel > 0 ? `Low Stock: ${part.stockLevel} left` : 'Out of Stock'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="part-price-row">
+                                                        <span className="part-price">${part.price.toFixed(2)}</span>
+                                                        <button
+                                                            className="add-to-cart-btn"
+                                                            onClick={() => handleAddToCart(part)}
+                                                            disabled={part.stockLevel <= 0}
+                                                        >
+                                                            <FontAwesomeIcon icon={faShoppingCart} />
+                                                            {part.stockLevel > 0 ? 'Add to Cart' : 'Out of Stock'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="no-parts">
+                                            <p>No replacement parts available for this model.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <ScrollToTop />
