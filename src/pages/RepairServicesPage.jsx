@@ -7,7 +7,11 @@ import RepairShowcase from '../components/RepairShowcase';
 import '../css/mainPage.css';
 import '../css/repairServices.css';
 import { useCart } from '../CartContext';
-import { getDevicesAndModels } from '../services/api';
+import {
+    getDevicesAndModels,
+    getServiceTypes,
+    getServiceOptions
+} from '../services/api';
 import repairImage1 from '../images/repair1.png';
 import repairImage2 from '../images/repair2.jpeg';
 import repairImage3 from '../images/repair3.png';
@@ -26,73 +30,11 @@ import {
     faClock,
     faShield,
     faStar,
-    faThumbsUp
+    faThumbsUp,
+    faInfoCircle
 } from '@fortawesome/free-solid-svg-icons';
 
 import { motion, AnimatePresence } from 'framer-motion';
-
-const repairTypes = [
-    {
-        title: "MacBook Repair",
-        image: repairImage1,
-        description: "Professional MacBook repair with genuine Apple parts and expert technicians.",
-        services: [
-            "Logic board repair",
-            "Screen replacement",
-            "Battery replacement",
-            "Water damage recovery",
-            "SSD/RAM upgrades"
-        ]
-    },
-    {
-        title: "Apple Watch Repair",
-        image: repairImage2,
-        description: "Specialized Apple Watch repair for all generations by certified technicians.",
-        services: [
-            "Screen replacement",
-            "Battery service",
-            "Button repair",
-            "Water damage repair",
-            "Sensor calibration"
-        ]
-    },
-    {
-        title: "iPad Repair",
-        image: repairImage3,
-        description: "Expert iPad repair services for all models with same-day service available.",
-        services: [
-            "Screen replacement",
-            "Battery replacement",
-            "Charging port repair",
-            "Camera module repair",
-            "Home button repair"
-        ]
-    },
-    {
-        title: "iPhone Repair",
-        image: repairImage4,
-        description: "Fast and reliable iPhone repair for all models with warranty on parts and labor.",
-        services: [
-            "Screen replacement",
-            "Battery replacement",
-            "Camera repair",
-            "Charging port repair",
-            "Motherboard repair"
-        ]
-    },
-    {
-        title: "AirPods Repair",
-        image: repairImage5,
-        description: "Specialized AirPods and AirPods Pro repair services for all issues.",
-        services: [
-            "Charging case repair",
-            "Battery replacement",
-            "Sound quality issues",
-            "Connectivity problems",
-            "Physical damage repair"
-        ]
-    }
-];
 
 function RepairServicesPage() {
     const [selectedDevice, setSelectedDevice] = useState('');
@@ -109,12 +51,116 @@ function RepairServicesPage() {
     const [devices, setDevices] = useState([]);
     const [deviceModels, setDeviceModels] = useState({});
     const [validationError, setValidationError] = useState('');
+    const [priceBreakdown, setPriceBreakdown] = useState([]);
     const { addToCart } = useCart();
     const navigate = useNavigate();
+
+    // Dynamic service data state variables
+    const [repairTypes, setRepairTypes] = useState([]);
+    const [serviceTypesByDevice, setServiceTypesByDevice] = useState({});
+    const [serviceOptions, setServiceOptions] = useState({});
+    const [otherIssueBasePrice, setOtherIssueBasePrice] = useState(45); // A configurable default
 
     useEffect(() => {
         setIsVisible(true);
         window.scrollTo(0, 0);
+    }, []);
+
+    // Fetch repair service types and options
+    useEffect(() => {
+        const fetchRepairTypes = async () => {
+            try {
+                setIsLoading(true);
+                // Fetch active service types
+                const serviceTypesData = await getServiceTypes(null, true);
+
+                if (serviceTypesData && serviceTypesData.length > 0) {
+                    // Process data for RepairShowcase component format
+                    const processedTypes = serviceTypesData.map(serviceType => {
+                        // Use provided image URL or fallback to repairImage based on device type
+                        let imageSource;
+
+                        switch(serviceType.deviceType.toLowerCase()) {
+                            case 'macbook':
+                                imageSource = repairImage1;
+                                break;
+                            case 'applewatch':
+                                imageSource = repairImage2;
+                                break;
+                            case 'ipad':
+                                imageSource = repairImage3;
+                                break;
+                            case 'iphone':
+                                imageSource = repairImage4;
+                                break;
+                            case 'airpods':
+                                imageSource = repairImage5;
+                                break;
+                            default:
+                                imageSource = repairImage1;
+                        }
+
+                        return {
+                            title: serviceType.title,
+                            image: serviceType.imageUrl || imageSource,
+                            description: serviceType.description || `Professional ${serviceType.title} with genuine Apple parts and expert technicians.`,
+                            services: [], // Will be populated from service options
+                            id: serviceType.id // Keep track of the ID for fetching options
+                        };
+                    });
+
+                    setRepairTypes(processedTypes);
+
+                    // Organize service types by device for the repair form
+                    const typesByDevice = {};
+                    serviceTypesData.forEach(serviceType => {
+                        if (!typesByDevice[serviceType.deviceType]) {
+                            typesByDevice[serviceType.deviceType] = [];
+                        }
+                        typesByDevice[serviceType.deviceType].push(serviceType);
+                    });
+
+                    setServiceTypesByDevice(typesByDevice);
+
+                    // Fetch service options for each service type
+                    const optionsPromises = serviceTypesData.map(serviceType =>
+                        getServiceOptions(serviceType.id, true)
+                    );
+
+                    const optionsResults = await Promise.all(optionsPromises);
+
+                    // Organize options by service type ID
+                    const optionsByType = {};
+                    serviceTypesData.forEach((serviceType, index) => {
+                        optionsByType[serviceType.id] = optionsResults[index] || [];
+                    });
+
+                    setServiceOptions(optionsByType);
+
+                    // Update repair types with their services
+                    const updatedTypes = processedTypes.map(type => {
+                        const typeOptions = optionsByType[type.id] || [];
+                        return {
+                            ...type,
+                            services: typeOptions.map(option => option.name).slice(0, 5) // Get up to 5 services
+                        };
+                    });
+
+                    setRepairTypes(updatedTypes);
+                }
+
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Error fetching repair types:', error);
+                setIsLoading(false);
+                // Fallback to empty arrays instead of hardcoded data
+                setRepairTypes([]);
+                setServiceTypesByDevice({});
+                setServiceOptions({});
+            }
+        };
+
+        fetchRepairTypes();
     }, []);
 
     // Fetch devices and models from backend
@@ -157,15 +203,15 @@ function RepairServicesPage() {
                 // Fallback to static data if API fails
                 const fallbackDevices = [
                     {
-                        id: 'Mac',
-                        name: 'Mac',
+                        id: 'macbook',
+                        name: 'MacBook',
                         icon: null,
                         style: "horizontal-device",
                         displayName: "MacBook",
                         faIcon: faLaptop
                     },
                     {
-                        id: 'iPhone',
+                        id: 'iphone',
                         name: 'iPhone',
                         icon: null,
                         style: "square-device",
@@ -173,7 +219,7 @@ function RepairServicesPage() {
                         faIcon: faMobileAlt
                     },
                     {
-                        id: 'AirPods',
+                        id: 'airpods',
                         name: 'AirPods',
                         icon: null,
                         style: "square-device",
@@ -181,7 +227,7 @@ function RepairServicesPage() {
                         faIcon: faHeadphones
                     },
                     {
-                        id: 'Apple Watch',
+                        id: 'applewatch',
                         name: 'Apple Watch',
                         icon: null,
                         style: "square-device",
@@ -189,7 +235,7 @@ function RepairServicesPage() {
                         faIcon: faClock
                     },
                     {
-                        id: 'iPad',
+                        id: 'ipad',
                         name: 'iPad',
                         icon: null,
                         style: "square-device",
@@ -201,7 +247,7 @@ function RepairServicesPage() {
                 setDevices(fallbackDevices);
 
                 const fallbackModels = {
-                    'Mac': [
+                    'macbook': [
                         { value: "MacBook Pro 14\" (2023)", label: "MacBook Pro 14\" (2023)" },
                         { value: "MacBook Pro 16\" (2023)", label: "MacBook Pro 16\" (2023)" },
                         { value: "MacBook Air M2 (2022)", label: "MacBook Air M2 (2022)" },
@@ -211,7 +257,7 @@ function RepairServicesPage() {
                         { value: "Mac Mini (2023)", label: "Mac Mini (2023)" },
                         { value: "Other Mac", label: "Other Mac" }
                     ],
-                    'iPhone': [
+                    'iphone': [
                         { value: "iPhone 15 Pro Max", label: "iPhone 15 Pro Max" },
                         { value: "iPhone 15 Pro", label: "iPhone 15 Pro" },
                         { value: "iPhone 15 Plus", label: "iPhone 15 Plus" },
@@ -227,7 +273,7 @@ function RepairServicesPage() {
                         { value: "iPhone SE", label: "iPhone SE" },
                         { value: "Other iPhone", label: "Other iPhone" }
                     ],
-                    'iPad': [
+                    'ipad': [
                         { value: "iPad Pro 12.9\" (2022)", label: "iPad Pro 12.9\" (2022)" },
                         { value: "iPad Pro 11\" (2022)", label: "iPad Pro 11\" (2022)" },
                         { value: "iPad Air (2022)", label: "iPad Air (2022)" },
@@ -236,7 +282,7 @@ function RepairServicesPage() {
                         { value: "iPad 9th gen", label: "iPad 9th gen" },
                         { value: "Other iPad", label: "Other iPad" }
                     ],
-                    'Apple Watch': [
+                    'applewatch': [
                         { value: "Apple Watch Ultra 2", label: "Apple Watch Ultra 2" },
                         { value: "Apple Watch Series 9", label: "Apple Watch Series 9" },
                         { value: "Apple Watch Series 8", label: "Apple Watch Series 8" },
@@ -246,7 +292,7 @@ function RepairServicesPage() {
                         { value: "Apple Watch SE (1st gen)", label: "Apple Watch SE (1st gen)" },
                         { value: "Other Apple Watch", label: "Other Apple Watch" }
                     ],
-                    'AirPods': [
+                    'airpods': [
                         { value: "AirPods Pro (2nd gen)", label: "AirPods Pro (2nd gen)" },
                         { value: "AirPods Pro (1st gen)", label: "AirPods Pro (1st gen)" },
                         { value: "AirPods (3rd gen)", label: "AirPods (3rd gen)" },
@@ -271,36 +317,35 @@ function RepairServicesPage() {
             setHasCalculatedPrice(false);
             return;
         }
-        const standardProblemsWithoutSubIssues = selectedProblems.filter(problem => {
-            return problem !== 'Other' && (!subProblems[problem] || subProblems[problem] === '');
+
+        // Check if any service type is missing a sub-option selection
+        const hasIncompleteSelections = selectedProblems.some(problem => {
+            if (problem === 'Other') {
+                return issueDescription.trim() === '';
+            }
+
+            return !subProblems[problem] || subProblems[problem] === '';
         });
 
-        if (standardProblemsWithoutSubIssues.length > 0) {
-            setValidationError("Please choose the specific issue from the dropdown");
+        if (hasIncompleteSelections) {
+            setValidationError("Please select options for all issues or provide details for custom issues");
             setEstimatedPrice(null);
             setNumericPrice(0);
             setHasCalculatedPrice(false);
             return;
         }
-        const hasOtherSelected = selectedProblems.includes('Other');
-        const isOtherDescriptionEmpty = hasOtherSelected && issueDescription.trim() === '';
 
-        if (isOtherDescriptionEmpty) {
-            setValidationError("For custom issues, the price will be calculated at the repair shop");
-            setEstimatedPrice(null);
-            setNumericPrice(0);
-            setHasCalculatedPrice(false);
-            return;
-        }
         calculatePrice();
         setHasCalculatedPrice(true);
-
     }, [selectedProblems, subProblems, issueDescription]);
 
     useEffect(() => {
         setEstimatedPrice(null);
         setNumericPrice(0);
         setHasCalculatedPrice(false);
+        setSelectedProblems([]);
+        setSubProblems({});
+        setIssueDescription('');
     }, [selectedDevice, selectedModel]);
 
     const fadeInUp = {
@@ -365,13 +410,16 @@ function RepairServicesPage() {
         }));
     };
 
+    // Fully dynamic price calculation with breakdown
     const calculatePrice = () => {
         if (selectedProblems.length === 0) {
             setEstimatedPrice(null);
             setNumericPrice(0);
+            setPriceBreakdown([]);
             setHasCalculatedPrice(false);
             return;
         }
+
         const hasOtherSelected = selectedProblems.includes('Other');
         const regularProblems = selectedProblems.filter(problem => problem !== 'Other');
         const hasUnselectedRegularIssues = regularProblems.some(problem => {
@@ -381,40 +429,65 @@ function RepairServicesPage() {
         if (hasUnselectedRegularIssues) {
             setEstimatedPrice(null);
             setNumericPrice(0);
+            setPriceBreakdown([]);
             return;
         }
+
         let basePrice = 0;
+        const breakdown = [];
 
-        if (selectedProblems.includes('Battery') && subProblems['Battery']) {
-            if (subProblems['Battery'] === 'Battery Replacement') {
-                basePrice += 50;
-            } else if (subProblems['Battery'] === 'Charging Port Issue') {
-                basePrice += 40;
+        // Calculate price based on selected services and options from database
+        regularProblems.forEach(problem => {
+            // Find the service type that matches this problem
+            const deviceTypes = serviceTypesByDevice[selectedDevice] || [];
+            const serviceType = deviceTypes.find(type => type.title === problem);
+
+            if (serviceType) {
+                // Add base price for this service type
+                const serviceBasePrice = serviceType.basePrice || 0;
+                basePrice += serviceBasePrice;
+
+                // Add to breakdown
+                breakdown.push({
+                    label: `${problem} (Base Service Fee)`,
+                    price: serviceBasePrice
+                });
+
+                // Get selected option
+                const selectedOption = subProblems[problem];
+                if (selectedOption) {
+                    // Find the matching option and its price
+                    const typeOptions = serviceOptions[serviceType.id] || [];
+                    const option = typeOptions.find(opt => opt.name === selectedOption);
+
+                    if (option) {
+                        const optionPrice = option.price || 0;
+                        basePrice += optionPrice;
+
+                        // Add to breakdown
+                        breakdown.push({
+                            label: selectedOption,
+                            price: optionPrice
+                        });
+                    }
+                }
             }
+        });
+
+        // Add default price for "Other" issues if selected
+        if (hasOtherSelected && issueDescription.trim() !== '') {
+            basePrice += otherIssueBasePrice;
+
+            // Add to breakdown
+            breakdown.push({
+                label: 'Other Issue Fee',
+                price: otherIssueBasePrice
+            });
         }
 
-        if (selectedProblems.includes('Screen') && subProblems['Screen']) {
-            if (subProblems['Screen'] === 'Front Screen Cracked') {
-                basePrice += 100;
-            } else if (subProblems['Screen'] === 'Back Glass Cracked') {
-                basePrice += 80;
-            }
-        }
-
-        if (selectedProblems.includes('Motherboard') && subProblems['Motherboard']) {
-            if (subProblems['Motherboard'] === 'Device Not Powering On') {
-                basePrice += 120;
-            }
-        }
-
-        if (selectedProblems.includes('Other') && issueDescription.trim() !== '') {
-            basePrice += 45; // Base price for other issues
-        }
-        if (basePrice === 0 && selectedProblems.length > 0) {
-            basePrice = 50; // Default base price
-        }
         setNumericPrice(basePrice);
-        setEstimatedPrice(`$${basePrice} - $${basePrice + 50}`);
+        setEstimatedPrice(`$${basePrice.toFixed(2)} - $${(basePrice + 50).toFixed(2)}`);
+        setPriceBreakdown(breakdown);
     };
 
     const handleGetPrice = () => {
@@ -423,14 +496,16 @@ function RepairServicesPage() {
             setValidationError("Please select at least one problem to get a price estimate.");
             return;
         }
+
         const hasIncompleteIssues = selectedProblems.some(problem => {
             if (problem === 'Other') {
                 return issueDescription.trim() === '';
             }
             return !subProblems[problem] || subProblems[problem] === '';
         });
+
         if (hasIncompleteIssues) {
-            setValidationError("For custom issues, the price will be calculated at the repair shop");
+            setValidationError("Please complete all selections to get an accurate price estimate");
             return;
         }
 
@@ -447,10 +522,17 @@ function RepairServicesPage() {
             alert("Please get a price estimate before proceeding.");
             return;
         }
+
+        // Create a detailed description of selected services and options
         const problemDetails = selectedProblems.map(problem => {
+            if (problem === 'Other') {
+                return `Other Issue: ${issueDescription}`;
+            }
+
             if (subProblems[problem]) {
                 return `${problem}: ${subProblems[problem]}`;
             }
+
             return problem;
         }).join(', ');
 
@@ -461,13 +543,15 @@ function RepairServicesPage() {
         const repairItem = {
             id: `repair-${Date.now()}`, // Unique ID using timestamp
             name: `${selectedDevice} ${selectedModel} Repair`,
-            description: problemDetails + (issueDescription ? ` - ${issueDescription}` : ''),
+            description: problemDetails,
             price: numericPrice,
             quantity: 1,
             type: 'service',
             icon: deviceIcon
         };
+
         addToCart(repairItem);
+        alert(`Added ${selectedDevice} ${selectedModel} repair to cart!`);
     };
 
     const getIconColor = (device) => {
@@ -492,6 +576,137 @@ function RepairServicesPage() {
         }
     };
 
+    // Render dynamic problem selection based on service types in the database
+    const renderProblemOptions = () => {
+        // Get service types for the selected device
+        const deviceTypes = serviceTypesByDevice[selectedDevice] || [];
+
+        if (deviceTypes.length === 0) {
+            return (
+                <div className="no-service-types">
+                    <p>No service types available for this device. Please contact support.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="problem-selection">
+                {deviceTypes.map(serviceType => (
+                    <label key={serviceType.id} className="problem-option">
+                        <input
+                            type="checkbox"
+                            value={serviceType.title}
+                            checked={selectedProblems.includes(serviceType.title)}
+                            onChange={() => handleProblemSelection(serviceType.title)}
+                        />
+                        <span className="problem-text">{serviceType.title}</span>
+                    </label>
+                ))}
+                <label className="problem-option">
+                    <input
+                        type="checkbox"
+                        value="Other"
+                        checked={selectedProblems.includes('Other')}
+                        onChange={() => handleProblemSelection('Other')}
+                    />
+                    <span className="problem-text">Other</span>
+                </label>
+            </div>
+        );
+    };
+
+    // Render dynamic sub-problems based on service options in the database
+    const renderSubProblems = () => {
+        return selectedProblems.map(problem => {
+            if (problem === 'Other') {
+                return (
+                    <AnimatePresence key="other">
+                        <motion.div
+                            className="sub-problem-selection"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <h4>Other Issues</h4>
+                            <textarea
+                                value={issueDescription}
+                                onChange={(e) => setIssueDescription(e.target.value)}
+                                placeholder="Describe the issue with your device"
+                                className="issue-textarea"
+                            />
+                        </motion.div>
+                    </AnimatePresence>
+                );
+            }
+
+            // Find the service type that matches this problem
+            const deviceTypes = serviceTypesByDevice[selectedDevice] || [];
+            const serviceType = deviceTypes.find(type => type.title === problem);
+
+            if (!serviceType) return null;
+
+            // Get options for this service type
+            const typeOptions = serviceOptions[serviceType.id] || [];
+
+            if (typeOptions.length === 0) return null;
+
+            return (
+                <AnimatePresence key={problem}>
+                    <motion.div
+                        className="sub-problem-selection"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <h4>{problem} Options</h4>
+                        <select
+                            value={subProblems[problem] || ''}
+                            onChange={(e) => handleSubProblemSelection(problem, e.target.value)}
+                            className="issue-select"
+                        >
+                            <option value="">Select Option</option>
+                            {typeOptions.map(option => (
+                                <option key={option.id} value={option.name}>
+                                    {option.name} - ${option.price.toFixed(2)}
+                                </option>
+                            ))}
+                        </select>
+                    </motion.div>
+                </AnimatePresence>
+            );
+        });
+    };
+
+    // Render price breakdown component
+    const renderPriceBreakdown = () => {
+        if (!hasCalculatedPrice || priceBreakdown.length === 0) {
+            return null;
+        }
+
+        return (
+            <div className="price-breakdown">
+                <h4 className="breakdown-title">
+                    <FontAwesomeIcon icon={faInfoCircle} className="info-icon" />
+                    Price Breakdown
+                </h4>
+                <ul className="breakdown-list">
+                    {priceBreakdown.map((item, index) => (
+                        <li key={index} className="breakdown-item">
+                            <span className="breakdown-label">{item.label}</span>
+                            <span className="breakdown-price">${item.price.toFixed(2)}</span>
+                        </li>
+                    ))}
+                    <li className="breakdown-item breakdown-total">
+                        <span className="breakdown-label">Total</span>
+                        <span className="breakdown-price">${numericPrice.toFixed(2)}</span>
+                    </li>
+                </ul>
+            </div>
+        );
+    };
+
     return (
         <div className="repair-services-page">
             <Navbar />
@@ -503,7 +718,7 @@ function RepairServicesPage() {
                 </div>
             </div>
 
-            {/* DEVICE SELECTION SECTION (NOW AT THE TOP) */}
+            {/* DEVICE SELECTION SECTION */}
             <div className="device-selection-section">
                 {isLoading ? (
                     <div className="loading-indicator">
@@ -536,7 +751,7 @@ function RepairServicesPage() {
                                     >
                                         <FontAwesomeIcon
                                             icon={device.faIcon}
-                                            beat={isHovered && device.id === "Apple Watch"}
+                                            beat={isHovered && device.id === "applewatch"}
                                             className="placeholder-icon"
                                             color={getIconColor(device.id)}
                                         />
@@ -556,7 +771,7 @@ function RepairServicesPage() {
                                     transition={{ duration: 0.3 }}
                                 >
                                     <div className="model-selection">
-                                        <h3>Select Your {selectedDevice} Model</h3>
+                                        <h3>Select Your {devices.find(d => d.id === selectedDevice)?.displayName || selectedDevice} Model</h3>
                                         <p className="model-instruction">Choose your specific model for an accurate repair quote</p>
                                         <select
                                             value={selectedModel}
@@ -580,7 +795,7 @@ function RepairServicesPage() {
                 <AnimatePresence>
                     {selectedModel && (
                         <motion.div
-                            key={`${selectedDevice}-${selectedModel}`} // Add key to force remount
+                            key={`${selectedDevice}-${selectedModel}`}
                             className="problem-selection-container"
                             initial="hidden"
                             animate="visible"
@@ -588,134 +803,9 @@ function RepairServicesPage() {
                             variants={slideInRight}
                         >
                             <div className="problem-container">
-                                <h3>What problems do you have with your {selectedDevice}?</h3>
-                                <div className="problem-selection">
-                                    <label className="problem-option">
-                                        <input
-                                            type="checkbox"
-                                            value="Battery"
-                                            checked={selectedProblems.includes('Battery')}
-                                            onChange={() => handleProblemSelection('Battery')}
-                                        />
-                                        <span className="problem-text">Battery</span>
-                                    </label>
-                                    <label className="problem-option">
-                                        <input
-                                            type="checkbox"
-                                            value="Screen"
-                                            checked={selectedProblems.includes('Screen')}
-                                            onChange={() => handleProblemSelection('Screen')}
-                                        />
-                                        <span className="problem-text">Screen</span>
-                                    </label>
-                                    <label className="problem-option">
-                                        <input
-                                            type="checkbox"
-                                            value="Motherboard"
-                                            checked={selectedProblems.includes('Motherboard')}
-                                            onChange={() => handleProblemSelection('Motherboard')}
-                                        />
-                                        <span className="problem-text">Motherboard</span>
-                                    </label>
-                                    <label className="problem-option">
-                                        <input
-                                            type="checkbox"
-                                            value="Other"
-                                            checked={selectedProblems.includes('Other')}
-                                            onChange={() => handleProblemSelection('Other')}
-                                        />
-                                        <span className="problem-text">Other</span>
-                                    </label>
-                                </div>
-
-                                <AnimatePresence>
-                                    {selectedProblems.includes('Battery') && (
-                                        <motion.div
-                                            className="sub-problem-selection"
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <h4>Battery Issues</h4>
-                                            <select
-                                                value={subProblems['Battery'] || ''}
-                                                onChange={(e) => handleSubProblemSelection('Battery', e.target.value)}
-                                                className="issue-select"
-                                            >
-                                                <option value="">Select Issue</option>
-                                                <option value="Battery Replacement">Battery Replacement</option>
-                                                <option value="Charging Port Issue">Charging Port Issue</option>
-                                            </select>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <AnimatePresence>
-                                    {selectedProblems.includes('Screen') && (
-                                        <motion.div
-                                            className="sub-problem-selection"
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <h4>Screen Issues</h4>
-                                            <select
-                                                value={subProblems['Screen'] || ''}
-                                                onChange={(e) => handleSubProblemSelection('Screen', e.target.value)}
-                                                className="issue-select"
-                                            >
-                                                <option value="">Select Issue</option>
-                                                <option value="Front Screen Cracked">Front Screen Cracked</option>
-                                                <option value="Back Glass Cracked">Back Glass Cracked</option>
-                                            </select>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <AnimatePresence>
-                                    {selectedProblems.includes('Motherboard') && (
-                                        <motion.div
-                                            className="sub-problem-selection"
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <h4>Motherboard Issues</h4>
-                                            <select
-                                                value={subProblems['Motherboard'] || ''}
-                                                onChange={(e) => handleSubProblemSelection('Motherboard', e.target.value)}
-                                                className="issue-select"
-                                            >
-                                                <option value="">Select Issue</option>
-                                                <option value="Device Not Powering On">Device Not Powering On</option>
-                                            </select>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <AnimatePresence>
-                                    {selectedProblems.includes('Other') && (
-                                        <motion.div
-                                            className="sub-problem-selection"
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <h4>Other Issues</h4>
-                                            <textarea
-                                                value={issueDescription}
-                                                onChange={(e) => setIssueDescription(e.target.value)}
-                                                placeholder="Describe the issue with your device"
-                                                className="issue-textarea"
-                                            />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
+                                <h3>What problems do you have with your {devices.find(d => d.id === selectedDevice)?.displayName || selectedDevice}?</h3>
+                                {renderProblemOptions()}
+                                {renderSubProblems()}
                                 {validationError && (
                                     <div className="validation-error">
                                         {validationError}
@@ -733,6 +823,7 @@ function RepairServicesPage() {
                                         transition={{ duration: 0.5 }}
                                     >
                                         <h3>Estimated Price: {estimatedPrice}</h3>
+                                        {renderPriceBreakdown()}
                                         <motion.button
                                             className="proceed-button"
                                             onClick={handleProceedWithRepair}
@@ -745,6 +836,19 @@ function RepairServicesPage() {
                                     </motion.div>
                                 )}
                             </AnimatePresence>
+
+                            {!estimatedPrice && selectedProblems.length > 0 && (
+                                <div className="get-price-button-container">
+                                    <motion.button
+                                        className="get-price-button"
+                                        onClick={handleGetPrice}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        Get Price Estimate
+                                    </motion.button>
+                                </div>
+                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>

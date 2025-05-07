@@ -482,3 +482,123 @@ export const adjustInventoryItemPrice = async (id, price) => {
     }
 };
 
+export const getServiceTypes = async (deviceType = null, activeOnly = false) => {
+    try {
+        let url = `${API_URL}/service-types`;
+        const params = new URLSearchParams();
+
+        if (deviceType) params.append('deviceType', deviceType);
+        if (activeOnly) params.append('activeOnly', 'true');
+
+        if (params.toString()) {
+            url += `?${params.toString()}`;
+        }
+
+        const res = await axios.get(url);
+        return res.data;
+    } catch (err) {
+        console.error('Error fetching service types:', err);
+        throw err;
+    }
+};
+
+export const getServiceTypeById = async (id) => {
+    try {
+        const res = await axios.get(`${API_URL}/service-types/${id}`);
+        return res.data;
+    } catch (err) {
+        console.error('Error fetching service type:', err);
+        throw err;
+    }
+};
+
+export const createServiceType = async (serviceTypeData) => {
+    try {
+        const res = await axios.post(`${API_URL}/service-types`, serviceTypeData);
+        return res.data;
+    } catch (err) {
+        console.error('Error creating service type:', err);
+        throw err;
+    }
+};
+
+export const updateServiceType = async (id, serviceTypeData) => {
+    try {
+        const res = await axios.put(`${API_URL}/service-types/${id}`, serviceTypeData);
+        return res.data;
+    } catch (err) {
+        console.error('Error updating service type:', err);
+        throw err;
+    }
+};
+
+export const deleteServiceType = async (id) => {
+    try {
+        const res = await axios.delete(`${API_URL}/service-types/${id}`);
+        return res.data;
+    } catch (err) {
+        console.error('Error deleting service type:', err);
+        throw err;
+    }
+};
+
+// Service Options API functions
+export const getServiceOptions = async (serviceTypeId = null, activeOnly = false) => {
+    try {
+        let url = `${API_URL}/service-options`;
+        const params = new URLSearchParams();
+
+        if (serviceTypeId) params.append('serviceTypeId', serviceTypeId);
+        if (activeOnly) params.append('activeOnly', 'true');
+
+        if (params.toString()) {
+            url += `?${params.toString()}`;
+        }
+
+        const res = await axios.get(url);
+        return res.data;
+    } catch (err) {
+        console.error('Error fetching service options:', err);
+        throw err;
+    }
+};
+
+export const getServiceOptionById = async (id) => {
+    try {
+        const res = await axios.get(`${API_URL}/service-options/${id}`);
+        return res.data;
+    } catch (err) {
+        console.error('Error fetching service option:', err);
+        throw err;
+    }
+};
+
+export const createServiceOption = async (serviceOptionData) => {
+    try {
+        const res = await axios.post(`${API_URL}/service-options`, serviceOptionData);
+        return res.data;
+    } catch (err) {
+        console.error('Error creating service option:', err);
+        throw err;
+    }
+};
+
+export const updateServiceOption = async (id, serviceOptionData) => {
+    try {
+        const res = await axios.put(`${API_URL}/service-options/${id}`, serviceOptionData);
+        return res.data;
+    } catch (err) {
+        console.error('Error updating service option:', err);
+        throw err;
+    }
+};
+
+export const deleteServiceOption = async (id) => {
+    try {
+        const res = await axios.delete(`${API_URL}/service-options/${id}`);
+        return res.data;
+    } catch (err) {
+        console.error('Error deleting service option:', err);
+        throw err;
+    }
+};

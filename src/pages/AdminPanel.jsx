@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import supportService from '../services/SupportService';
 import axios from 'axios';
+import ServicesTab from './ServicesTab';
+import '../css/servicesTab.css';
 import {
     getRepairs,
     getSupportRequests,
@@ -2275,7 +2277,7 @@ function AdminPanel() {
                                         className="price-input"
                                         type="number"
                                         min="0"
-                                        step="1"
+                                        step="0.01"
                                         value={newPrice}
                                         onChange={(e) => setNewPrice(parseFloat(e.target.value) || 0)}
                                         placeholder="0.00"
@@ -2381,7 +2383,7 @@ function AdminPanel() {
                                         name="price"
                                         value={newItemData.price}
                                         onChange={handleNewItemInputChange}
-                                        step="1"
+                                        step="0.01"
                                         min="0"
                                         required
                                     />
@@ -3122,6 +3124,13 @@ function AdminPanel() {
                                 <FontAwesomeIcon icon={faListAlt} className="sidebar-icon" />
                                 <span>Inventory</span>
                             </li>
+                            <li
+                                className={`sidebar-menu-item ${activeTab === 'services' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('services')}
+                            >
+                                <FontAwesomeIcon icon={faTools} className="sidebar-icon" />
+                                <span>Services</span>
+                            </li>
 
                             <li
                                 className={`sidebar-menu-item ${activeTab === 'support' ? 'active' : ''}`}
@@ -3186,6 +3195,13 @@ function AdminPanel() {
                             <span className="mobile-nav-label">Inventory</span>
                         </div>
                         <div
+                            className={`mobile-nav-item ${activeTab === 'services' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('services')}
+                        >
+                            <FontAwesomeIcon icon={faTools} className="mobile-nav-icon" />
+                            <span className="mobile-nav-label">Services</span>
+                        </div>
+                        <div
                             className={`mobile-nav-item ${activeTab === 'support' ? 'active' : ''}`}
                             onClick={() => setActiveTab('support')}
                         >
@@ -3212,6 +3228,7 @@ function AdminPanel() {
                                 {activeTab === 'orders' && renderOrders()}
                                 {activeTab === 'inventory' && renderInventory()}
                                 {activeTab === 'support' && renderSupportRequests()}
+                                {activeTab === 'services' && <ServicesTab />}
                             </>
                         )}
                     </div>
