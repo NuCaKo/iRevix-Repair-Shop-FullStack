@@ -1665,3 +1665,173 @@
     border-color: #007bff;
     box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
 }
+/* Price Adjustment Modal Styling */
+.price-adjust-modal {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    max-width: 450px;
+    width: 100%;
+    padding: 0;
+    animation: modalFadeIn 0.3s ease-out forwards;
+    position: relative;
+    overflow: hidden;
+}
+
+.price-adjust-modal .modal-header {
+    background: #4CAF50;
+    color: white;
+    padding: 15px 20px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.price-adjust-modal .modal-header h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+}
+
+.price-adjust-modal .modal-header h2 svg {
+    margin-right: 10px;
+}
+
+.price-adjust-modal .modal-content {
+    padding: 20px;
+}
+
+.price-adjust-modal .item-details {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #4CAF50;
+}
+
+.price-adjust-modal .price-input-group {
+    margin-bottom: 20px;
+}
+
+.price-adjust-modal label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.price-adjust-modal .price-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.price-adjust-modal .price-input-wrapper::before {
+    content: "$";
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 600;
+    color: #555;
+}
+
+.price-adjust-modal .price-input {
+    padding: 12px 12px 12px 30px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    width: 100%;
+    transition: border-color 0.2s ease;
+}
+
+.price-adjust-modal .price-input:focus {
+    border-color: #4CAF50;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
+.price-adjust-modal .modal-footer {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: flex-end;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.price-adjust-modal .modal-footer button {
+    padding: 10px 20px;
+    margin-left: 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.price-adjust-modal .modal-footer .cancel-btn {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    color: #555;
+}
+
+.price-adjust-modal .modal-footer .cancel-btn:hover {
+    background: #e9ecef;
+}
+
+.price-adjust-modal .modal-footer .save-btn {
+    background: #4CAF50;
+    border: 1px solid #4CAF50;
+    color: white;
+}
+
+.price-adjust-modal .modal-footer .save-btn:hover {
+    background: #43a047;
+}
+
+/* Green button styling */
+.green-btn {
+    background-color: #4CAF50 !important;
+    color: white !important;
+    border: 1px solid #43a047 !important;
+    transition: all 0.2s ease;
+}
+
+.green-btn:hover {
+    background-color: #43a047 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+/* Simpler Price Difference Styling */
+.price-difference {
+    margin-top: 15px;
+    padding: 12px 15px;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #666;
+    transition: all 0.3s ease;
+}
+
+.price-difference .difference-text {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* For price increase */
+.price-difference.price-increase {
+    border-left-color: #4CAF50;
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.price-difference.price-increase .difference-text {
+    color: #2E7D32;
+}
+
+/* For price decrease */
+.price-difference.price-decrease {
+    border-left-color: #F44336;
+    background-color: rgba(244, 67, 54, 0.1);
+}
+
+.price-difference.price-decrease .difference-text {
+    color: #C62828;
+}

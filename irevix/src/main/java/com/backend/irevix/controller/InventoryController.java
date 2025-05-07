@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/inventory")
+@CrossOrigin(origins = "*") // Add this if CORS is an issue
 public class InventoryController {
 
     private final InventoryService inventoryService;
@@ -20,37 +22,104 @@ public class InventoryController {
     public InventoryController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
     }
+
     @GetMapping
     public ResponseEntity<List<Inventory>> getAllInventoryItems(
             @RequestParam(required = false) String deviceType,
-            @RequestParam(required = false) String modelType
+            @RequestParam(required = false) String modelType,
+            @RequestParam(required = false) Boolean lowStock
     ) {
+        // Log the incoming parameters for debugging
+        System.out.println("Request params - deviceType: " + deviceType + ", modelType: " + modelType + ", lowStock: " + lowStock);
+
         List<Inventory> items;
+
+        // Handle low stock parameter
+        if (lowStock != null && lowStock) {
+            items = inventoryService.getLowStockItems();
+            System.out.println("Fetching low stock items: " + items.size() + " found");
+            return ResponseEntity.ok(items);
+        }
+
+        // Handle device and model filtering
         if (deviceType != null && modelType != null) {
-            items = inventoryService.getInventoryItemsByDeviceAndModel(deviceType, modelType);
+            // Normalize deviceType to lowercase for case-insensitive search
+            String normalizedDeviceType = deviceType.toLowerCase();
+            System.out.println("Normalized deviceType: " + normalizedDeviceType);
+
+            // Try exact match first
+            items = inventoryService.getInventoryItemsByDeviceAndModel(normalizedDeviceType, modelType);
+
+            // If no results, try case-insensitive search
+            if (items.isEmpty()) {
+                System.out.println("No exact match found, trying case-insensitive search");
+                items = inventoryService.getAllInventoryItems().stream()
+                        .filter(item -> item.getDeviceType().toLowerCase().equals(normalizedDeviceType) &&
+                                item.getModelType().equalsIgnoreCase(modelType))
+                        .collect(Collectors.toList());
+            }
+
+            // If still no results, try partial matching (contains logic)
+            if (items.isEmpty()) {
+                System.out.println("No case-insensitive match found, trying partial matching");
+                items = inventoryService.getAllInventoryItems().stream()
+                        .filter(item -> item.getDeviceType().toLowerCase().contains(normalizedDeviceType.toLowerCase()) &&
+                                item.getModelType().toLowerCase().contains(modelType.toLowerCase()))
+                        .collect(Collectors.toList());
+            }
+
+            System.out.println("Found " + items.size() + " items for device: " + deviceType + ", model: " + modelType);
         } else if (deviceType != null) {
-            items = inventoryService.getInventoryItemsByDevice(deviceType);
+            String normalizedDeviceType = deviceType.toLowerCase();
+            items = inventoryService.getInventoryItemsByDevice(normalizedDeviceType);
+            System.out.println("Found " + items.size() + " items for device: " + deviceType);
         } else {
             items = inventoryService.getAllInventoryItems();
+            System.out.println("Returning all " + items.size() + " items");
         }
+
         return ResponseEntity.ok(items);
     }
-    @GetMapping("/low-stock")
-    public ResponseEntity<List<Inventory>> getLowStockItems() {
-        List<Inventory> lowStockItems = inventoryService.getLowStockItems();
-        return ResponseEntity.ok(lowStockItems);
+
+    @GetMapping("/fallback")
+    public ResponseEntity<List<Inventory>> getFallbackInventory(
+            @RequestParam String deviceType,
+            @RequestParam String modelType
+    ) {
+        System.out.println("Fallback search for deviceType: " + deviceType + ", modelType: " + modelType);
+
+        String normalizedDeviceType = deviceType.toLowerCase();
+
+        // Use a more flexible search approach
+        List<Inventory> items = inventoryService.getAllInventoryItems().stream()
+                .filter(item -> {
+                    boolean deviceMatch = item.getDeviceType().toLowerCase().contains(normalizedDeviceType) ||
+                            normalizedDeviceType.contains(item.getDeviceType().toLowerCase());
+
+                    boolean modelMatch = item.getModelType().toLowerCase().contains(modelType.toLowerCase()) ||
+                            modelType.toLowerCase().contains(item.getModelType().toLowerCase());
+
+                    return deviceMatch && modelMatch;
+                })
+                .collect(Collectors.toList());
+
+        System.out.println("Fallback search found " + items.size() + " items");
+        return ResponseEntity.ok(items);
     }
+
     @GetMapping("/{id}")
     public ResponseEntity<Inventory> getInventoryItemById(@PathVariable Long id) {
         Optional<Inventory> item = inventoryService.getInventoryItemById(id);
         return item.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
     @PostMapping
     public ResponseEntity<Inventory> createInventoryItem(@RequestBody Inventory inventory) {
         Inventory createdItem = inventoryService.createInventoryItem(inventory);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdItem);
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<Inventory> updateInventoryItem(
             @PathVariable Long id,
@@ -58,6 +127,7 @@ public class InventoryController {
         Inventory updatedItem = inventoryService.updateInventoryItem(id, inventoryDetails);
         return ResponseEntity.ok(updatedItem);
     }
+
     @PatchMapping("/{id}/restock")
     public ResponseEntity<Inventory> restockInventoryItem(
             @PathVariable Long id,
@@ -68,6 +138,7 @@ public class InventoryController {
         }
         return ResponseEntity.notFound().build();
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteInventoryItem(@PathVariable Long id) {
         inventoryService.deleteInventoryItem(id);
