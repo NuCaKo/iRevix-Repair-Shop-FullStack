@@ -1835,3 +1835,229 @@
 .price-difference.price-decrease .difference-text {
     color: #C62828;
 }
+/* Fix for FontAwesome icons in buttons */
+.action-btn svg,
+.inventory-actions .action-btn svg,
+button svg {
+    width: 1em;  /* Ensure proper width */
+    height: 1em; /* Ensure proper height */
+    display: inline-block;
+    vertical-align: middle;
+    font-size: inherit;
+    overflow: visible;
+}
+
+/* Ensure buttons properly display FontAwesome icons */
+.inventory-actions .action-btn,
+.action-btn,
+.restock-btn,
+.green-btn,
+.adjust-price-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    padding: 8px 12px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
+
+/* Hide any unwanted text in buttons */
+.action-btn .fa-layers-text,
+.green-btn .fa-layers-text {
+    display: none !important;
+}
+
+/* Specifically target the problematic buttons */
+.adjust-price-btn .fa-money-bill-wave,
+.restock-btn .fa-redo {
+    font-size: 14px !important; /* Adjust size if needed */
+    margin-right: 5px !important;
+}
+
+/* Fix for add new item button */
+button .fa-microchip {
+    margin-right: 5px !important;
+}
+
+/* Ensure consistent button sizing */
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.action-buttons button {
+    min-width: auto;
+    min-height: 34px;
+}
+
+/* Adjust delete button */
+.action-btn.delete-btn {
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 30px !important;
+    height: 30px !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+}
+
+.inventory-table .action-buttons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+/* Price adjustment button specific fix */
+.adjust-price-btn {
+    position: relative;
+    padding-left: 25px !important;
+}
+
+.adjust-price-btn svg {
+    position: absolute;
+    left: 8px;
+}
+
+/* Make sure icon is visible */
+.fa-money-bill-wave,
+.fa-microchip,
+.fa-clipboard-list,
+.fa-list-alt {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Fix for check low stock button */
+.action-btn.low-stock-active {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+}
+/* ===== BUTTON LAYOUT FIX ===== */
+/* This CSS will fix the buttons that should appear side by side */
+
+/* Ensure action buttons container displays properly */
+.action-buttons {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+}
+
+/* Fix individual button styling */
+.action-buttons button,
+.action-btn,
+.restock-btn,
+.adjust-price-btn,
+.green-btn,
+.delete-btn {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+    padding: 6px 12px !important;
+    font-size: 14px !important;
+    border-radius: 4px !important;
+    min-width: fit-content !important;
+    min-height: 32px !important;
+    max-width: 150px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Ensure the text and icon in buttons don't overlap */
+.action-buttons button svg,
+.action-btn svg,
+.restock-btn svg,
+.adjust-price-btn svg {
+    margin-right: 5px !important;
+    font-size: 14px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
+}
+
+/* Special styling for delete button (the x button) */
+.action-btn.delete-btn {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    border-radius: 50% !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+}
+
+/* Reset any unwanted styles that might be interfering */
+.restock-btn span,
+.adjust-price-btn span,
+.action-btn span {
+    position: relative !important;
+    display: inline-block !important;
+    z-index: 5 !important;
+}
+
+/* Clear any absolute positioning that might be causing overlap */
+.restock-btn svg,
+.adjust-price-btn svg,
+.action-btn svg {
+    position: relative !important;
+    z-index: 5 !important;
+}
+
+/* Fix for inventory table cells that contain buttons */
+.inventory-table td:last-child {
+    min-width: 240px !important;
+    width: auto !important;
+}
+
+/* Ensure FontAwesome content doesn't show as text */
+.fa-layers-text,
+.fa-layers-counter {
+    display: none !important;
+}
+
+/* Override any frameworks that might be interfering */
+.action-buttons button.MuiButtonBase-root,
+.action-buttons button.btn {
+    min-width: auto !important;
+    margin: 0 !important;
+}
+
+/* Clearfix to ensure proper container sizing */
+.action-buttons:after {
+    content: "" !important;
+    display: table !important;
+    clear: both !important;
+}
+
+/* Make sure buttons don't get squished */
+@media (max-width: 768px) {
+    .action-buttons {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+
+    .action-buttons button {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .action-btn.delete-btn {
+        width: 32px !important;
+        max-width: 32px !important;
+    }
+}

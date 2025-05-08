@@ -162,11 +162,11 @@ function ServicesTab() {
                 isActive: true
             });
             setIsLoading(false);
-            alert('Service type added successfully');
+            window.showNotification('success', 'Service type added successfully');
         } catch (error) {
             console.error('Error adding service type:', error);
             setIsLoading(false);
-            alert('Failed to add service type: ' + (error.message || 'Unknown error'));
+            window.showNotification('error', 'Failed to add service type: ' + (error.message || 'Unknown error'));
         }
     };
 
@@ -185,11 +185,11 @@ function ServicesTab() {
             setIsEditTypeModalOpen(false);
             setEditServiceType(null);
             setIsLoading(false);
-            alert('Service type updated successfully');
+            window.showNotification('success', 'Service type updated successfully');
         } catch (error) {
             console.error('Error updating service type:', error);
             setIsLoading(false);
-            alert('Failed to update service type: ' + (error.message || 'Unknown error'));
+            window.showNotification('error', 'Failed to update service type: ' + (error.message || 'Unknown error'));
         }
     };
 
@@ -212,11 +212,11 @@ function ServicesTab() {
                 }
 
                 setIsLoading(false);
-                alert('Service type deleted successfully');
+                window.showNotification('success', 'Service type deleted successfully');
             } catch (error) {
                 console.error('Error deleting service type:', error);
                 setIsLoading(false);
-                alert('Failed to delete service type: ' + (error.message || 'Unknown error'));
+                window.showNotification('error', 'Failed to delete service type: ' + (error.message || 'Unknown error'));
             }
         }
     };
@@ -242,11 +242,11 @@ function ServicesTab() {
                 isActive: true
             });
             setIsLoading(false);
-            alert('Service option added successfully');
+            window.showNotification('success', 'Service option added successfully');
         } catch (error) {
             console.error('Error adding service option:', error);
             setIsLoading(false);
-            alert('Failed to add service option: ' + (error.message || 'Unknown error'));
+            window.showNotification('error', 'Failed to add service option: ' + (error.message || 'Unknown error'));
         }
     };
 
@@ -260,11 +260,11 @@ function ServicesTab() {
             setIsEditOptionModalOpen(false);
             setEditServiceOption(null);
             setIsLoading(false);
-            alert('Service option updated successfully');
+            window.showNotification('success', 'Service option updated successfully');
         } catch (error) {
             console.error('Error updating service option:', error);
             setIsLoading(false);
-            alert('Failed to update service option: ' + (error.message || 'Unknown error'));
+            window.showNotification('error', 'Failed to update service option: ' + (error.message || 'Unknown error'));
         }
     };
 
@@ -275,11 +275,11 @@ function ServicesTab() {
                 await deleteServiceOption(id);
                 setServiceOptions(serviceOptions.filter(option => option.id !== id));
                 setIsLoading(false);
-                alert('Service option deleted successfully');
+                window.showNotification('success', 'Service option deleted successfully');
             } catch (error) {
                 console.error('Error deleting service option:', error);
                 setIsLoading(false);
-                alert('Failed to delete service option: ' + (error.message || 'Unknown error'));
+                window.showNotification('error', 'Failed to delete service option: ' + (error.message || 'Unknown error'));
             }
         }
     };

@@ -229,7 +229,7 @@ const ProfilePage = () => {
             });
 
             setErrors({});
-            alert('Your password has been successfully changed!');
+            window.showNotification('success', 'Your password has been successfully changed!');
         } catch (error) {
             setErrors({
                 passwordGeneral: 'An error occurred while changing the password. Please check your current password and try again.'
@@ -248,7 +248,7 @@ const ProfilePage = () => {
 
         try {
             await new Promise(resolve => setTimeout(resolve, 1500));
-            alert('Your account has been successfully deleted!');
+            window.showNotification('success', 'Your account has been successfully deleted!');
             localStorage.removeItem('currentUser');
             navigate('/');
         } catch (error) {
@@ -260,7 +260,7 @@ const ProfilePage = () => {
 
     const handleContactPreferencesSubmit = (e) => {
         e.preventDefault();
-        alert('Your contact preferences have been successfully updated!');
+        window.showNotification('success', 'Your contact preferences have been successfully updated!');
     };
     const renderGeneralInfoView = () => {
         if (isEditing) {

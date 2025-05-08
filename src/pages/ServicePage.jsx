@@ -153,7 +153,7 @@ const ServicePanel = () => {
             });
         } catch (error) {
             console.error("Error creating repair:", error);
-            alert("Failed to create new repair. Please try again.");
+            window.showNotification('error', "Failed to create new repair. Please try again.");
         }
     };
 
@@ -205,7 +205,7 @@ const ServicePanel = () => {
 
         } catch (error) {
             console.error("❌ Error assigning repair:", error);
-            alert("Failed to assign repair. Please try again.");
+            window.showNotification('error', "Failed to assign repair. Please try again.");
         }
     };
 
@@ -222,7 +222,7 @@ const ServicePanel = () => {
             }
         } catch (error) {
             console.error("Error rejecting repair:", error);
-            alert("Failed to reject repair. Please try again.");
+            window.showNotification('error', "Failed to reject repair. Please try again.");
         }
     };
 
@@ -239,7 +239,7 @@ const ServicePanel = () => {
             }
         } catch (error) {
             console.error("Error updating status:", error);
-            alert("Failed to update repair status. Please try again.");
+            window.showNotification('error', "Failed to update repair status. Please try again.");
         }
     };
 
@@ -256,7 +256,7 @@ const ServicePanel = () => {
                 link.download = `service_report_${repairId}.pdf`; // Dosya adını belirleyebilirsiniz
                 link.click();
             } else {
-                alert("Service report not found.");
+                window.showNotification('warning', "Service report not found.");
             }
         } catch (error) {
             console.error("Error fetching service report:", error);
@@ -285,7 +285,7 @@ const ServicePanel = () => {
             setRepairNotes('');
         } catch (error) {
             console.error("Error adding note:", error);
-            alert("Failed to add note. Please try again.");
+            window.showNotification('error', "Failed to add note. Please try again.");
         }
     };
 
@@ -294,7 +294,7 @@ const ServicePanel = () => {
         if (!file) return;
         const maxSize = 20 * 1024 * 1024;
         if (file.size > maxSize) {
-            alert("Dosya boyutu çok büyük! Lütfen 20MB'den küçük bir dosya seçin.");
+            window.showNotification('warning', "File is too big, Please choose a file smaller than 20MB.");
             return;
         }
         try {
@@ -314,7 +314,7 @@ const ServicePanel = () => {
             fetchAllData(); // Görselleri tekrar çekmek
         } catch (error) {
             console.error("Error uploading image:", error.response ? error.response.data : error.message);
-            alert("Failed to upload image. Please try again.");
+            window.showNotification('error', "Failed to upload image. Please try again.");
         }
     };
 
@@ -367,11 +367,11 @@ const ServicePanel = () => {
                 throw new Error("Upload failed");
             }
 
-            alert("Service report PDF uploaded successfully.");
+            window.showNotification('success', "Service report PDF uploaded successfully.");
             setPdfReady(true);
         } catch (error) {
             console.error("❌ PDF upload error:", error);
-            alert("Error uploading service report PDF.");
+            window.showNotification('error', "Error uploading service report PDF.");
         }
     };
 
@@ -382,10 +382,10 @@ const ServicePanel = () => {
                 urgency: "NORMAL"
             });
 
-            alert(`Part request submitted for item #${itemId}`);
+            window.showNotification('success', `Part request submitted for item #${itemId}`);
         } catch (error) {
             console.error("Error requesting part:", error);
-            alert("Failed to request part. Please try again.");
+            window.showNotification('error', "Failed to request part. Please try again.");
         }
     };
 
@@ -1206,7 +1206,7 @@ const ServicePanel = () => {
                         const priority = document.getElementById('request-priority').value;
                         const notes = document.getElementById('request-notes').value;
 
-                        alert(`Stock request created: ${quantity} units ${stockRequestItem.name} (Priority: ${priority})`);
+                        window.showNotification('success', `Stock request created: ${quantity} units ${stockRequestItem.name} (Priority: ${priority})`);
                         setShowStockRequestModal(false);
                     };
 

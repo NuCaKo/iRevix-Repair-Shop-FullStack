@@ -554,8 +554,6 @@ function RepairServicesPage() {
 
         addToCart(repairItem);
 
-        // Use customer notification type for cart additions
-        window.showNotification('customer', `Added ${selectedDevice} ${selectedModel} repair to cart!`);
     };
 
     const getIconColor = (device) => {

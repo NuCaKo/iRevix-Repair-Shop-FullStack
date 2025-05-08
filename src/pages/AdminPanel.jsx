@@ -166,10 +166,10 @@ function AdminPanel() {
                 const unreadCount = notificationsData.filter(n => !n.isRead).length;
                 setUnreadNotifications(unreadCount);
             }
-            alert(`Repair order for ${updatedOrder.customer}'s ${updatedOrder.device} has been updated.`);
+            window.showNotification('success', `Repair order for ${updatedOrder.customer}'s ${updatedOrder.device} has been updated.`);
         } catch (error) {
             console.error('Error updating order:', error);
-            alert('Failed to update order. Please try again.');
+            window.showNotification('error', 'Failed to update order. Please try again.');
         }
     };
 
@@ -380,10 +380,10 @@ function AdminPanel() {
             link.click();
             document.body.removeChild(link);
 
-            alert("Inventory report has been downloaded successfully!");
+            window.showNotification('success', "Inventory report has been downloaded successfully!");
         } catch (error) {
             console.error("Error exporting inventory report:", error);
-            alert("There was an error exporting the inventory report. Please try again.");
+            window.showNotification('error', "There was an error exporting the inventory report. Please try again.");
         }
     };
     useEffect(() => {
@@ -988,7 +988,7 @@ function AdminPanel() {
             setIsRestockModalOpen(false);
             setRestockItem(null);
             setRestockQuantity(1);
-            alert("Inventory item restocked successfully!");
+            window.showNotification('success', "Inventory item restocked successfully!");
         } catch (error) {
             console.error("Error restocking inventory item:", error);
             if (error.response) {
@@ -996,7 +996,7 @@ function AdminPanel() {
                 console.error('Response data:', error.response.data);
             }
 
-            alert("Failed to restock inventory item. Please try again.");
+            window.showNotification('error', "Failed to restock inventory item. Please try again.");
         }
     };
     const markAllAsRead = async () => {
@@ -1048,10 +1048,10 @@ function AdminPanel() {
                     const updatedFilteredItems = filteredInventoryItems.filter(item => item.id !== itemId);
                     setFilteredInventoryItems(updatedFilteredItems);
                 }
-                alert("Inventory item deleted successfully.");
+                window.showNotification('success', "Inventory item deleted successfully.");
             } catch (error) {
                 console.error("Error deleting inventory item:", error);
-                alert("Failed to delete inventory item. Please try again.");
+                window.showNotification('error', "Failed to delete inventory item. Please try again.");
             }
         }
     };
@@ -1066,7 +1066,7 @@ function AdminPanel() {
             // Validate the new price
             const numericPrice = parseFloat(newPrice);
             if (isNaN(numericPrice) || numericPrice < 0) {
-                alert('Please enter a valid price value.');
+                window.showNotification('warning', 'Please enter a valid price value.');
                 return;
             }
 
@@ -1086,10 +1086,10 @@ function AdminPanel() {
             setFilteredInventoryItems(updatedItems);
             setIsPriceAdjustModalOpen(false);
 
-            alert(`Price for ${updatedItem.name} has been updated to $${updatedItem.price.toFixed(2)}.`);
+            window.showNotification('success', `Price for ${updatedItem.name} has been updated to $${updatedItem.price.toFixed(2)}.`);
         } catch (error) {
             console.error('Error in handleSavePriceAdjustment:', error);
-            alert(`Failed to adjust price: ${error.message || 'Unknown error'}`);
+            window.showNotification('error', `Failed to adjust price: ${error.message || 'Unknown error'}`);
         }
     };
 
@@ -1119,7 +1119,7 @@ function AdminPanel() {
             await createInventoryItem(itemData);
 
             // Show success message
-            alert("New inventory item added successfully!");
+            window.showNotification('success', "New inventory item added successfully!");
 
             // Close the modal and reset form
             setIsAddItemModalOpen(false);
@@ -1182,7 +1182,7 @@ function AdminPanel() {
             }
         } catch (error) {
             console.error("Error adding inventory item:", error);
-            alert("Failed to add inventory item. Please try again.");
+            window.showNotification('error', "Failed to add inventory item. Please try again.");
         }
     };
 
@@ -1228,10 +1228,10 @@ function AdminPanel() {
             link.click();
             document.body.removeChild(link);
 
-            alert("Revenue report has been downloaded successfully!");
+            window.showNotification('success', "Revenue report has been downloaded successfully!");
         } catch (error) {
             console.error("Error exporting revenue report:", error);
-            alert("There was an error exporting the revenue report. Please try again.");
+            window.showNotification('error', 'There was an error marking all notifications as read. Please try again.');
         }
     };
 
@@ -2028,16 +2028,19 @@ function AdminPanel() {
                 <h2>Inventory Management</h2>
                 <div className="inventory-actions">
                     <button className="action-btn" onClick={exportInventoryReport}>
-                        <FontAwesomeIcon icon={faListAlt} /> Generate Inventory Report
+                        <FontAwesomeIcon icon={faListAlt} />
+                        <span>Generate Inventory Report</span>
                     </button>
                     <button className="action-btn" onClick={() => setIsAddItemModalOpen(true)}>
-                        <FontAwesomeIcon icon={faMicrochip} /> Add New Item
+                        <FontAwesomeIcon icon={faMicrochip} />
+                        <span>Add New Item</span>
                     </button>
                     <button
                         className={`action-btn ${showLowStockOnly ? 'low-stock-active' : ''}`}
                         onClick={handleLowStockToggle}
                     >
-                        <FontAwesomeIcon icon={faClipboardList} /> Check Low Stock
+                        <FontAwesomeIcon icon={faClipboardList} />
+                        <span>Check Low Stock</span>
                     </button>
                 </div>
             </div>
@@ -2152,9 +2155,8 @@ function AdminPanel() {
                                                         stockNum <= reorderNum ? '#ffc107' :
                                                             '#28a745'
                                                 }}>
-                    {stockNum}
-                </span>
-
+                                                {stockNum}
+                                                </span>
                                                 {/* Diagnostic text element */}
                                                 <div style={{ fontSize: '12px' }}>
                                                     <div>Stock: {stockNum}</div>
@@ -2184,13 +2186,15 @@ function AdminPanel() {
                                             className="action-btn restock-btn"
                                             onClick={() => handleRestockClick(item)}
                                         >
-                                            Restock
+                                            <FontAwesomeIcon icon={faRedo} />
+                                            <span>Restock</span>
                                         </button>
                                         <button
                                             className="adjust-price-btn green-btn"
                                             onClick={() => handleOpenPriceAdjustModal(item)}
                                         >
-                                            <FontAwesomeIcon icon={faMoneyBillWave} /> Adjust Price
+                                            <FontAwesomeIcon icon={faMoneyBillWave} />
+                                            <span>Adjust Price</span>
                                         </button>
                                         <button
                                             className="action-btn delete-btn"
@@ -2524,7 +2528,7 @@ function AdminPanel() {
 
             } catch (error) {
                 console.error('Error marking all notifications as read:', error);
-                alert('There was an error marking all notifications as read. Please try again.');
+                window.showNotification('error', 'There was an error marking all notifications as read. Please try again.');
             }
         };
         const getStatusBadgeClass = (status) => {
@@ -2593,7 +2597,7 @@ function AdminPanel() {
                 setReplyText('');
             } catch (error) {
                 console.error('Error sending reply:', error);
-                alert('Failed to send reply. Please try again.');
+                window.showNotification('error', 'Failed to send reply. Please try again.');
             }
         };
         const renderRequestDetails = () => {
