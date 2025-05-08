@@ -15,121 +15,78 @@ import {
 } from '@fortawesome/free-brands-svg-icons';
 import '../css/PaymentPage.css';
 
+const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    }).format(price);
+};
+
 function PaymentPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const [orderData, setOrderData] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState('credit');
+    const [paymentData, setPaymentData] = useState({ cardNumber: '', cardHolder: '', expiryDate: '', cvv: '' });
+    const [paypalEmail, setPaypalEmail] = useState('');
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
 
     useEffect(() => {
-        console.log("Location state:", location.state);
-
         if (location.state && location.state.orderData) {
-            console.log("Order data received:", location.state.orderData);
             setOrderData(location.state.orderData);
             setPaymentMethod(location.state.paymentMethod || 'credit');
         } else {
-            console.error("No order data found in location state");
-
-            // Show a message before redirecting
-            alert("Payment information missing. Redirecting to checkout page.");
-
-            // Redirect to checkout with a delay to allow the alert to be seen
-            const timer = setTimeout(() => {
-                navigate('/checkout');
-            }, 500);
-
-            return () => clearTimeout(timer);
+            alert("Payment information missing. Redirecting to checkout...");
+            setTimeout(() => navigate('/checkout'), 1000);
         }
     }, [location, navigate]);
 
-    useEffect(() => {
-        // This will help detect if orderData becomes null after being set
-        if (orderData === null) {
-            console.error("orderData became null after being set");
-        }
-    }, [orderData]);
-
-    const [paymentData, setPaymentData] = useState({
-        cardNumber: '',
-        cardHolder: '',
-        expiryDate: '',
-        cvv: '',
-        saveCard: false
-    });
-
-    const [paypalEmail, setPaypalEmail] = useState('');
-
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setPaymentData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        setPaymentData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Get current user
         const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-        // Create an order record (you could save this to the backend)
-        const finalOrder = {
-            items: orderData?.items || [],
-            total: orderData?.total || 0,
-            customer: {
-                id: user.id,
-                name: `${user.firstName} ${user.lastName}`,
-                email: user.email
-            },
-            paymentMethod: paymentMethod,
-            paymentDetails: paymentMethod === 'credit' ? paymentData : { email: paypalEmail },
-            orderDate: new Date().toISOString()
-        };
-
-        console.log("Order completed:", finalOrder);
-
-        // Clear the cart (optional)
         try {
-            if (user.id) {
-                fetch(`http://localhost:8080/api/cart/clear/${user.id}`, { method: "DELETE" });
-            }
-        } catch (err) {
-            console.error("Error clearing cart:", err);
-        }
+            // Backend'e siparişi gönder
+            const response = await fetch(`http://localhost:8080/api/checkout?clerkUserId=${user.id}`, {
+                method: 'POST'
+            });
 
-        alert('Payment processed successfully!');
-        navigate('/', { replace: true });
+            if (!response.ok) {
+                throw new Error("Order failed to be placed");
+            }
+
+            setPaymentSuccess(true); // ödeme başarılı ekranını göster
+
+            // 2 saniye sonra orders sayfasına yönlendir
+            setTimeout(() => {
+                navigate('/orders');
+            }, 2000);
+        } catch (err) {
+            console.error(err);
+            alert("An error occurred while processing your payment.");
+        }
     };
 
-    // Show loading while waiting for data
     if (!orderData) {
+        return <p>Loading...</p>;
+    }
+
+    if (paymentSuccess) {
         return (
             <div className="payment-page-container">
+                <Navbar />
                 <div className="payment-header">
-                    <h1>Payment Processing</h1>
-                </div>
-                <div className="loading-payment">
-                    <div className="spinner"></div>
-                    <p>Loading payment information...</p>
-                    <button
-                        className="back-btn"
-                        onClick={() => navigate('/checkout')}
-                    >
-                        ← Return to Checkout
-                    </button>
+                    <h1 style={{ color: '#2ecc71' }}>✅ Payment Successful</h1>
+                    <p>Your order has been placed. Redirecting to your orders...</p>
                 </div>
             </div>
         );
     }
-
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD'
-        }).format(price);
-    };
 
     return (
         <div className="payment-page-container">

@@ -21,7 +21,7 @@ import {
     faMobileAlt
 } from '@fortawesome/free-solid-svg-icons';
 import '../css/CheckoutPage.css';
-import { useCart } from '../CartContext'; // Import useCart hook
+import { useCart } from '../CartContext';
 
 function CheckoutPage() {
     const location = useLocation();
@@ -29,12 +29,14 @@ function CheckoutPage() {
     const { cartItems, isLoading } = useCart();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userRole, setUserRole] = useState('');
+
     const orderType = location.state?.type || 'all';
     const itemsToCheckout = orderType === 'all'
         ? cartItems
         : orderType === 'parts'
             ? cartItems.filter(item => item.type === 'part')
             : cartItems.filter(item => item.type === 'service');
+
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -47,10 +49,26 @@ function CheckoutPage() {
         appointmentDate: '',
         appointmentTime: ''
     });
-    const subtotal = itemsToCheckout.reduce((total, item) => total + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.0725; // 7.25% tax rate
-    const shipping = subtotal > 100 ? 0 : 10; // Free shipping over $100
-    const total = subtotal + tax + shipping;
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            setIsLoggedIn(true);
+            setUserRole(user.role);
+            setFormData(prev => ({
+                ...prev,
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                email: user.email || '',
+                phone: user.phone || ''
+            }));
+        } else {
+            setIsLoggedIn(false);
+            setUserRole('');
+        }
+    }, []);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -58,24 +76,13 @@ function CheckoutPage() {
             [name]: value
         }));
     };
-    useEffect(() => {
-        const storedUser = localStorage.getItem('currentUser');
-        if (storedUser) {
-            const user = JSON.parse(storedUser);
-            setIsLoggedIn(true);
-            setUserRole(user.role);
-        } else {
-            setIsLoggedIn(false);
-            setUserRole('');
-        }
-    }, []);
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Calculate all values again to ensure they're current
         const calculatedSubtotal = itemsToCheckout.reduce((total, item) => total + (item.price * item.quantity), 0);
-        const calculatedTax = calculatedSubtotal * 0.0725; // 7.25% tax rate
-        const calculatedShipping = calculatedSubtotal > 100 ? 0 : 10; // Free shipping over $100
+        const calculatedTax = calculatedSubtotal * 0.0725;
+        const calculatedShipping = calculatedSubtotal > 100 ? 0 : 10;
         const calculatedTotal = calculatedSubtotal + calculatedTax + calculatedShipping;
 
         const orderData = {
@@ -84,20 +91,13 @@ function CheckoutPage() {
             tax: calculatedTax,
             shipping: calculatedShipping,
             total: calculatedTotal,
-            formData: {...formData}
+            formData: { ...formData }
         };
 
         if (formData.paymentMethod === 'inStore') {
             alert('Your order has been placed! Please visit our store to complete the payment.');
             navigate('/', { replace: true });
         } else {
-            // Log the data being passed to make sure it's correct
-            console.log("Navigating to payment with data:", {
-                orderData,
-                paymentMethod: formData.paymentMethod
-            });
-
-            // Use navigate with state data
             navigate('/payment', {
                 state: {
                     orderData: orderData,
@@ -106,12 +106,19 @@ function CheckoutPage() {
             });
         }
     };
+
+    const subtotal = itemsToCheckout.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const tax = subtotal * 0.0725;
+    const shipping = subtotal > 100 ? 0 : 10;
+    const total = subtotal + tax + shipping;
+
     const formatPrice = (price) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD'
         }).format(price);
     };
+
     const getItemIcon = (item) => {
         if (item.icon) return item.icon;
         if (item.type === 'service') {
@@ -129,6 +136,7 @@ function CheckoutPage() {
             return faTools;
         }
     };
+
     if (!isLoggedIn) {
         return (
             <div className="checkout-page-container">
@@ -148,6 +156,7 @@ function CheckoutPage() {
             </div>
         );
     }
+
     if (userRole !== 'customer') {
         return (
             <div className="checkout-page-container">
@@ -167,6 +176,7 @@ function CheckoutPage() {
             </div>
         );
     }
+
     if (isLoading) {
         return (
             <div className="checkout-page-container">
@@ -180,6 +190,7 @@ function CheckoutPage() {
             </div>
         );
     }
+
     if (itemsToCheckout.length === 0) {
         return (
             <div className="checkout-page-container">

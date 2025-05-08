@@ -16,48 +16,8 @@ const OrdersPage = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [showInvoiceModal, setShowInvoiceModal] = useState(false);
     const [invoiceOrder, setInvoiceOrder] = useState(null);
-    const [currentOrders, setCurrentOrders] = useState([
-        {
-            id: 201,
-            date: '2024-03-18',
-            deviceType: 'iPhone 12',
-            issue: 'Battery Replacement',
-            status: 'Processing',
-            estimatedCompletion: '2024-03-20',
-            cost: 1200
-        },
-        {
-            id: 202,
-            date: '2024-03-20',
-            deviceType: 'MacBook Air',
-            issue: 'Keyboard Replacement',
-            status: 'In Repair',
-            estimatedCompletion: '2024-03-25',
-            cost: 2800
-        }
-    ]);
-    const [pastOrders, setPastOrders] = useState([
-        {
-            id: 101,
-            date: '2024-02-15',
-            deviceType: 'iPhone 13',
-            issue: 'Screen Replacement',
-            status: 'Completed',
-            completionDate: '2024-02-16',
-            cost: 2500,
-            invoiceNo: 'INV-2024-001'
-        },
-        {
-            id: 102,
-            date: '2024-03-10',
-            deviceType: 'MacBook Pro',
-            issue: 'Battery Replacement',
-            status: 'Completed',
-            completionDate: '2024-03-12',
-            cost: 1800,
-            invoiceNo: 'INV-2024-002'
-        }
-    ]);
+    const [currentOrders, setCurrentOrders] = useState([]);
+    const [pastOrders, setPastOrders] = useState([]);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('currentUser');
@@ -75,16 +35,31 @@ const OrdersPage = () => {
                 email: user.email || '',
                 role: user.role || ''
             });
+
+            fetchOrders(user.id);
         } else {
             navigate('/');
         }
     }, [navigate]);
 
-    const viewOrderDetails = (order, e) => {
-        if (e) {
-            e.stopPropagation();
-        }
+    const fetchOrders = async (clerkUserId) => {
+        try {
+            const response = await fetch(`http://localhost:8080/api/orders/${clerkUserId}`);
+            if (!response.ok) throw new Error('Failed to fetch orders');
+            const orders = await response.json();
 
+            const current = orders.filter(order => order.status !== 'Completed');
+            const past = orders.filter(order => order.status === 'Completed');
+
+            setCurrentOrders(current);
+            setPastOrders(past);
+        } catch (error) {
+            console.error('Failed to fetch orders:', error);
+        }
+    };
+
+    const viewOrderDetails = (order, e) => {
+        if (e) e.stopPropagation();
         setSelectedOrder(order);
         setShowDetailsModal(true);
     };
@@ -95,9 +70,7 @@ const OrdersPage = () => {
     };
 
     const downloadInvoice = (order, e) => {
-        if (e) {
-            e.stopPropagation();
-        }
+        if (e) e.stopPropagation();
         setInvoiceOrder(order);
         setShowInvoiceModal(true);
     };
@@ -105,94 +78,9 @@ const OrdersPage = () => {
     const printInvoice = () => {
         const printWindow = window.open('', '_blank');
         const invoiceContent = document.querySelector('.invoice-content').cloneNode(true);
-        const headerH1 = invoiceContent.querySelector('.invoice-header h1');
-        if (headerH1) {
-            headerH1.textContent = 'iRevix Repair Shop';
-        }
-
-        const footerP = invoiceContent.querySelectorAll('.invoice-footer p');
-        if (footerP && footerP.length > 1) {
-            footerP[1].textContent = 'iRevix Repair Shop © 2024 - All Rights Reserved';
-        }
         const style = document.createElement('style');
-        style.textContent = `
-            body { 
-                font-family: Arial, sans-serif; 
-                padding: 20mm; 
-                margin: 0;
-                color: #000;
-            }
-            .print-only-header { 
-                text-align: right; 
-                margin-bottom: 10px; 
-                font-size: 12px;
-            }
-            .invoice-header { 
-                text-align: center; 
-                margin-bottom: 20px; 
-                border-bottom: 2px solid #1976d2;
-                padding-bottom: 10px;
-            }
-            .invoice-header h1 { 
-                color: #1976d2; 
-                margin: 0 0 5px 0; 
-                font-size: 24px;
-            }
-            .invoice-number { 
-                font-size: 16px; 
-                font-weight: bold; 
-            }
-            .invoice-section { 
-                margin-bottom: 20px; 
-            }
-            .invoice-section h3 { 
-                border-bottom: 1px solid #ddd; 
-                padding-bottom: 5px; 
-                margin-top: 0;
-                font-size: 16px;
-                color: #333;
-            }
-            .detail-row { 
-                margin-bottom: 5px; 
-                display: flex;
-            }
-            .detail-label { 
-                font-weight: bold; 
-                width: 150px; 
-                color: #555;
-            }
-            .detail-value {
-                flex: 1;
-            }
-            table { 
-                width: 100%; 
-                border-collapse: collapse; 
-                margin: 20px 0; 
-            }
-            th, td { 
-                border: 1px solid #ddd; 
-                padding: 8px; 
-                text-align: left; 
-            }
-            th { 
-                background-color: #f8f8f8; 
-            }
-            .text-right { 
-                text-align: right; 
-            }
-            .total-row { 
-                font-weight: bold; 
-            }
-            .invoice-footer { 
-                margin-top: 30px; 
-                text-align: center; 
-                font-size: 12px; 
-                color: #666; 
-                border-top: 1px solid #ddd;
-                padding-top: 10px;
-            }
-        `;
-        printWindow.document.write('<html><head><title>Invoice - iRevix Repair Shop</title></head><body>');
+        style.textContent = `body{font-family:Arial;padding:20mm;color:#000}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f8f8f8}`;
+        printWindow.document.write('<html><head><title>Invoice</title></head><body>');
         printWindow.document.head.appendChild(style);
         printWindow.document.body.appendChild(invoiceContent);
         printWindow.document.write('</body></html>');
@@ -201,37 +89,26 @@ const OrdersPage = () => {
         printWindow.addEventListener('load', () => {
             setTimeout(() => {
                 printWindow.print();
-                printWindow.addEventListener('afterprint', () => {
-                    printWindow.close();
-                });
+                printWindow.addEventListener('afterprint', () => printWindow.close());
             }, 500);
         });
     };
 
     const requestSupport = (orderId, e) => {
-        if (e) {
-            e.stopPropagation();
-        }
+        if (e) e.stopPropagation();
         navigate(`/support?orderId=${orderId}`);
     };
 
     const getStatusClass = (status) => {
         switch (status.toLowerCase()) {
-            case 'completed':
-                return 'completed';
-            case 'processing':
-                return 'processing';
-            case 'in repair':
-                return 'in-progress';
-            case 'pending':
-                return 'pending';
-            case 'cancelled':
-                return 'cancelled';
-            default:
-                return '';
+            case 'completed': return 'completed';
+            case 'processing': return 'processing';
+            case 'in repair': return 'in-progress';
+            case 'pending': return 'pending';
+            case 'cancelled': return 'cancelled';
+            default: return '';
         }
     };
-
     return (
         <div className="orders-page">
             <Navbar />
