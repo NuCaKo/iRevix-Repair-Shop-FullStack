@@ -33,6 +33,7 @@ import ReturnsRefundsPage from './pages/ReturnsRefundsPage';
 import PublicCartPage from './pages/PublicCartPage';
 import PublicCheckoutPage from './pages/PublicCheckoutPage';
 import PublicPaymentPage from './pages/PublicPaymentPage';
+import NotificationProvider from './components/NotificationProvider';
 
 import './App.css';
 const clerkPubKey = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || 'pk_test_c3RpcnJpbmctY29icmEtNDAuY2xlcmsuYWNjb3VudHMuZGV2JA';
@@ -140,6 +141,7 @@ function App() {
 
                 {/* 2) Your normal router and routes */}
                 <Router>
+                    <NotificationProvider />
                     <Routes>
                         {/* Public Routes */}
                         <Route path="/" element={<MainPage />} />

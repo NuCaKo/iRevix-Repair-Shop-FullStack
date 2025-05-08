@@ -515,11 +515,13 @@ function RepairServicesPage() {
 
     const handleProceedWithRepair = () => {
         if (selectedProblems.length === 0) {
-            alert("Please select at least one problem before proceeding with repair.");
+            // Use notification instead of alert
+            window.showNotification('warning', "Please select at least one problem before proceeding with repair.");
             return;
         }
         if (!hasCalculatedPrice || numericPrice === 0) {
-            alert("Please get a price estimate before proceeding.");
+            // Use notification instead of alert
+            window.showNotification('warning', "Please get a price estimate before proceeding.");
             return;
         }
 
@@ -551,7 +553,9 @@ function RepairServicesPage() {
         };
 
         addToCart(repairItem);
-        alert(`Added ${selectedDevice} ${selectedModel} repair to cart!`);
+
+        // Use customer notification type for cart additions
+        window.showNotification('customer', `Added ${selectedDevice} ${selectedModel} repair to cart!`);
     };
 
     const getIconColor = (device) => {

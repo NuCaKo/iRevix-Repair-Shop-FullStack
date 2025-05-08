@@ -154,7 +154,7 @@ function ReplacementParts() {
             // Check if user is logged in
             const currentUser = localStorage.getItem('currentUser');
             if (!currentUser) {
-                alert("Please log in to add items to cart");
+                window.showNotification('warning', "Please log in to add items to cart");
                 return;
             }
 
@@ -192,7 +192,7 @@ function ReplacementParts() {
             alert(`Added ${item.name} to cart!`);
         } catch (error) {
             console.error('Error adding to cart:', error);
-            alert(error.message || 'Failed to add item to cart');
+            window.showNotification('error', error.message || 'Failed to add item to cart');
         }
     };
 
