@@ -57,17 +57,29 @@ public class CartService {
         item.setType(type != null ? type.toLowerCase() : "part");
 
         if ("part".equalsIgnoreCase(type) && partId != null && partId > 0) {
-            // This is a regular replacement part
-            ReplacementPart part = partRepo.findById(partId)
-                    .orElseThrow(() -> new RuntimeException("Part not found with ID: " + partId));
+            try {
+                // This is a regular replacement part
+                ReplacementPart part = partRepo.findById(partId)
+                        .orElseThrow(() -> new RuntimeException("Part not found with ID: " + partId));
 
-            item.setName(part.getName());
-            item.setPrice(part.getPrice());
-            item.setPart(part);
-            item.setPartNumber(part.getPartNumber());
-            item.setImageUrl(part.getImageUrl());
+                item.setName(part.getName());
+                item.setPrice(part.getPrice());
+                item.setPart(part);
+                item.setPartNumber(part.getPartNumber());
+                item.setImageUrl(part.getImageUrl());
+            } catch (Exception e) {
+                // If replacement part lookup fails, use provided name and price if available
+                System.err.println("Error finding replacement part: " + e.getMessage());
+                if (name != null && customPrice != null) {
+                    item.setName(name);
+                    item.setPrice(customPrice);
+                    // Don't set part reference
+                } else {
+                    throw new RuntimeException("Unable to add item to cart: " + e.getMessage());
+                }
+            }
         } else {
-            // This is a service item or custom part
+            // This is a service item or custom part or direct inventory item
             item.setName(name != null ? name : "Service Item");
             item.setPrice(customPrice != null ? customPrice : 100.0);
             item.setPartNumber(null);

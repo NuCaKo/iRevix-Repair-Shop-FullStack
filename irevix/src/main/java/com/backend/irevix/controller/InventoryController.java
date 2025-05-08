@@ -1,6 +1,8 @@
 package com.backend.irevix.controller;
 
 import com.backend.irevix.model.Inventory;
+import com.backend.irevix.model.ReplacementPart;
+import com.backend.irevix.repository.ReplacementPartRepository;
 import com.backend.irevix.service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,10 +19,13 @@ import java.util.stream.Collectors;
 public class InventoryController {
 
     private final InventoryService inventoryService;
+    private final ReplacementPartRepository replacementPartRepository; // Added this
 
     @Autowired
-    public InventoryController(InventoryService inventoryService) {
+    public InventoryController(InventoryService inventoryService,
+                               ReplacementPartRepository replacementPartRepository) { // Added parameter
         this.inventoryService = inventoryService;
+        this.replacementPartRepository = replacementPartRepository; // Set the field
     }
 
     @GetMapping
@@ -143,5 +148,40 @@ public class InventoryController {
     public ResponseEntity<Void> deleteInventoryItem(@PathVariable Long id) {
         inventoryService.deleteInventoryItem(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Change from @PostMapping to @GetMapping
+    @GetMapping("/to-replacement-part")
+    public ResponseEntity<?> convertToReplacementPart(@RequestParam Long inventoryId) {
+        try {
+            Optional<Inventory> inventoryOpt = inventoryService.getInventoryItemById(inventoryId);
+
+            if (!inventoryOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Inventory item not found with ID: " + inventoryId);
+            }
+
+            Inventory inventory = inventoryOpt.get();
+
+            // Create and save a new replacement part based on inventory
+            ReplacementPart part = new ReplacementPart();
+            part.setName(inventory.getName());
+            part.setPartNumber(inventory.getPartNumber());
+            part.setPrice(inventory.getPrice());
+            part.setDescription(inventory.getDescription());
+            part.setModelName(inventory.getModelType());
+            part.setStockQuantity(inventory.getStockLevel());
+
+            // Use the injected repository directly
+            System.out.println("Creating new replacement part for: " + inventory.getName());
+            ReplacementPart saved = replacementPartRepository.save(part);
+            System.out.println("Successfully created replacement part with ID: " + saved.getId());
+
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            e.printStackTrace(); // Important: Log the full stack trace
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error converting to replacement part: " + e.getMessage());
+        }
     }
 }

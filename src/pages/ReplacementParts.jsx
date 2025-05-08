@@ -29,7 +29,7 @@ function ReplacementParts() {
     const [devices, setDevices] = useState([]);
     const [deviceModels, setDeviceModels] = useState({});
     const [isLoading, setIsLoading] = useState(true);
-    const { addToCart } = useCart();
+    const { addToCart, refreshCart } = useCart();
     const location = useLocation();
 
     // Category to icon mapping for parts
@@ -149,39 +149,50 @@ function ReplacementParts() {
         setSelectedModel(model);
     };
 
-    const handleAddToCart = async (part) => {
-        const storedUser = JSON.parse(localStorage.getItem("currentUser"));
-        if (!storedUser || storedUser.role !== 'customer') {
-            alert("Please log in as a customer to add items to your cart.");
-            return;
-        }
-
-        const userId = storedUser.id;
-
+    const handleAddToCart = async (item) => {
         try {
-            const res = await fetch(`http://localhost:8080/api/cart/add`, {
+            // Check if user is logged in
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) {
+                alert("Please log in to add items to cart");
+                return;
+            }
+
+            const user = JSON.parse(currentUser);
+
+            // Use the existing cart/add endpoint
+            const formData = new URLSearchParams({
+                'userId': user.id,
+                'partId': '-1',  // Use -1 or any negative number as a signal
+                'quantity': '1',
+                'type': 'part',
+                'name': item.name,
+                'price': item.price,
+                'description': item.description || ''
+            });
+
+            console.log("Adding to cart:", Object.fromEntries(formData));
+
+            const response = await fetch('http://localhost:8080/api/cart/add', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded"
                 },
-                body: new URLSearchParams({
-                    userId: userId,
-                    partId: part.id,
-                    quantity: 1,
-                    type: 'part'
-                })
+                body: formData
             });
 
-            if (!res.ok) throw new Error("Failed to add item to cart");
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Cart add response:", response.status, errorText);
+                throw new Error(`Failed to add to cart: ${errorText}`);
+            }
 
-            const data = await res.json();
-            console.log("✅ Backend cart response:", data);
-
-            alert(`Added ${part.name} to cart!`);
-
-        } catch (err) {
-            console.error("🚨 Error adding to cart:", err);
-            alert("Failed to add item to cart.");
+            // Successfully added to cart
+            refreshCart();
+            alert(`Added ${item.name} to cart!`);
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            alert(error.message || 'Failed to add item to cart');
         }
     };
 
