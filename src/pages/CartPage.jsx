@@ -101,20 +101,18 @@ function CartPage() {
         }
     };
 
-    // Clear entire cart
     const clearCart = async () => {
         if (!userId) return;
 
-        if (window.confirm('Are you sure you want to empty your cart? This cannot be undone.')) {
-            try {
-                const res = await fetch(`http://localhost:8080/api/cart/clear/${userId}`, { method: "DELETE" });
-                if (res.ok) {
-                    // Reload the page after clearing cart
-                    window.location.reload();
-                }
-            } catch (err) {
-                console.error("Error clearing cart:", err);
+        try {
+            const res = await fetch(`http://localhost:8080/api/cart/clear/${userId}`, { method: "DELETE" });
+            if (res.ok) {
+                window.showNotification('success', "Your cart has been emptied successfully!");
+                window.location.reload();
             }
+        } catch (err) {
+            console.error("Error clearing cart:", err);
+            window.showNotification('error', "Failed to empty cart. Please try again.");
         }
     };
 

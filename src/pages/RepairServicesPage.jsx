@@ -514,7 +514,6 @@ function RepairServicesPage() {
     };
 
 
-// Replace the handleProceedWithRepair function with this:
     const handleProceedWithRepair = () => {
         if (selectedProblems.length === 0) {
             // Use notification instead of alert
@@ -555,9 +554,6 @@ function RepairServicesPage() {
         };
 
         addToCart(repairItem);
-
-        // Show success notification instead of redirecting
-        window.showNotification('success', "Repair service added to cart successfully!");
 
         // Reset the form for a new repair quote
         setSelectedProblems([]);
