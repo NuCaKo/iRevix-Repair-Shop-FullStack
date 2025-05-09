@@ -188,16 +188,6 @@ CREATE TABLE IF NOT EXISTS users (
                                      UNIQUE KEY username (username),
                                      UNIQUE KEY email (email)
 );
-
--- Create cart tables (from the additional provided code)
-CREATE TABLE IF NOT EXISTS cart (
-                                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                                    user_id INT NOT NULL,
-                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS cart_item (
                                          id BIGINT PRIMARY KEY AUTO_INCREMENT,
                                          cart_id BIGINT NOT NULL,
@@ -277,19 +267,6 @@ CREATE TABLE IF NOT EXISTS part_categories (
                                                PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS repairs (
-                                       id BIGINT NOT NULL AUTO_INCREMENT,
-                                       repair_id VARCHAR(255) DEFAULT NULL,
-                                       customer VARCHAR(255) NOT NULL,
-                                       device VARCHAR(255) NOT NULL,
-                                       problem TEXT,
-                                       status VARCHAR(255) NOT NULL,
-                                       date VARCHAR(255) NOT NULL,
-                                       updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                       PRIMARY KEY (id),
-                                       UNIQUE KEY repair_id (repair_id)
-);
-
 CREATE TABLE IF NOT EXISTS notifications (
                                              id BIGINT NOT NULL AUTO_INCREMENT,
                                              type VARCHAR(255) NOT NULL,
@@ -309,6 +286,23 @@ CREATE TABLE IF NOT EXISTS traffic (
                                        conversions INT NOT NULL,
                                        period VARCHAR(255) DEFAULT NULL,
                                        PRIMARY KEY (id)
+);
+
+CREATE TABLE orders (
+                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                        clerk_user_id VARCHAR(255),
+                        customer_name VARCHAR(255),
+                        device_type VARCHAR(255),
+                        issue TEXT,
+                        status VARCHAR(50),
+                        order_date DATE,
+                        completion_date DATE,
+                        estimated_completion DATE,
+                        cost DECIMAL(10,2),
+                        invoice_no VARCHAR(50),
+
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS support_requests (
@@ -506,13 +500,6 @@ INSERT INTO repair_types (revenue_id, type, count, revenue, revenue_amount) VALU
                                                                                 (8, 'Battery Replacement', 18, 1260, 1260),
                                                                                 (8, 'Water Damage', 7, 1260, 1260),
                                                                                 (8, 'Charging Port', 12, 720, 720);
-
--- Insert repairs data
-INSERT INTO repairs (repair_id, customer, device, problem, status, date, updated_at) VALUES
-                                                                                         ('RPR1234', 'John Smith', 'iPhone 12', 'Screen Replacement', 'In Progress', '2025-05-01', '2025-05-08 04:21:38'),
-                                                                                         ('RPR1235', 'Emma Johnson', 'MacBook Pro', 'Battery Issue', 'Pending', '2025-05-01', '2025-05-08 03:16:02'),
-                                                                                         ('RPR1236', 'Michael Brown', 'Apple Watch', 'Not Turning On', 'In Progress', '2025-04-28', '2025-05-07 14:18:06');
-
 -- Insert traffic data
 INSERT INTO traffic (date, visitors, page_views, conversions, period) VALUES
                                                                           ('2025-05-01', 425, 1456, 32, '7days'),

@@ -1,6 +1,5 @@
 package com.backend.irevix.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -63,71 +62,5 @@ public class Revenue {
         if (date == null) {
             date = new Date();
         }
-    }
-
-    @Entity
-    @Table(name = "daily_revenue")
-    @Data
-    public static class DailyRevenue {
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
-
-        @ManyToOne
-        @JoinColumn(name = "revenue_id")
-        @JsonIgnore
-        private Revenue revenue;
-
-        @Column(nullable = false)
-        private String date;
-
-        private double sales;
-        private double repairs;
-        private double total;
-    }
-
-    @Entity
-    @Table(name = "device_revenue")
-    @Data
-    public static class DeviceRevenue {
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
-
-        @ManyToOne
-        @JoinColumn(name = "revenue_id")
-        @JsonIgnore
-        private Revenue revenue;
-
-        private String device;
-        @Column(name = "revenue")
-        private double revenueValue;
-
-        @Column(name = "revenue_amount")
-        private double revenueAmount;
-
-        private double percentage;
-    }
-
-    @Entity
-    @Table(name = "repair_types")
-    @Data
-    public static class RepairType {
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
-
-        @ManyToOne
-        @JoinColumn(name = "revenue_id")
-        @JsonIgnore
-        private Revenue revenue;
-
-        private String type;
-        private int count;
-        @Column(name = "revenue")
-        private double revenueValue;
-
-        @Column(name = "revenue_amount")
-        private double revenueAmount;
     }
 }

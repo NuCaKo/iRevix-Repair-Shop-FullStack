@@ -383,11 +383,13 @@ export const fetchLowStockItems = async () => {
 
 export const createNotification = async (notificationData) => {
     try {
-        const res = await axios.post(`${API_URL}/notifications`, notificationData);
-        return res.data;
-    } catch (err) {
-        console.error('Error creating notification:', err);
-        throw err;
+        console.log('Creating notification with data:', notificationData);
+        const response = await axios.post(`${API_URL}/notifications`, notificationData);
+        console.log('Notification created:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating notification:', error);
+        throw error;
     }
 };
 
@@ -599,6 +601,53 @@ export const deleteServiceOption = async (id) => {
         return res.data;
     } catch (err) {
         console.error('Error deleting service option:', err);
+        throw err;
+    }
+};
+export const getOrdersAsRepairs = async () => {
+    try {
+        console.log("Fetching orders from API...");
+        const res = await axios.get(`${API_URL}/orders/all`);
+        console.log("Orders data:", res.data);
+
+        if (!res.data || res.data.length === 0) {
+            console.log("WARNING: No orders data returned from API");
+            return [];
+        }
+
+        // Map Order objects to match Repair object format expected by the admin panel
+        const mappedRepairs = res.data.map(order => {
+            console.log("Processing order:", order);
+            return {
+                id: order.id,
+                repairId: `ORD-${order.id}`,
+                // Use camelCase property names to match the Java entity
+                customer: order.customerName,  // Changed from customer_name to customerName
+                device: order.deviceType,      // Changed from device_type to deviceType
+                problem: order.issue,
+                status: order.status || 'Pending',
+                date: order.orderDate ? order.orderDate.toString() :
+                    new Date().toISOString().split('T')[0],
+            };
+        });
+
+        console.log("Mapped repairs:", mappedRepairs);
+        return mappedRepairs;
+    } catch (err) {
+        console.error('Error fetching orders as repairs:', err);
+        if (err.response) {
+            console.error('Response status:', err.response.status);
+            console.error('Response data:', err.response.data);
+        }
+        return [];
+    }
+};
+export const updateOrder = async (id, orderData) => {
+    try {
+        const res = await axios.put(`${API_URL}/orders/${id}`, orderData);
+        return res.data;
+    } catch (err) {
+        console.error('Error updating order:', err);
         throw err;
     }
 };

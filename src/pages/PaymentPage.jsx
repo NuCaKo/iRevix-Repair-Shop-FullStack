@@ -21,6 +21,13 @@ const formatPrice = (price) => {
         currency: 'USD'
     }).format(price);
 };
+function extractDeviceType(itemName) {
+    const devices = ['iPhone', 'iPad', 'MacBook', 'Apple Watch', 'AirPods'];
+    for (const device of devices) {
+        if (itemName.includes(device)) return device;
+    }
+    return 'Other';
+}
 
 function PaymentPage() {
     const location = useLocation();
@@ -51,18 +58,35 @@ function PaymentPage() {
         const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
         try {
-            // Backend'e siparişi gönderirken ad ve soyadı da ekle
-            const response = await fetch(`http://localhost:8080/api/checkout?clerkUserId=${user.id}&firstName=${encodeURIComponent(user.firstName || '')}&lastName=${encodeURIComponent(user.lastName || '')}`, {
-                method: 'POST'
+            // Satın alınan ürünlerin tiplerini ve fiyatlarını da gönder
+            const requestData = {
+                clerkUserId: user.id,
+                customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+                items: orderData.items.map(item => ({
+                    type: item.type,  // "part" veya "service"
+                    name: item.name,
+                    deviceType: item.deviceType || extractDeviceType(item.name),
+                    price: item.price,
+                    quantity: item.quantity
+                })),
+                totalAmount: orderData.total
+            };
+
+            // Backend'e JSON formatında gönder
+            const response = await fetch(`http://localhost:8080/api/checkout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
             });
 
             if (!response.ok) {
                 throw new Error("Order failed to be placed");
             }
 
-            setPaymentSuccess(true); // ödeme başarılı ekranını göster
+            setPaymentSuccess(true);
 
-            // 2 saniye sonra orders sayfasına yönlendir
             setTimeout(() => {
                 navigate('/orders');
             }, 2000);
@@ -71,7 +95,6 @@ function PaymentPage() {
             alert("An error occurred while processing your payment.");
         }
     };
-
 
     if (!orderData) {
         return <p>Loading...</p>;

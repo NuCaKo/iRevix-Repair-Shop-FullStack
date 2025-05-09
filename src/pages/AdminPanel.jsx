@@ -22,7 +22,9 @@ import {
     createNotification,
     restockInventoryItem,
     createInventoryItem,
-    adjustInventoryItemPrice
+    adjustInventoryItemPrice,
+    getOrdersAsRepairs,
+    updateOrder
 } from '../services/api';
 import {
     BrowserRouter as Router,
@@ -101,6 +103,9 @@ function AdminPanel() {
     const [isPriceAdjustModalOpen, setIsPriceAdjustModalOpen] = useState(false);
     const [priceAdjustItem, setPriceAdjustItem] = useState(null);
     const [newPrice, setNewPrice] = useState(0);
+    const [lastOrderTime, setLastOrderTime] = useState(Date.now());
+    const [newSaleIndicator, setNewSaleIndicator] = useState(false);
+    const [lastCheckTime, setLastCheckTime] = useState(Date.now());
     const [newItemData, setNewItemData] = useState({
         name: '',
         partNumber: '',
@@ -136,6 +141,50 @@ function AdminPanel() {
         setEditOrderData({...order});
         setIsEditModalOpen(true);
     };
+    const checkForNewSales = async () => {
+        try {
+            const todayData = await getRevenueData('today');
+            const currentTodaySales = todayData.today;
+
+            // Satış bilgilerini localStorage'a kaydederek önceki değerlerle karşılaştırıyoruz
+            const lastKnownSales = localStorage.getItem('lastKnownSales') ?
+                parseFloat(localStorage.getItem('lastKnownSales')) : 0;
+
+            if (currentTodaySales > lastKnownSales) {
+                console.log('New sale detected!', { lastKnownSales, currentTodaySales });
+                setNewSaleIndicator(true);
+                setLastOrderTime(Date.now());
+
+                // 5 saniye sonra göstergeyi kapat
+                setTimeout(() => {
+                    setNewSaleIndicator(false);
+                }, 5000);
+
+                // Yeni bildirimi Revenue tab'ına eklemek için revenueData'yı güncelle
+                if (revenueData) {
+                    setRevenueData({
+                        ...revenueData,
+                        today: currentTodaySales
+                    });
+                }
+            }
+
+            // Yeni satış değerini kaydet
+            localStorage.setItem('lastKnownSales', currentTodaySales.toString());
+        } catch (error) {
+            console.error('Error checking for new sales:', error);
+        }
+    };
+
+// Aşağıdaki useEffect'i ekleyin (periyodik kontrol için)
+    useEffect(() => {
+        // Her 1 dakikada bir yeni satış kontrolü yap
+        const newSalesCheckInterval = setInterval(() => {
+            checkForNewSales();
+        }, 60000); // 1 dakika
+
+        return () => clearInterval(newSalesCheckInterval);
+    }, []);
 
     const handleSaveOrder = async () => {
         try {
@@ -144,35 +193,177 @@ function AdminPanel() {
             );
             const orderId = editOrderData.id;
             const updateData = {
-                problem: editOrderData.problem,
+                issue: editOrderData.problem,
                 status: editOrderData.status
             };
-            const updatedOrder = await updateRepair(orderId, updateData);
+
+            // Check if status has changed
+            const statusChanged = originalOrder.status !== editOrderData.status;
+
+            // You'll need to create this function or adjust your existing one
+            const updatedOrder = await updateOrder(orderId, updateData);
+
+            // Map the response back to the format expected by your admin panel
+            const mappedOrder = {
+                id: updatedOrder.id,
+                repairId: `ORD-${updatedOrder.id}`,
+                customer: updatedOrder.customerName,
+                device: updatedOrder.deviceType,
+                problem: updatedOrder.issue,
+                status: updatedOrder.status,
+                date: updatedOrder.orderDate ? new Date(updatedOrder.orderDate).toISOString().split('T')[0] :
+                    new Date().toISOString().split('T')[0],
+            };
+
             const updatedOrders = repairOrders.map(order =>
-                order.id === orderId ? updatedOrder : order
+                order.id === orderId ? mappedOrder : order
             );
 
             setRepairOrders(updatedOrders);
             setIsEditModalOpen(false);
-            if (originalOrder && originalOrder.status !== updatedOrder.status) {
-                await createNotification({
-                    type: 'order',
-                    message: `Repair order for ${updatedOrder.customer}'s ${updatedOrder.device} status changed from "${originalOrder.status}" to "${updatedOrder.status}".`,
-                    time: 'just now'
-                });
-                window.dispatchEvent(new Event('notification-update'));
-                const notificationsData = await getNotifications();
-                setNotifications(notificationsData);
-                const unreadCount = notificationsData.filter(n => !n.isRead).length;
-                setUnreadNotifications(unreadCount);
+
+            // Create a notification if status changed
+            if (statusChanged) {
+                try {
+                    await createNotification({
+                        type: 'order',
+                        message: `Repair order for ${updatedOrder.customerName}'s ${updatedOrder.deviceType} status changed from "${originalOrder.status}" to "${updatedOrder.status}".`,
+                        time: 'just now'
+                    });
+
+                    // Trigger notification refresh
+                    window.dispatchEvent(new Event('notification-update'));
+
+                    // Optionally: refresh notifications immediately
+                    const notificationsData = await getNotifications();
+                    setNotifications(notificationsData);
+                    const unreadCount = notificationsData.filter(n => !n.isRead).length;
+                    setUnreadNotifications(unreadCount);
+
+                    window.showNotification('success', 'Order updated successfully!');
+                } catch (notificationError) {
+                    console.error('Error creating notification:', notificationError);
+                }
+            } else {
+                window.showNotification('success', 'Order updated successfully!');
             }
-            window.showNotification('success', `Repair order for ${updatedOrder.customer}'s ${updatedOrder.device} has been updated.`);
         } catch (error) {
             console.error('Error updating order:', error);
             window.showNotification('error', 'Failed to update order. Please try again.');
         }
     };
+    // Add this to your AdminPanel.jsx file
 
+// 1. Add a function to store last seen order IDs in localStorage
+    const storeLastSeenOrderIds = (orderIds) => {
+        localStorage.setItem('lastSeenOrderIds', JSON.stringify(orderIds));
+    };
+
+    const getLastSeenOrderIds = () => {
+        const stored = localStorage.getItem('lastSeenOrderIds');
+        return stored ? JSON.parse(stored) : [];
+    };
+
+// 3. Replace your checkForNewOrders function with this improved version
+    const checkForNewOrders = async () => {
+        try {
+            console.log('Checking for new orders...');
+            const latestOrders = await getOrdersAsRepairs();
+            console.log('Latest orders from API:', latestOrders);
+
+            // Get previously seen order IDs from localStorage instead of component state
+            const previouslySeenOrderIds = getLastSeenOrderIds();
+            console.log('Previously seen order IDs:', previouslySeenOrderIds);
+
+            // Find new orders by comparing with previously seen IDs
+            const newOrders = latestOrders.filter(order => !previouslySeenOrderIds.includes(order.id));
+            console.log('New orders detected:', newOrders);
+
+            if (newOrders.length > 0) {
+                console.log(`Found ${newOrders.length} new orders`);
+
+                // Update orders list
+                setRepairOrders(latestOrders);
+
+                // Create notifications for each new order
+                for (const order of newOrders) {
+                    console.log('Creating notification for order:', order);
+                    try {
+                        const notificationData = {
+                            type: 'order',
+                            message: `New repair order received from ${order.customer || 'Customer'} for ${order.device || 'device'}: ${order.problem || 'repair'}`,
+                            time: 'just now'
+                        };
+                        console.log('Creating notification with data:', notificationData);
+
+                        await createNotification(notificationData);
+                        console.log('Notification created successfully');
+                    } catch (notifError) {
+                        console.error('Error creating notification for order:', order.id, notifError);
+                    }
+                }
+
+                // Update localStorage with all current order IDs
+                storeLastSeenOrderIds(latestOrders.map(order => order.id));
+
+                // Explicitly force refresh notifications
+                await refreshNotifications();
+
+                // Dispatch notification update event
+                window.dispatchEvent(new Event('notification-update'));
+
+                // Show a user notification
+                window.showNotification('info', `${newOrders.length} new repair order(s) received!`);
+            } else {
+                // Still update the seen order IDs to keep it current
+                storeLastSeenOrderIds(latestOrders.map(order => order.id));
+                console.log('No new orders found');
+            }
+        } catch (error) {
+            console.error('Error checking for new orders:', error);
+        }
+    };
+    useEffect(() => {
+        if (!isLoading && (activeTab === 'orders' || activeTab === 'dashboard')) {
+            console.log(`Tab "${activeTab}" activated - checking for new orders`);
+            checkForNewOrders();
+            setLastCheckTime(Date.now());
+        }
+    }, [isLoading, activeTab]);
+
+// 3. Set up a SINGLE interval for periodic checking
+    useEffect(() => {
+        console.log('Setting up new orders check interval');
+
+        // Only run interval when component is loaded
+        if (isLoading) return;
+
+        const orderCheckInterval = setInterval(() => {
+            console.log('Running scheduled check for new orders');
+            checkForNewOrders();
+            setLastCheckTime(Date.now());
+        }, 30000); // Check every 30 seconds
+
+        // Clean up interval on component unmount
+        return () => {
+            console.log('Cleaning up order check interval');
+            clearInterval(orderCheckInterval);
+        };
+    }, [isLoading]); // Only dependency should be isLoading
+
+// 4. Keep the event listener for new order events
+    useEffect(() => {
+        const handleNewOrderCreated = () => {
+            console.log('New order created event detected');
+            checkForNewOrders();
+        };
+
+        window.addEventListener('new-order-created', handleNewOrderCreated);
+
+        return () => {
+            window.removeEventListener('new-order-created', handleNewOrderCreated);
+        };
+    }, []);
     const checkLowStockItems = async () => {
         try {
             const lowStockItems = await fetchLowStockItems();
@@ -392,34 +583,31 @@ function AdminPanel() {
             setNotifiedLowStockItems(JSON.parse(savedNotifiedItems));
         }
     }, []);
-    useEffect(() => {
-        const fetchAllData = async () => {
-            try {
-                const notificationsData = await getNotifications();
-                setNotifications(notificationsData);
-                const unreadNotificationCount = notificationsData.filter(n => !n.isRead).length;
-                setUnreadNotifications(unreadNotificationCount);
-                console.log('Initial unread notifications count:', unreadNotificationCount);
-                const supportData = await getSupportRequests();
-                setSupportRequests(supportData);
-                const unreadSupportCount = supportData.filter(req => !req.isRead).length;
-                setUnreadSupportRequests(unreadSupportCount);
-                console.log('Initial unread support requests count:', unreadSupportCount);
-                const trafficData = await getTrafficData(trafficPeriod);
-                setWebsiteTraffic(trafficData);
+    const fetchAllData = async () => {
+        try {
+            const notificationsData = await getNotifications();
+            setNotifications(notificationsData);
+            const unreadNotificationCount = notificationsData.filter(n => !n.isRead).length;
+            setUnreadNotifications(unreadNotificationCount);
 
-                const repairsData = await getRepairs();
-                setRepairOrders(repairsData);
+            const supportData = await getSupportRequests();
+            setSupportRequests(supportData);
+            const unreadSupportCount = supportData.filter(req => !req.isRead).length;
+            setUnreadSupportRequests(unreadSupportCount);
 
-                setIsLoading(false);
-            } catch (error) {
-                console.error('Error loading data:', error);
-                setIsLoading(false);
-            }
-        };
+            const trafficData = await getTrafficData(trafficPeriod);
+            setWebsiteTraffic(trafficData);
 
-        fetchAllData();
-    }, []);
+            // Change this line
+            const repairsData = await getOrdersAsRepairs(); // Instead of getRepairs()
+            setRepairOrders(repairsData);
+
+            setIsLoading(false);
+        } catch (error) {
+            console.error('Error loading data:', error);
+            setIsLoading(false);
+        }
+    };
 
 
     useEffect(() => {
@@ -504,6 +692,39 @@ function AdminPanel() {
             fetchRevenueData();
         }
     }, [revenuePeriod, activeTab]);
+    useEffect(() => {
+        // Revenue verilerini otomatik yenileme
+        const revenueRefreshInterval = setInterval(async () => {
+            if (activeTab === 'revenue' || activeTab === 'dashboard') {
+                try {
+                    console.log('Automatically refreshing revenue data...');
+                    const data = await getRevenueData(revenuePeriod);
+                    // Veriyi işle ve güncellenmiş state'i ayarla
+                    const processedData = {
+                        dailyRevenue: data.dailyRevenue || [],
+                        deviceRevenue: data.deviceRevenue || [],
+                        repairsByType: data.repairsByType || [],
+                        today: data.today || 0,
+                        thisWeek: data.thisWeek || 0,
+                        thisMonth: data.thisMonth || 0,
+                        lastMonth: data.lastMonth || 0,
+                        repairSalesRatio: data.repairSalesRatio || '0:0',
+                        periodLabel: data.periodLabel || revenuePeriod,
+                        todayChange: data.todayChange || '0%',
+                        weekChange: data.weekChange || '0%',
+                        monthChange: data.monthChange || '0%'
+                    };
+                    setRevenueData(processedData);
+                    // Yeni satış kontrolü
+                    checkForNewSales(processedData);
+                } catch (error) {
+                    console.error('Error automatically refreshing revenue data:', error);
+                }
+            }
+        }, 30000); // 30 saniyede bir güncelleme
+
+        return () => clearInterval(revenueRefreshInterval);
+    }, [activeTab, revenuePeriod]);
     useEffect(() => {
         const fetchDashboardStats = async () => {
             if (activeTab === 'dashboard') {
@@ -650,8 +871,11 @@ function AdminPanel() {
     };
     useEffect(() => {
         if (!isLoading && activeTab === 'support') {
+            // Get requests from the service
             const allRequests = supportService.getAllRequests();
             setSupportRequests(allRequests);
+
+            // Calculate unread count correctly
             const unreadCount = supportService.getUnreadCountForAdmin();
             setUnreadSupportRequests(unreadCount);
         }
@@ -659,8 +883,11 @@ function AdminPanel() {
     useEffect(() => {
         if (!isLoading && activeTab === 'support') {
             const interval = setInterval(() => {
+                // Get fresh data
                 const allRequests = supportService.getAllRequests();
                 setSupportRequests(allRequests);
+
+                // Recalculate unread count properly
                 const unreadCount = supportService.getUnreadCountForAdmin();
                 setUnreadSupportRequests(unreadCount);
             }, 10000);
@@ -1292,7 +1519,10 @@ function AdminPanel() {
                     </div>
                     <div className="stat-content">
                         {dashboardStats ? (
-                            <h3>${dashboardStats.todayRevenue.toLocaleString()}</h3>
+                            <h3>
+                                ${dashboardStats.todayRevenue.toLocaleString()}
+                                {newSaleIndicator && <span className="new-sale-badge">New Sale!</span>}
+                            </h3>
                         ) : (
                             <h3><div className="loading-indicator-small"></div></h3>
                         )}
@@ -1474,13 +1704,13 @@ function AdminPanel() {
             const [
                 notificationsData,
                 trafficData,
-                repairsData,
+                repairsData, // This will come from orders now
                 supportData,
                 revenueData
             ] = await Promise.all([
                 getNotifications(),
                 getTrafficData(trafficPeriod),
-                getRepairs(),
+                getOrdersAsRepairs(), // Change this from getRepairs()
                 getSupportRequests(),
                 getRevenueData(revenuePeriod)
             ]);
@@ -2468,45 +2698,28 @@ function AdminPanel() {
                 console.error('Error marking request as read:', error);
             }
         };
-        const markAllSupportAsRead = async () => {
+        const markAllSupportAsRead = () => {
             try {
                 console.log('Marking all support requests as read');
-                const unreadRequests = supportRequests.filter(req => !req.isRead);
 
-                if (unreadRequests.length === 0) {
+                // Check if there are any unread requests
+                const unreadCount = supportRequests.filter(req => !req.isRead).length;
+
+                if (unreadCount === 0) {
                     console.log('No unread support requests to mark');
                     return;
                 }
-                const updatedRequests = supportRequests.map(req => ({
-                    ...req,
-                    isRead: true
-                }));
 
+                // Use the supportService to mark all as read - this updates localStorage
+                const updatedRequests = supportService.markAllAsReadByAdmin();
+
+                // Update the local state
                 setSupportRequests(updatedRequests);
                 setUnreadSupportRequests(0);
-                for (const req of unreadRequests) {
-                    try {
-                        await updateSupportRequest(req.id, { isRead: true });
-                        console.log(`Marked support request ${req.id} as read`);
-                    } catch (error) {
-                        console.error(`Failed to mark support request ${req.id} as read:`, error);
-                    }
-                }
-                const freshRequests = await getSupportRequests();
-                setSupportRequests(freshRequests);
-                const remainingUnread = freshRequests.filter(req => !req.isRead).length;
-                setUnreadSupportRequests(remainingUnread);
 
-                console.log('All support requests marked as read');
+                console.log('All support requests marked as read successfully');
             } catch (error) {
                 console.error('Error marking all support requests as read:', error);
-                try {
-                    const freshRequests = await getSupportRequests();
-                    setSupportRequests(freshRequests);
-                    setUnreadSupportRequests(freshRequests.filter(req => !req.isRead).length);
-                } catch (refreshError) {
-                    console.error('Error refreshing support requests:', refreshError);
-                }
             }
         };
 
@@ -2879,7 +3092,15 @@ function AdminPanel() {
         return (
             <div className="revenue-container">
                 <div className="revenue-header">
-                    <h2>Revenue Dashboard</h2>
+                    <h2>
+                        Revenue Dashboard
+                        {lastOrderTime && (
+                            <span className="update-indicator">
+                <FontAwesomeIcon icon={faRedo} spin={newSaleIndicator} />
+                Last update: {new Date(lastOrderTime).toLocaleTimeString()}
+            </span>
+                        )}
+                    </h2>
                     <div className="revenue-controls">
                         <select
                             className="date-range-select"

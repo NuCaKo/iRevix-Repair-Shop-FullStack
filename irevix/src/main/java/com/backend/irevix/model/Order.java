@@ -12,19 +12,41 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "clerk_user_id")
     private String clerkUserId;
-    // Müşteri adı-soyadı için yeni alan eklendi
+
+    @Column(name = "customer_name")
     private String customerName;
+
+    @Column(name = "device_type")
     private String deviceType;
+
+    @Column(name = "issue")
     private String issue;
+
+    @Column(name = "status")
     private String status;
 
+    @Column(name = "order_date")
     private LocalDate orderDate;
+
+    @Column(name = "completion_date")
     private LocalDate completionDate;
+
+    @Column(name = "estimated_completion")
     private LocalDate estimatedCompletion;
 
+    @Column(name = "cost")
     private BigDecimal cost;
+
+    @Column(name = "invoice_no")
     private String invoiceNo;
+
+    @Column(name = "created_at")
+    private LocalDate createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDate updatedAt;
 
     // ✅ GETTERS
     public Long getId() {
@@ -35,7 +57,6 @@ public class Order {
         return clerkUserId;
     }
 
-    // CustomerName için getter
     public String getCustomerName() {
         return customerName;
     }
@@ -72,12 +93,23 @@ public class Order {
         return invoiceNo;
     }
 
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDate getUpdatedAt() {
+        return updatedAt;
+    }
+
     // ✅ SETTERS
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public void setClerkUserId(String clerkUserId) {
         this.clerkUserId = clerkUserId;
     }
 
-    // CustomerName için setter
     public void setCustomerName(String customerName) {
         this.customerName = customerName;
     }
@@ -112,5 +144,24 @@ public class Order {
 
     public void setInvoiceNo(String invoiceNo) {
         this.invoiceNo = invoiceNo;
+    }
+
+    public void setCreatedAt(LocalDate createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public void setUpdatedAt(LocalDate updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "id=" + id +
+                ", customerName='" + customerName + '\'' +
+                ", deviceType='" + deviceType + '\'' +
+                ", status='" + status + '\'' +
+                ", orderDate=" + orderDate +
+                '}';
     }
 }

@@ -1,0 +1,29 @@
+package com.backend.irevix.model;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.Data;
+
+@Entity
+@Table(name = "repair_types")
+@Data
+public class RepairType {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "revenue_id")
+    @JsonIgnore
+    private Revenue revenue;  // Bu ilişki alanı
+
+    private String type;
+    private int count;
+
+    // 'revenue' değil 'revenueValue' olarak değiştiriyoruz
+    @Column(name = "revenue")
+    private double revenueValue;  // Bu veri alanı
+
+    @Column(name = "revenue_amount")
+    private double revenueAmount;
+}
