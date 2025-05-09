@@ -590,10 +590,16 @@ function AdminPanel() {
             const unreadNotificationCount = notificationsData.filter(n => !n.isRead).length;
             setUnreadNotifications(unreadNotificationCount);
 
-            const supportData = await getSupportRequests();
-            setSupportRequests(supportData);
-            const unreadSupportCount = supportData.filter(req => !req.isRead).length;
-            setUnreadSupportRequests(unreadSupportCount);
+            try {
+                const supportData = await supportService.getAllRequests();
+                setSupportRequests(supportData);
+                const unreadSupportCount = await supportService.getUnreadCountForAdmin();
+                setUnreadSupportRequests(unreadSupportCount);
+            } catch (error) {
+                console.error('Error loading support data:', error);
+                setSupportRequests([]);
+                setUnreadSupportRequests(0);
+            }
 
             const trafficData = await getTrafficData(trafficPeriod);
             setWebsiteTraffic(trafficData);
@@ -872,25 +878,39 @@ function AdminPanel() {
     };
     useEffect(() => {
         if (!isLoading && activeTab === 'support') {
-            // Get requests from the service
-            const allRequests = supportService.getAllRequests();
-            setSupportRequests(allRequests);
+            const loadSupportRequests = async () => {
+                try {
+                    // Get requests from the service asynchronously
+                    const allRequests = await supportService.getAllRequests();
+                    setSupportRequests(allRequests);
 
-            // Calculate unread count correctly
-            const unreadCount = supportService.getUnreadCountForAdmin();
-            setUnreadSupportRequests(unreadCount);
+                    // Calculate unread count correctly
+                    const unreadCount = await supportService.getUnreadCountForAdmin();
+                    setUnreadSupportRequests(unreadCount);
+                } catch (error) {
+                    console.error('Error loading support requests:', error);
+                    setSupportRequests([]);
+                    setUnreadSupportRequests(0);
+                }
+            };
+
+            loadSupportRequests();
         }
     }, [isLoading, activeTab]);
     useEffect(() => {
         if (!isLoading && activeTab === 'support') {
-            const interval = setInterval(() => {
-                // Get fresh data
-                const allRequests = supportService.getAllRequests();
-                setSupportRequests(allRequests);
+            const interval = setInterval(async () => {
+                try {
+                    // Get fresh data asynchronously
+                    const allRequests = await supportService.getAllRequests();
+                    setSupportRequests(allRequests);
 
-                // Recalculate unread count properly
-                const unreadCount = supportService.getUnreadCountForAdmin();
-                setUnreadSupportRequests(unreadCount);
+                    // Recalculate unread count properly
+                    const unreadCount = await supportService.getUnreadCountForAdmin();
+                    setUnreadSupportRequests(unreadCount);
+                } catch (error) {
+                    console.error('Error refreshing support requests:', error);
+                }
             }, 10000);
 
             return () => clearInterval(interval);
@@ -2783,20 +2803,22 @@ function AdminPanel() {
     const renderSupportRequests = () => {
         const markAsRead = async (id) => {
             try {
-                const updatedRequest = await updateSupportRequest(id, { isRead: true });
-                setSupportRequests(supportRequests.map(req =>
-                    req.id === id ? updatedRequest : req
-                ));
-                const updatedUnreadCount = supportRequests
-                    .filter(req => req.id !== id && !req.isRead)
-                    .length;
+                // Use supportService instead of updateSupportRequest directly
+                const updatedRequest = await supportService.markAsReadByAdmin(id);
+                if (updatedRequest) {
+                    setSupportRequests(supportRequests.map(req =>
+                        req.id === id ? updatedRequest : req
+                    ));
 
-                setUnreadSupportRequests(updatedUnreadCount);
+                    // Recalculate unread count or get it from the service
+                    const updatedUnreadCount = await supportService.getUnreadCountForAdmin();
+                    setUnreadSupportRequests(updatedUnreadCount);
+                }
             } catch (error) {
                 console.error('Error marking request as read:', error);
             }
         };
-        const markAllSupportAsRead = () => {
+        const markAllSupportAsRead = async () => {
             try {
                 console.log('Marking all support requests as read');
 
@@ -2808,11 +2830,12 @@ function AdminPanel() {
                     return;
                 }
 
-                // Use the supportService to mark all as read
+                // Use the supportService to mark all as read (now async)
                 console.log('Using supportService to mark all as read');
-                const updatedRequests = supportService.markAllAsReadByAdmin();
+                await supportService.markAllAsReadByAdmin();
 
-                // Update the state with the updated data
+                // Get fresh data after marking all as read
+                const updatedRequests = await supportService.getAllRequests();
                 setSupportRequests(updatedRequests);
 
                 // Important: Set unread count to zero immediately
@@ -2825,10 +2848,14 @@ function AdminPanel() {
                 window.showNotification('error', 'Failed to mark all requests as read');
 
                 // Refresh data to ensure UI is in correct state
-                const allRequests = supportService.getAllRequests();
-                setSupportRequests(allRequests);
-                const unreadCount = supportService.getUnreadCountForAdmin();
-                setUnreadSupportRequests(unreadCount);
+                try {
+                    const allRequests = await supportService.getAllRequests();
+                    setSupportRequests(allRequests);
+                    const unreadCount = await supportService.getUnreadCountForAdmin();
+                    setUnreadSupportRequests(unreadCount);
+                } catch (refreshError) {
+                    console.error('Error refreshing data after failed operation:', refreshError);
+                }
             }
         };
 
@@ -2879,12 +2906,18 @@ function AdminPanel() {
             }
         };
         const getFilteredRequests = () => {
+            // Make sure supportRequests is an array
+            if (!Array.isArray(supportRequests)) {
+                console.error('supportRequests is not an array:', supportRequests);
+                return [];
+            }
+
             if (supportFilter === 'all') {
                 return supportRequests;
             }
 
             return supportRequests.filter(request =>
-                request.status.toLowerCase() === supportFilter.toLowerCase()
+                request?.status?.toLowerCase() === supportFilter.toLowerCase()
             );
         };
         const viewRequestDetails = (request) => {
@@ -2901,22 +2934,26 @@ function AdminPanel() {
             if (!replyText.trim() || !selectedRequest) return;
 
             try {
-                const newMessage = {
-                    id: Date.now(), // Generate temporary ID
-                    sender: 'agent',
-                    agentName: 'Admin Support',
-                    message: replyText,
-                    date: new Date().toLocaleString()
-                };
-                const updatedMessages = [...selectedRequest.messages, newMessage];
-                const updatedRequest = await updateSupportRequest(selectedRequest.id, {
-                    messages: updatedMessages
-                });
-                setSupportRequests(supportRequests.map(req =>
-                    req.id === updatedRequest.id ? updatedRequest : req
-                ));
-                setSelectedRequest(updatedRequest);
-                setReplyText('');
+                // Use supportService.addMessage instead
+                const updatedRequest = await supportService.addMessage(
+                    selectedRequest.id,
+                    'agent',
+                    'Admin Support', // Agent name
+                    replyText
+                );
+
+                if (updatedRequest) {
+                    // Update the support requests list
+                    setSupportRequests(supportRequests.map(req =>
+                        req.id === updatedRequest.id ? updatedRequest : req
+                    ));
+
+                    // Update the selected request with the updated one
+                    setSelectedRequest(updatedRequest);
+                    setReplyText('');
+                } else {
+                    throw new Error('Failed to add message');
+                }
             } catch (error) {
                 console.error('Error sending reply:', error);
                 window.showNotification('error', 'Failed to send reply. Please try again.');
@@ -3023,14 +3060,20 @@ function AdminPanel() {
                                     </button>
                                     <button
                                         className="close-request-button"
-                                        onClick={() => {
-                                            const updatedRequest = supportService.closeRequest(selectedRequest.id);
+                                        onClick={async () => {
+                                            try {
+                                                const updatedRequest = await supportService.closeRequest(selectedRequest.id);
 
-                                            if (updatedRequest) {
-                                                setSupportRequests(supportRequests.map(req =>
-                                                    req.id === updatedRequest.id ? updatedRequest : req
-                                                ));
-                                                setSelectedRequest(updatedRequest);
+                                                if (updatedRequest) {
+                                                    setSupportRequests(supportRequests.map(req =>
+                                                        req.id === updatedRequest.id ? updatedRequest : req
+                                                    ));
+                                                    setSelectedRequest(updatedRequest);
+                                                    window.showNotification('success', 'Request marked as resolved');
+                                                }
+                                            } catch (error) {
+                                                console.error('Error closing request:', error);
+                                                window.showNotification('error', 'Failed to close request');
                                             }
                                         }}
                                     >

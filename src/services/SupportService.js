@@ -1,187 +1,158 @@
+import axios from 'axios';
+
+const API_URL = 'http://localhost:8080/api';
 
 class SupportService {
     constructor() {
-        this.init();
+        // No need to initialize from localStorage anymore
     }
 
-    init() {
-        const storedRequests = localStorage.getItem('supportRequests');
-        this.supportRequests = storedRequests ? JSON.parse(storedRequests) : [];
-        this.lastId = this.supportRequests.length > 0
-            ? Math.max(...this.supportRequests.map(req => req.id))
-            : 0;
+    async getAllRequests() {
+        try {
+            const response = await axios.get(`${API_URL}/support`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching support requests:', error);
+            return [];
+        }
     }
-    saveToStorage() {
-        localStorage.setItem('supportRequests', JSON.stringify(this.supportRequests));
-    }
-    getAllRequests() {
-        return this.supportRequests;
-    }
-    getUserRequests(userId) {
-        return this.supportRequests.filter(req => req.userId === userId);
-    }
-    getRequestById(id) {
-        return this.supportRequests.find(req => req.id === id);
-    }
-    createRequest(userId, username, requestData) {
-        const newId = ++this.lastId;
 
-        const newRequest = {
-            id: newId,
-            userId,
-            customer: username,
-            title: requestData.title,
-            description: requestData.description,
-            category: requestData.category.charAt(0).toUpperCase() + requestData.category.slice(1),
-            priority: requestData.priority.charAt(0).toUpperCase() + requestData.priority.slice(1),
-            status: "Open",
-            isRead: false, // For admin notification
-            date: new Date().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            }),
-            messages: [
-                {
-                    id: 1,
-                    sender: "system",
-                    message: "Your request has been received. A support agent will contact you shortly.",
-                    date: new Date().toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: 'numeric',
-                        hour12: true
-                    })
-                }
-            ]
-        };
-
-        this.supportRequests.push(newRequest);
-        this.saveToStorage();
-
-        return newRequest;
+    async getUserRequests(userId) {
+        try {
+            const response = await axios.get(`${API_URL}/support/user/${userId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching support requests for user ${userId}:`, error);
+            return [];
+        }
     }
-    addMessage(requestId, senderType, senderName, messageText) {
-        const request = this.getRequestById(requestId);
 
-        if (!request) {
+    async getRequestById(id) {
+        try {
+            const response = await axios.get(`${API_URL}/support/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching support request ${id}:`, error);
             return null;
         }
+    }
 
-        const newMessage = {
-            id: request.messages.length + 1,
-            sender: senderType, // "customer", "agent", or "system"
-            message: messageText,
-            date: new Date().toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                hour12: true
-            })
-        };
-        if (senderType === "agent") {
-            newMessage.agentName = senderName;
+    async createRequest(userId, username, requestData) {
+        try {
+            const supportRequest = {
+                userId: userId,
+                customer: username,
+                title: requestData.title,
+                description: requestData.description,
+                category: requestData.category.charAt(0).toUpperCase() + requestData.category.slice(1),
+                priority: requestData.priority.charAt(0).toUpperCase() + requestData.priority.slice(1),
+                email: requestData.email || '',
+                // Status, isRead, and date will be set by the backend
+            };
+
+            const response = await axios.post(`${API_URL}/support`, supportRequest);
+            return response.data;
+        } catch (error) {
+            console.error('Error creating support request:', error);
+            throw error;
         }
-        if (request.status !== "Closed") {
+    }
+
+    async addMessage(requestId, senderType, senderName, messageText) {
+        try {
+            const message = {
+                sender: senderType, // "customer", "agent", or "system"
+                message: messageText,
+                // Date will be set by the backend
+            };
+
             if (senderType === "agent") {
-                request.status = "In Progress";
+                message.agentName = senderName;
             }
-            if (senderType === "agent") {
-                request.isReadByCustomer = false;
-            } else if (senderType === "customer") {
-                request.isRead = false;
-            }
+
+            const response = await axios.post(`${API_URL}/support/${requestId}/messages`, message);
+            return response.data;
+        } catch (error) {
+            console.error(`Error adding message to support request ${requestId}:`, error);
+            return null;
         }
-
-        request.messages.push(newMessage);
-        this.saveToStorage();
-
-        return request;
     }
-    markAsReadByAdmin(requestId) {
-        const request = this.getRequestById(requestId);
 
-        if (request) {
-            request.isRead = true;
-            this.saveToStorage();
+    async markAsReadByAdmin(requestId) {
+        try {
+            const response = await axios.put(`${API_URL}/support/${requestId}/read`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error marking support request ${requestId} as read by admin:`, error);
+            return null;
         }
-
-        return request;
     }
-    markAsReadByCustomer(requestId) {
-        const request = this.getRequestById(requestId);
 
-        if (request) {
-            request.isReadByCustomer = true;
-            this.saveToStorage();
+    async markAsReadByCustomer(requestId) {
+        try {
+            const response = await axios.put(`${API_URL}/support/${requestId}/read-by-customer`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error marking support request ${requestId} as read by customer:`, error);
+            return null;
         }
-
-        return request;
     }
-    closeRequest(requestId) {
-        const request = this.getRequestById(requestId);
 
-        if (request) {
-            request.status = "Closed";
-            request.messages.push({
-                id: request.messages.length + 1,
-                sender: "system",
-                message: "This support request has been marked as resolved and closed.",
-                date: new Date().toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: 'numeric',
-                    hour12: true
-                })
-            });
-
-            this.saveToStorage();
+    async closeRequest(requestId) {
+        try {
+            const response = await axios.put(`${API_URL}/support/${requestId}/close`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error closing support request ${requestId}:`, error);
+            return null;
         }
-
-        return request;
     }
-    markAllAsReadByAdmin() {
-        console.log('SupportService: Marking all support requests as read');
 
-        // Find all unread requests
-        const unreadRequests = this.supportRequests.filter(req => !req.isRead);
-        console.log(`SupportService: Found ${unreadRequests.length} unread requests`);
-
-        if (unreadRequests.length === 0) {
-            console.log('SupportService: No unread requests to mark');
-            return this.supportRequests;
+    async markAllAsReadByAdmin() {
+        try {
+            const response = await axios.put(`${API_URL}/support/read-all`);
+            return response.data.count ?
+                await this.getAllRequests() : // Refresh the list after successful update
+                [];
+        } catch (error) {
+            console.error('Error marking all support requests as read by admin:', error);
+            return [];
         }
-
-        // Update all requests to be marked as read
-        this.supportRequests = this.supportRequests.map(req => {
-            if (!req.isRead) {
-                return { ...req, isRead: true };
-            }
-            return req;
-        });
-
-        // Save changes to localStorage
-        this.saveToStorage();
-        console.log(`SupportService: Marked ${unreadRequests.length} requests as read`);
-
-        // Return the updated array
-        return this.supportRequests;
     }
-    getUnreadCountForAdmin() {
-        return this.supportRequests.filter(req => !req.isRead).length;
+
+    async getUnreadCountForAdmin() {
+        try {
+            const response = await axios.get(`${API_URL}/support/count/unread`);
+            return response.data.count;
+        } catch (error) {
+            console.error('Error getting unread count for admin:', error);
+            return 0;
+        }
     }
-    getUnreadCountForUser(userId) {
-        return this.supportRequests.filter(req =>
-            req.userId === userId && !req.isReadByCustomer
-        ).length;
+
+    async getUnreadCountForUser(userId) {
+        try {
+            // This endpoint isn't in your current controller, so we'll need to add it
+            // For now, we'll fetch all the user's requests and count the unread ones
+            const response = await axios.get(`${API_URL}/support/user/${userId}`);
+            return response.data.filter(req => !req.isReadByCustomer).length;
+        } catch (error) {
+            console.error(`Error getting unread count for user ${userId}:`, error);
+            return 0;
+        }
+    }
+
+    // Additional method to delete a support request
+    async deleteRequest(requestId) {
+        try {
+            const response = await axios.delete(`${API_URL}/support/${requestId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting support request ${requestId}:`, error);
+            return null;
+        }
     }
 }
-const supportService = new SupportService();
 
+const supportService = new SupportService();
 export default supportService;

@@ -14,6 +14,7 @@ const SupportRequestsPage = () => {
     const [filter, setFilter] = useState('all');
     const [replyText, setReplyText] = useState('');
     const [unreadCount, setUnreadCount] = useState(0);
+    const [error, setError] = useState(null);
     const [newRequest, setNewRequest] = useState({
         title: '',
         priority: 'normal',
@@ -23,15 +24,20 @@ const SupportRequestsPage = () => {
     const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('currentUser');
+        const storedUser = localStorage.getItem('currentUser'); // Fixed typo here
         if (storedUser) {
-            const user = JSON.parse(storedUser);
-            setCurrentUser(user);
-            if (user.role !== 'customer') {
-                navigate('/');
-                return;
+            try {
+                const user = JSON.parse(storedUser);
+                setCurrentUser(user);
+                if (user.role !== 'customer') {
+                    navigate('/');
+                    return;
+                }
+                loadUserRequests(user.id);
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                navigate('/login');
             }
-            loadUserRequests(user.id);
         } else {
             navigate('/login');
         }
@@ -47,14 +53,33 @@ const SupportRequestsPage = () => {
         return () => clearInterval(interval);
     }, [currentUser]);
 
-    const loadUserRequests = (userId) => {
-        setIsLoading(true);
-        const userRequests = supportService.getUserRequests(userId);
-        setSupportRequests(userRequests);
-        const unreadCount = supportService.getUnreadCountForUser(userId);
-        setUnreadCount(unreadCount);
+    const loadUserRequests = async (userId) => {
+        try {
+            setIsLoading(true);
+            setError(null);
 
-        setIsLoading(false);
+            // Get user requests asynchronously
+            const userRequests = await supportService.getUserRequests(userId);
+
+            // Ensure we get an array back
+            if (Array.isArray(userRequests)) {
+                setSupportRequests(userRequests);
+            } else {
+                console.error('Expected array of requests but got:', userRequests);
+                setSupportRequests([]);
+            }
+
+            // Get unread count asynchronously
+            const count = await supportService.getUnreadCountForUser(userId);
+            setUnreadCount(typeof count === 'number' ? count : 0);
+        } catch (error) {
+            console.error('Error loading support requests:', error);
+            setError('Failed to load your support requests. Please try again later.');
+            setSupportRequests([]);
+            setUnreadCount(0);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleInputChange = (e) => {
@@ -88,38 +113,59 @@ const SupportRequestsPage = () => {
         return Object.keys(errors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) {
             return;
         }
-        const createdRequest = supportService.createRequest(
-            currentUser.id,
-            currentUser.name || currentUser.username || 'Customer',
-            newRequest
-        );
-        setSupportRequests([createdRequest, ...supportRequests]);
-        setNewRequest({
-            title: '',
-            priority: 'normal',
-            category: 'technical',
-            description: ''
-        });
-        setShowNewRequestForm(false);
+
+        try {
+            // Create request asynchronously
+            const createdRequest = await supportService.createRequest(
+                currentUser.id,
+                currentUser.name || currentUser.username || 'Customer',
+                newRequest
+            );
+
+            if (createdRequest) {
+                setSupportRequests([createdRequest, ...supportRequests]);
+                setNewRequest({
+                    title: '',
+                    priority: 'normal',
+                    category: 'technical',
+                    description: ''
+                });
+                setShowNewRequestForm(false);
+                window.showNotification && window.showNotification('success', 'Support request created successfully');
+            } else {
+                throw new Error('Failed to create request');
+            }
+        } catch (error) {
+            console.error('Error creating support request:', error);
+            window.showNotification && window.showNotification('error', 'Failed to create support request');
+        }
     };
 
     const getFilteredRequests = () => {
+        // Ensure supportRequests is an array
+        if (!Array.isArray(supportRequests)) {
+            console.error('supportRequests is not an array:', supportRequests);
+            return [];
+        }
+
         if (filter === 'all') {
             return supportRequests;
         }
 
         return supportRequests.filter(request =>
-            request.status.toLowerCase() === filter.toLowerCase()
+            request && request.status && request.status.toLowerCase() === filter.toLowerCase()
         );
     };
 
     const getStatusBadgeClass = (status) => {
+        if (!status) return '';
+
         switch (status.toLowerCase()) {
             case 'open':
                 return 'status-open';
@@ -133,6 +179,8 @@ const SupportRequestsPage = () => {
     };
 
     const getPriorityBadgeClass = (priority) => {
+        if (!priority) return '';
+
         switch (priority.toLowerCase()) {
             case 'high':
                 return 'priority-high';
@@ -145,14 +193,23 @@ const SupportRequestsPage = () => {
         }
     };
 
-    const viewRequestDetails = (request) => {
+    const viewRequestDetails = async (request) => {
         setSelectedRequest(request);
+
         if (!request.isReadByCustomer) {
-            supportService.markAsReadByCustomer(request.id);
-            setSupportRequests(supportRequests.map(req =>
-                req.id === request.id ? {...req, isReadByCustomer: true} : req
-            ));
-            setUnreadCount(prev => Math.max(0, prev - 1));
+            try {
+                // Mark as read asynchronously
+                const updatedRequest = await supportService.markAsReadByCustomer(request.id);
+
+                if (updatedRequest) {
+                    setSupportRequests(supportRequests.map(req =>
+                        req.id === request.id ? {...req, isReadByCustomer: true} : req
+                    ));
+                    setUnreadCount(prev => Math.max(0, prev - 1));
+                }
+            } catch (error) {
+                console.error('Error marking request as read:', error);
+            }
         }
     };
 
@@ -161,27 +218,36 @@ const SupportRequestsPage = () => {
         setReplyText('');
     };
 
-    const sendReply = () => {
+    const sendReply = async () => {
         if (!replyText.trim() || !selectedRequest) return;
 
-        const updatedRequest = supportService.addMessage(
-            selectedRequest.id,
-            'customer',
-            currentUser.name || currentUser.username || 'Customer',
-            replyText
-        );
+        try {
+            // Add message asynchronously
+            const updatedRequest = await supportService.addMessage(
+                selectedRequest.id,
+                'customer',
+                currentUser.name || currentUser.username || 'Customer',
+                replyText
+            );
 
-        if (updatedRequest) {
-            setSupportRequests(supportRequests.map(req =>
-                req.id === updatedRequest.id ? updatedRequest : req
-            ));
-            setSelectedRequest(updatedRequest);
-            setReplyText('');
+            if (updatedRequest) {
+                setSupportRequests(supportRequests.map(req =>
+                    req.id === updatedRequest.id ? updatedRequest : req
+                ));
+                setSelectedRequest(updatedRequest);
+                setReplyText('');
+                window.showNotification && window.showNotification('success', 'Reply sent successfully');
+            } else {
+                throw new Error('Failed to send reply');
+            }
+        } catch (error) {
+            console.error('Error sending reply:', error);
+            window.showNotification && window.showNotification('error', 'Failed to send reply');
         }
     };
 
     const hasUnreadMessages = (request) => {
-        return !request.isReadByCustomer;
+        return request && !request.isReadByCustomer;
     };
 
     const renderRequestDetails = () => {
@@ -234,27 +300,31 @@ const SupportRequestsPage = () => {
 
                     <div className="messages-container">
                         <h3>Conversation</h3>
-                        {selectedRequest.messages.map(message => (
-                            <div
-                                key={message.id}
-                                className={`message ${message.sender === 'customer' ? 'customer-message' : message.sender === 'agent' ? 'agent-message' : 'system-message'}`}
-                            >
-                                {message.sender === 'agent' && (
-                                    <div className="message-sender">
-                                        <strong>{message.agentName}</strong> (Support Agent)
-                                    </div>
-                                )}
+                        {Array.isArray(selectedRequest.messages) && selectedRequest.messages.length > 0 ? (
+                            selectedRequest.messages.map(message => (
+                                <div
+                                    key={message.id || `msg-${Math.random()}`}
+                                    className={`message ${message.sender === 'customer' ? 'customer-message' : message.sender === 'agent' ? 'agent-message' : 'system-message'}`}
+                                >
+                                    {message.sender === 'agent' && (
+                                        <div className="message-sender">
+                                            <strong>{message.agentName}</strong> (Support Agent)
+                                        </div>
+                                    )}
 
-                                {message.sender === 'customer' && (
-                                    <div className="message-sender">
-                                        <strong>You</strong>
-                                    </div>
-                                )}
+                                    {message.sender === 'customer' && (
+                                        <div className="message-sender">
+                                            <strong>You</strong>
+                                        </div>
+                                    )}
 
-                                <div className="message-content">{message.message}</div>
-                                <div className="message-date">{message.date}</div>
-                            </div>
-                        ))}
+                                    <div className="message-content">{message.message}</div>
+                                    <div className="message-date">{message.date}</div>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="no-messages">No messages yet.</p>
+                        )}
                     </div>
 
                     {selectedRequest.status !== 'Closed' && (
@@ -407,7 +477,17 @@ const SupportRequestsPage = () => {
                             <div className="loading-message">
                                 <p>Loading support requests...</p>
                             </div>
-                        ) : getFilteredRequests().length === 0 ? (
+                        ) : error ? (
+                            <div className="error-message-container">
+                                <p>{error}</p>
+                                <button
+                                    className="retry-button"
+                                    onClick={() => currentUser && loadUserRequests(currentUser.id)}
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        ) : !Array.isArray(getFilteredRequests()) || getFilteredRequests().length === 0 ? (
                             <div className="empty-state">
                                 <h3>No support requests found</h3>
                                 <p>
@@ -426,7 +506,7 @@ const SupportRequestsPage = () => {
                             <div className="requests-list">
                                 {getFilteredRequests().map(request => (
                                     <div
-                                        key={request.id}
+                                        key={request.id || `req-${Math.random()}`}
                                         className={`request-card ${hasUnreadMessages(request) ? 'has-new-messages' : ''}`}
                                     >
                                         <div className="request-header">
@@ -452,20 +532,21 @@ const SupportRequestsPage = () => {
                                         </div>
 
                                         <p className="request-description">
-                                            {request.description.length > 100
+                                            {request.description && request.description.length > 100
                                                 ? `${request.description.substring(0, 100)}...`
-                                                : request.description}
-                                        </p><div className="request-footer">
+                                                : request.description || 'No description provided'}
+                                        </p>
+                                        <div className="request-footer">
                                             <span className="message-count">
-                                                {request.messages.length} message{request.messages.length !== 1 ? 's' : ''}
+                                                {Array.isArray(request.messages) ? request.messages.length : 0} message{(!Array.isArray(request.messages) || request.messages.length !== 1) ? 's' : ''}
                                             </span>
-                                        <button
-                                            className="view-details-button"
-                                            onClick={() => viewRequestDetails(request)}
-                                        >
-                                            View Details
-                                        </button>
-                                    </div>
+                                            <button
+                                                className="view-details-button"
+                                                onClick={() => viewRequestDetails(request)}
+                                            >
+                                                View Details
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

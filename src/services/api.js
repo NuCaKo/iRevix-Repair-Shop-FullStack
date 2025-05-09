@@ -94,26 +94,6 @@ export const deleteRepair = async (id) => {
     }
 };
 
-export const getSupportRequests = async () => {
-    try {
-        const res = await axios.get(`${API_URL}/support`);
-        return res.data;
-    } catch (err) {
-        console.error('Error fetching support requests:', err);
-        throw err;
-    }
-};
-
-export const updateSupportRequest = async (id, requestData) => {
-    try {
-        const res = await axios.put(`${API_URL}/support/${id}`, requestData);
-        return res.data;
-    } catch (err) {
-        console.error('Error updating support request:', err);
-        throw err;
-    }
-};
-
 export const getTrafficData = async (period = '7days') => {
     try {
         const res = await axios.get(`${API_URL}/traffic?period=${period}`);
@@ -648,6 +628,137 @@ export const updateOrder = async (id, orderData) => {
         return res.data;
     } catch (err) {
         console.error('Error updating order:', err);
+        throw err;
+    }
+};
+// Add these functions to your api.js file (or replace existing ones)
+
+export const getSupportRequests = async () => {
+    try {
+        const res = await axios.get(`${API_URL}/support`);
+        return res.data;
+    } catch (err) {
+        console.error('Error fetching support requests:', err);
+        throw err;
+    }
+};
+
+export const getSupportRequestById = async (id) => {
+    try {
+        const res = await axios.get(`${API_URL}/support/${id}`);
+        return res.data;
+    } catch (err) {
+        console.error(`Error fetching support request ${id}:`, err);
+        throw err;
+    }
+};
+
+export const getSupportRequestsByUser = async (userId) => {
+    try {
+        const res = await axios.get(`${API_URL}/support/user/${userId}`);
+        return res.data;
+    } catch (err) {
+        console.error(`Error fetching support requests for user ${userId}:`, err);
+        throw err;
+    }
+};
+
+export const getUnreadSupportRequests = async () => {
+    try {
+        const res = await axios.get(`${API_URL}/support/unread`);
+        return res.data;
+    } catch (err) {
+        console.error('Error fetching unread support requests:', err);
+        throw err;
+    }
+};
+
+export const getUnreadSupportCount = async () => {
+    try {
+        const res = await axios.get(`${API_URL}/support/count/unread`);
+        return res.data.count;
+    } catch (err) {
+        console.error('Error fetching unread support count:', err);
+        throw err;
+    }
+};
+
+export const createSupportRequest = async (requestData) => {
+    try {
+        const res = await axios.post(`${API_URL}/support`, requestData);
+        return res.data;
+    } catch (err) {
+        console.error('Error creating support request:', err);
+        throw err;
+    }
+};
+
+export const updateSupportRequest = async (id, requestData) => {
+    try {
+        const res = await axios.put(`${API_URL}/support/${id}`, requestData);
+        return res.data;
+    } catch (err) {
+        console.error(`Error updating support request ${id}:`, err);
+        throw err;
+    }
+};
+
+export const addSupportMessage = async (id, messageData) => {
+    try {
+        const res = await axios.post(`${API_URL}/support/${id}/messages`, messageData);
+        return res.data;
+    } catch (err) {
+        console.error(`Error adding message to support request ${id}:`, err);
+        throw err;
+    }
+};
+
+export const markSupportRequestAsRead = async (id) => {
+    try {
+        const res = await axios.put(`${API_URL}/support/${id}/read`);
+        return res.data;
+    } catch (err) {
+        console.error(`Error marking support request ${id} as read:`, err);
+        throw err;
+    }
+};
+
+export const markSupportRequestAsReadByCustomer = async (id) => {
+    try {
+        const res = await axios.put(`${API_URL}/support/${id}/read-by-customer`);
+        return res.data;
+    } catch (err) {
+        console.error(`Error marking support request ${id} as read by customer:`, err);
+        throw err;
+    }
+};
+
+export const markAllSupportRequestsAsRead = async () => {
+    try {
+        const res = await axios.put(`${API_URL}/support/read-all`);
+        return res.data;
+    } catch (err) {
+        console.error('Error marking all support requests as read:', err);
+        throw err;
+    }
+};
+
+export const closeSupportRequest = async (id) => {
+    try {
+        const res = await axios.put(`${API_URL}/support/${id}/close`);
+        return res.data;
+    } catch (err) {
+        console.error(`Error closing support request ${id}:`, err);
+        throw err;
+    }
+};
+
+export const deleteSupportRequest = async (id) => {
+    try {
+        const res = await axios.delete(`${API_URL}/support/${id}`);
+        return res.data;
+    } catch (err) {
+        console.error(`Error deleting support request ${id}:`, err);
         throw err;
     }
 };
