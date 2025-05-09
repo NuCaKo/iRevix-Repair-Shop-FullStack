@@ -2,18 +2,20 @@ package com.backend.irevix.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "orders")
 public class Order {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
 
     @Column(name = "clerk_user_id")
     private String clerkUserId;
@@ -39,6 +41,9 @@ public class Order {
     @Column(name = "estimated_completion")
     private LocalDate estimatedCompletion;
 
+    @Column(name = "appointment_date_time")
+    private LocalDateTime appointmentDateTime;
+
     @Column(name = "cost")
     private BigDecimal cost;
 
@@ -55,13 +60,13 @@ public class Order {
     @JsonManagedReference
     private List<OrderItem> orderItems = new ArrayList<>();
 
-
+    // === Utility ===
     public void addOrderItem(OrderItem item) {
         orderItems.add(item);
         item.setOrder(this);
     }
 
-    // Getters and Setters
+    // === Getters ===
     public Long getId() { return id; }
     public String getClerkUserId() { return clerkUserId; }
     public String getCustomerName() { return customerName; }
@@ -71,12 +76,14 @@ public class Order {
     public LocalDate getOrderDate() { return orderDate; }
     public LocalDate getCompletionDate() { return completionDate; }
     public LocalDate getEstimatedCompletion() { return estimatedCompletion; }
+    public LocalDateTime getAppointmentDateTime() { return appointmentDateTime; }
     public BigDecimal getCost() { return cost; }
     public String getInvoiceNo() { return invoiceNo; }
     public LocalDate getCreatedAt() { return createdAt; }
     public LocalDate getUpdatedAt() { return updatedAt; }
     public List<OrderItem> getOrderItems() { return orderItems; }
 
+    // === Setters ===
     public void setId(Long id) { this.id = id; }
     public void setClerkUserId(String clerkUserId) { this.clerkUserId = clerkUserId; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
@@ -86,6 +93,7 @@ public class Order {
     public void setOrderDate(LocalDate orderDate) { this.orderDate = orderDate; }
     public void setCompletionDate(LocalDate completionDate) { this.completionDate = completionDate; }
     public void setEstimatedCompletion(LocalDate estimatedCompletion) { this.estimatedCompletion = estimatedCompletion; }
+    public void setAppointmentDateTime(LocalDateTime appointmentDateTime) { this.appointmentDateTime = appointmentDateTime; }
     public void setCost(BigDecimal cost) { this.cost = cost; }
     public void setInvoiceNo(String invoiceNo) { this.invoiceNo = invoiceNo; }
     public void setCreatedAt(LocalDate createdAt) { this.createdAt = createdAt; }
@@ -100,6 +108,7 @@ public class Order {
                 ", deviceType='" + deviceType + '\'' +
                 ", status='" + status + '\'' +
                 ", orderDate=" + orderDate +
+                ", appointmentDateTime=" + appointmentDateTime +
                 '}';
     }
 }

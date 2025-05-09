@@ -85,14 +85,31 @@ function CheckoutPage() {
         const calculatedShipping = calculatedSubtotal > 100 ? 0 : 10;
         const calculatedTotal = calculatedSubtotal + calculatedTax + calculatedShipping;
 
+
+        const enrichedItems = itemsToCheckout.map(item => {
+            if (item.type === 'service') {
+                return {
+                    ...item,
+                    customerEmail: formData.email,
+                    customerPhone: formData.phone,
+                    appointmentDateTime: `${formData.appointmentDate}T${formData.appointmentTime}`,
+                    deviceType: item.deviceType || 'Unknown Device',
+                    deviceModel: item.deviceModel || 'Unknown Model',
+                };
+            }
+            return item;
+        });
+
+
         const orderData = {
-            items: itemsToCheckout,
+            items: enrichedItems,
             subtotal: calculatedSubtotal,
             tax: calculatedTax,
             shipping: calculatedShipping,
             total: calculatedTotal,
             formData: { ...formData }
         };
+
 
         if (formData.paymentMethod === 'inStore') {
             alert('Your order has been placed! Please visit our store to complete the payment.');
@@ -106,6 +123,7 @@ function CheckoutPage() {
             });
         }
     };
+
 
     const subtotal = itemsToCheckout.reduce((total, item) => total + (item.price * item.quantity), 0);
     const tax = subtotal * 0.0725;

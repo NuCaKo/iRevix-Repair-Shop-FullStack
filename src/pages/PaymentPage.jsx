@@ -58,21 +58,27 @@ function PaymentPage() {
         const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
         try {
-            // Satın alınan ürünlerin tiplerini ve fiyatlarını da gönder
+            const enrichedItems = orderData.items.map(item => {
+                if (item.type === 'service') {
+                    return {
+                        ...item,
+                        customerEmail: orderData.formData.email,
+                        customerPhone: orderData.formData.phone,
+                        appointmentDateTime: `${orderData.formData.appointmentDate}T${orderData.formData.appointmentTime}`,
+                        deviceType: item.deviceType || extractDeviceType(item.name),
+                        deviceModel: item.name // ya da farklı bir alan
+                    };
+                }
+                return item;
+            });
+
             const requestData = {
                 clerkUserId: user.id,
                 customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-                items: orderData.items.map(item => ({
-                    type: item.type,  // "part" veya "service"
-                    name: item.name,
-                    deviceType: item.deviceType || extractDeviceType(item.name),
-                    price: item.price,
-                    quantity: item.quantity
-                })),
+                items: enrichedItems,
                 totalAmount: orderData.total
             };
 
-            // Backend'e JSON formatında gönder
             const response = await fetch(`http://localhost:8080/api/checkout`, {
                 method: 'POST',
                 headers: {
@@ -97,6 +103,7 @@ function PaymentPage() {
             alert("An error occurred while processing your payment.");
         }
     };
+
 
     if (!orderData) {
         return <p>Loading...</p>;
