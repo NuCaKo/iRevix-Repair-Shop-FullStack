@@ -740,7 +740,8 @@ function AdminPanel() {
                         const todayData = trafficData[trafficData.length - 1];
                         stats.todayVisitors = todayData.visitors;
                     }
-                    const repairsData = await getRepairs();
+                    // Change this line to use getOrdersAsRepairs instead
+                    const repairsData = await getOrdersAsRepairs();
                     if (repairsData) {
                         const today = new Date().toISOString().split('T')[0];
                         stats.newOrders = repairsData.filter(order =>
@@ -763,7 +764,7 @@ function AdminPanel() {
             }
         };
         fetchDashboardStats();
-    }, [activeTab]); // This will trigger on tab changes and initial render
+    }, [activeTab]);
     const debugLog = (message, data) => {
         console.log(`DEBUG: ${message}`, data);
     };

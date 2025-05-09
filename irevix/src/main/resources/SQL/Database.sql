@@ -188,21 +188,6 @@ CREATE TABLE IF NOT EXISTS users (
                                      UNIQUE KEY username (username),
                                      UNIQUE KEY email (email)
 );
-CREATE TABLE IF NOT EXISTS cart_item (
-                                         id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                                         cart_id BIGINT NOT NULL,
-                                         part_id BIGINT DEFAULT -1,
-                                         quantity INT NOT NULL DEFAULT 1,
-                                         type VARCHAR(20) NOT NULL,
-                                         name VARCHAR(255) NOT NULL,
-                                         price DECIMAL(10,2) NOT NULL,
-                                         description TEXT,
-                                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                         FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE,
-                                         CONSTRAINT fk_part FOREIGN KEY (part_id) REFERENCES inventory(id) ON DELETE SET NULL ON UPDATE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS revenue (
                                        id INT NOT NULL AUTO_INCREMENT,
                                        period VARCHAR(255) DEFAULT NULL,
