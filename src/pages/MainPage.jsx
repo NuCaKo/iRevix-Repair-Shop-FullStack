@@ -347,13 +347,11 @@ function MainPage() {
                         <div>
                             <h2 className="hero-section-title">Who We Are</h2>
                             <p className="hero-section-text">Professional repair service dedicated to bringing your devices back to life quickly and reliably.</p>
-                        </div>
-
-                        <div>
-                            <h2 className="hero-section-title">Our Story</h2>
                             <p className="hero-section-text">Founded with a passion for technology and service, iRevix has been helping customers since 2018.</p>
                         </div>
-                    </div>
+                        </div>
+
+
                 </motion.div>
             </motion.div>
 

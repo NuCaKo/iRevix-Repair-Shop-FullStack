@@ -1,24 +1,27 @@
 package com.backend.irevix.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
-@Entity
-public class CartItem {
+import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "cart_items")
+public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Sepet ilişkisi
     @ManyToOne
     @JoinColumn(name = "cart_id")
     @JsonBackReference
     @JsonIgnoreProperties({"cart"})
     private Cart cart;
 
+    // Temel ürün bilgileri
     private String name;
     private Double price;
     private int quantity;
@@ -27,10 +30,19 @@ public class CartItem {
     private String imageUrl;
     private String description;
 
+    // Parça ilişkisi (varsa)
     @ManyToOne
-    @JoinColumn(name = "part_id", nullable = true)
+    @JoinColumn(name = "part_id")
     private ReplacementPart part;
 
+    // Servis randevusu için ek alanlar (sadece type=service olduğunda dolu olur)
+    private String customerEmail;
+    private String customerPhone;
+    private String deviceType;
+    private String deviceModel;
+    private LocalDateTime appointmentDateTime;
+
+    // === GETTERS ===
     public Long getId() {
         return id;
     }
@@ -39,70 +51,116 @@ public class CartItem {
         return cart;
     }
 
-    public void setCart(Cart cart) {
-        this.cart = cart;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public Double getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
-        this.price = price;
-    }
-
     public int getQuantity() {
         return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
     }
 
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
     public String getPartNumber() {
         return partNumber;
-    }
-
-    public void setPartNumber(String partNumber) {
-        this.partNumber = partNumber;
     }
 
     public String getImageUrl() {
         return imageUrl;
     }
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+    public String getDescription() {
+        return description;
     }
 
     public ReplacementPart getPart() {
         return part;
     }
 
-    public void setPart(ReplacementPart part) {
-        this.part = part;
+    public String getCustomerEmail() {
+        return customerEmail;
     }
-    public String getDescription() {
-        return description;
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public String getDeviceType() {
+        return deviceType;
+    }
+
+    public String getDeviceModel() {
+        return deviceModel;
+    }
+
+    public LocalDateTime getAppointmentDateTime() {
+        return appointmentDateTime;
+    }
+
+    // === SETTERS ===
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setCart(Cart cart) {
+        this.cart = cart;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setPrice(Double price) {
+        this.price = price;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public void setPartNumber(String partNumber) {
+        this.partNumber = partNumber;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setPart(ReplacementPart part) {
+        this.part = part;
+    }
+
+    public void setCustomerEmail(String customerEmail) {
+        this.customerEmail = customerEmail;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
+    }
+
+    public void setDeviceType(String deviceType) {
+        this.deviceType = deviceType;
+    }
+
+    public void setDeviceModel(String deviceModel) {
+        this.deviceModel = deviceModel;
+    }
+
+    public void setAppointmentDateTime(LocalDateTime appointmentDateTime) {
+        this.appointmentDateTime = appointmentDateTime;
     }
 }
