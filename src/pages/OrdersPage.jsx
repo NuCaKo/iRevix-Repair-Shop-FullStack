@@ -159,7 +159,8 @@ const OrdersPage = () => {
                                                 </div>
                                                 <div className="order-dates">
                                                     <div className="order-date">
-                                                        <span>Order Date:</span> {order.date}
+                                                        <span>Order Date:</span> {order.orderDate}
+
                                                     </div>
                                                     <div className="completion-date">
                                                         <span>Estimated Completion:</span> {order.estimatedCompletion}
@@ -216,7 +217,7 @@ const OrdersPage = () => {
                                                 </div>
                                                 <div className="order-dates">
                                                     <div className="order-date">
-                                                        <span>Order Date:</span> {order.date}
+                                                        <span>Order Date:</span> {order.orderDate}
                                                     </div>
                                                     <div className="completion-date">
                                                         <span>Completion Date:</span> {order.completionDate}
@@ -286,7 +287,8 @@ const OrdersPage = () => {
                                     </div>
                                     <div className="detail-row">
                                         <span className="detail-label">Order Date:</span>
-                                        <span className="detail-value">{selectedOrder.date}</span>
+                                        <span className="detail-value">{selectedOrder.orderDate}</span>
+
                                     </div>
                                     {selectedOrder.completionDate ? (
                                         <div className="detail-row"><span className="detail-label">Completion Date:</span>

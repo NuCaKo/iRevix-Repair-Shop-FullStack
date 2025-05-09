@@ -1,9 +1,11 @@
 package com.backend.irevix.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -11,6 +13,7 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
 
     @Column(name = "clerk_user_id")
     private String clerkUserId;
@@ -48,111 +51,46 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDate updatedAt;
 
-    // ✅ GETTERS
-    public Long getId() {
-        return id;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonManagedReference
+    private List<OrderItem> orderItems = new ArrayList<>();
+
+
+    public void addOrderItem(OrderItem item) {
+        orderItems.add(item);
+        item.setOrder(this);
     }
 
-    public String getClerkUserId() {
-        return clerkUserId;
-    }
+    // Getters and Setters
+    public Long getId() { return id; }
+    public String getClerkUserId() { return clerkUserId; }
+    public String getCustomerName() { return customerName; }
+    public String getDeviceType() { return deviceType; }
+    public String getIssue() { return issue; }
+    public String getStatus() { return status; }
+    public LocalDate getOrderDate() { return orderDate; }
+    public LocalDate getCompletionDate() { return completionDate; }
+    public LocalDate getEstimatedCompletion() { return estimatedCompletion; }
+    public BigDecimal getCost() { return cost; }
+    public String getInvoiceNo() { return invoiceNo; }
+    public LocalDate getCreatedAt() { return createdAt; }
+    public LocalDate getUpdatedAt() { return updatedAt; }
+    public List<OrderItem> getOrderItems() { return orderItems; }
 
-    public String getCustomerName() {
-        return customerName;
-    }
-
-    public String getDeviceType() {
-        return deviceType;
-    }
-
-    public String getIssue() {
-        return issue;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public LocalDate getOrderDate() {
-        return orderDate;
-    }
-
-    public LocalDate getCompletionDate() {
-        return completionDate;
-    }
-
-    public LocalDate getEstimatedCompletion() {
-        return estimatedCompletion;
-    }
-
-    public BigDecimal getCost() {
-        return cost;
-    }
-
-    public String getInvoiceNo() {
-        return invoiceNo;
-    }
-
-    public LocalDate getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDate getUpdatedAt() {
-        return updatedAt;
-    }
-
-    // ✅ SETTERS
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setClerkUserId(String clerkUserId) {
-        this.clerkUserId = clerkUserId;
-    }
-
-    public void setCustomerName(String customerName) {
-        this.customerName = customerName;
-    }
-
-    public void setDeviceType(String deviceType) {
-        this.deviceType = deviceType;
-    }
-
-    public void setIssue(String issue) {
-        this.issue = issue;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public void setOrderDate(LocalDate orderDate) {
-        this.orderDate = orderDate;
-    }
-
-    public void setCompletionDate(LocalDate completionDate) {
-        this.completionDate = completionDate;
-    }
-
-    public void setEstimatedCompletion(LocalDate estimatedCompletion) {
-        this.estimatedCompletion = estimatedCompletion;
-    }
-
-    public void setCost(BigDecimal cost) {
-        this.cost = cost;
-    }
-
-    public void setInvoiceNo(String invoiceNo) {
-        this.invoiceNo = invoiceNo;
-    }
-
-    public void setCreatedAt(LocalDate createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setUpdatedAt(LocalDate updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public void setId(Long id) { this.id = id; }
+    public void setClerkUserId(String clerkUserId) { this.clerkUserId = clerkUserId; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
+    public void setDeviceType(String deviceType) { this.deviceType = deviceType; }
+    public void setIssue(String issue) { this.issue = issue; }
+    public void setStatus(String status) { this.status = status; }
+    public void setOrderDate(LocalDate orderDate) { this.orderDate = orderDate; }
+    public void setCompletionDate(LocalDate completionDate) { this.completionDate = completionDate; }
+    public void setEstimatedCompletion(LocalDate estimatedCompletion) { this.estimatedCompletion = estimatedCompletion; }
+    public void setCost(BigDecimal cost) { this.cost = cost; }
+    public void setInvoiceNo(String invoiceNo) { this.invoiceNo = invoiceNo; }
+    public void setCreatedAt(LocalDate createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(LocalDate updatedAt) { this.updatedAt = updatedAt; }
+    public void setOrderItems(List<OrderItem> orderItems) { this.orderItems = orderItems; }
 
     @Override
     public String toString() {
