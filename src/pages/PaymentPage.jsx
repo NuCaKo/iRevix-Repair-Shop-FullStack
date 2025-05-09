@@ -51,8 +51,8 @@ function PaymentPage() {
         const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
         try {
-            // Backend'e siparişi gönder
-            const response = await fetch(`http://localhost:8080/api/checkout?clerkUserId=${user.id}`, {
+            // Backend'e siparişi gönderirken ad ve soyadı da ekle
+            const response = await fetch(`http://localhost:8080/api/checkout?clerkUserId=${user.id}&firstName=${encodeURIComponent(user.firstName || '')}&lastName=${encodeURIComponent(user.lastName || '')}`, {
                 method: 'POST'
             });
 
@@ -71,6 +71,7 @@ function PaymentPage() {
             alert("An error occurred while processing your payment.");
         }
     };
+
 
     if (!orderData) {
         return <p>Loading...</p>;

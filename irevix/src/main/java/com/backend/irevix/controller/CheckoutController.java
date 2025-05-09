@@ -17,9 +17,14 @@ public class CheckoutController {
     }
 
     @PostMapping
-    public ResponseEntity<Order> checkout(@RequestParam String clerkUserId) {
+    public ResponseEntity<Order> checkout(
+            @RequestParam String clerkUserId,
+            @RequestParam(required = false, defaultValue = "") String firstName,
+            @RequestParam(required = false, defaultValue = "") String lastName) {
         try {
-            Order order = checkoutService.checkout(clerkUserId);
+            // Müşteri adını birleştir
+            String customerName = (firstName + " " + lastName).trim();
+            Order order = checkoutService.checkout(clerkUserId, customerName);
             return ResponseEntity.ok(order);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();

@@ -21,7 +21,7 @@ public class CheckoutService {
         this.orderRepo = orderRepo;
     }
 
-    public Order checkout(String clerkUserId) {
+    public Order checkout(String clerkUserId, String customerName) {
         Cart cart = cartService.getCart(clerkUserId);
         List<CartItem> items = cart.getItems();
 
@@ -35,6 +35,8 @@ public class CheckoutService {
 
         Order order = new Order();
         order.setClerkUserId(clerkUserId);
+        // Müşteri adını ayarla
+        order.setCustomerName(customerName);
         order.setOrderDate(LocalDate.now());
         order.setEstimatedCompletion(LocalDate.now().plusDays(3));
         order.setStatus("Processing");

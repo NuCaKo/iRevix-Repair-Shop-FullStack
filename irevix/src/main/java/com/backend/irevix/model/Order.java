@@ -13,6 +13,8 @@ public class Order {
     private Long id;
 
     private String clerkUserId;
+    // Müşteri adı-soyadı için yeni alan eklendi
+    private String customerName;
     private String deviceType;
     private String issue;
     private String status;
@@ -31,6 +33,11 @@ public class Order {
 
     public String getClerkUserId() {
         return clerkUserId;
+    }
+
+    // CustomerName için getter
+    public String getCustomerName() {
+        return customerName;
     }
 
     public String getDeviceType() {
@@ -68,6 +75,11 @@ public class Order {
     // ✅ SETTERS
     public void setClerkUserId(String clerkUserId) {
         this.clerkUserId = clerkUserId;
+    }
+
+    // CustomerName için setter
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
     }
 
     public void setDeviceType(String deviceType) {
