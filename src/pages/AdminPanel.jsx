@@ -2702,24 +2702,35 @@ function AdminPanel() {
             try {
                 console.log('Marking all support requests as read');
 
-                // Check if there are any unread requests
+                // First check if we have any unread requests
                 const unreadCount = supportRequests.filter(req => !req.isRead).length;
-
                 if (unreadCount === 0) {
                     console.log('No unread support requests to mark');
+                    window.showNotification('info', 'No unread support requests to mark');
                     return;
                 }
 
-                // Use the supportService to mark all as read - this updates localStorage
+                // Use the supportService to mark all as read
+                console.log('Using supportService to mark all as read');
                 const updatedRequests = supportService.markAllAsReadByAdmin();
 
-                // Update the local state
+                // Update the state with the updated data
                 setSupportRequests(updatedRequests);
+
+                // Important: Set unread count to zero immediately
                 setUnreadSupportRequests(0);
 
-                console.log('All support requests marked as read successfully');
+                // Show success notification
+                window.showNotification('success', 'All support requests marked as read');
             } catch (error) {
-                console.error('Error marking all support requests as read:', error);
+                console.error('Failed to mark all requests as read:', error);
+                window.showNotification('error', 'Failed to mark all requests as read');
+
+                // Refresh data to ensure UI is in correct state
+                const allRequests = supportService.getAllRequests();
+                setSupportRequests(allRequests);
+                const unreadCount = supportService.getUnreadCountForAdmin();
+                setUnreadSupportRequests(unreadCount);
             }
         };
 

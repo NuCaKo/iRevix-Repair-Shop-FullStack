@@ -146,6 +146,33 @@ class SupportService {
 
         return request;
     }
+    markAllAsReadByAdmin() {
+        console.log('SupportService: Marking all support requests as read');
+
+        // Find all unread requests
+        const unreadRequests = this.supportRequests.filter(req => !req.isRead);
+        console.log(`SupportService: Found ${unreadRequests.length} unread requests`);
+
+        if (unreadRequests.length === 0) {
+            console.log('SupportService: No unread requests to mark');
+            return this.supportRequests;
+        }
+
+        // Update all requests to be marked as read
+        this.supportRequests = this.supportRequests.map(req => {
+            if (!req.isRead) {
+                return { ...req, isRead: true };
+            }
+            return req;
+        });
+
+        // Save changes to localStorage
+        this.saveToStorage();
+        console.log(`SupportService: Marked ${unreadRequests.length} requests as read`);
+
+        // Return the updated array
+        return this.supportRequests;
+    }
     getUnreadCountForAdmin() {
         return this.supportRequests.filter(req => !req.isRead).length;
     }

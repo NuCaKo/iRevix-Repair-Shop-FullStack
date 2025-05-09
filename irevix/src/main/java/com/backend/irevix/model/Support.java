@@ -1,11 +1,20 @@
 package com.backend.irevix.model;
 
-import jakarta.persistence.*;
-import lombok.Data;
-
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
-@Data
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+
 @Entity
 @Table(name = "support_requests")
 public class Support {
@@ -14,59 +23,161 @@ public class Support {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "support_id", unique = true)
+    @Column(name = "support_id", unique = true, nullable = false)
     private int supportId;
-
-    @Column(nullable = false)
-    private String title;
-
-    @Column(nullable = false)
-    private String status; // Open, In Progress, Closed
-
-    @Column(nullable = false)
-    private String priority; // High, Normal, Low
-
-    private String category;
-    private String date;
 
     @Column(nullable = false)
     private String customer;
 
+    private String userId;
+
     private String email;
 
-    @Column(name = "is_read")
-    private boolean isRead;
+    @Column(nullable = false)
+    private String title;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @OneToMany(mappedBy = "support", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Message> messages;
+    @Column(nullable = false)
+    private String category;
 
-    @Entity
-    @Table(name = "support_messages")
-    @Data
-    public static class Message {
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
+    @Column(nullable = false)
+    private String priority;
 
-        @Column(name = "message_id")
-        private int messageId;
+    @Column(nullable = false)
+    private String status;
 
-        @ManyToOne
-        @JoinColumn(name = "support_id")
-        private Support support;
+    @Column(nullable = false)
+    private boolean isRead;
 
-        @Column(nullable = false)
-        private String sender;
+    private boolean isReadByCustomer;
 
-        @Column(nullable = false, columnDefinition = "TEXT")
-        private String message;
+    @Column(nullable = false)
+    private String date;
 
-        @Column(name = "agent_name")
-        private String agentName;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    @JoinColumn(name = "support_id")
+    private List<Message> messages = new ArrayList<>();
 
-        private String date;
+    // Constructors
+    public Support() {}
+
+    // Getters and setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public int getSupportId() {
+        return supportId;
+    }
+
+    public void setSupportId(int supportId) {
+        this.supportId = supportId;
+    }
+
+    public String getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(String customer) {
+        this.customer = customer;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean isRead() {
+        return isRead;
+    }
+
+    public void setRead(boolean isRead) {
+        this.isRead = isRead;
+    }
+
+    public boolean isReadByCustomer() {
+        return isReadByCustomer;
+    }
+
+    public void setReadByCustomer(boolean isReadByCustomer) {
+        this.isReadByCustomer = isReadByCustomer;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
+
+    public List<Message> getMessages() {
+        return messages;
+    }
+
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
+    }
+
+    // Add a message to this support request
+    public void addMessage(Message message) {
+        this.messages.add(message);
     }
 }
