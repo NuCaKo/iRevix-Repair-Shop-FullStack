@@ -75,23 +75,12 @@ public class CartItem {
         return imageUrl;
     }
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
     public ReplacementPart getPart() {
         return part;
     }
 
-    public void setPart(ReplacementPart part) {
-        this.part = part;
-    }
     public String getDescription() {
         return description;
-    }
-
-    public ReplacementPart getPart() {
-        return part;
     }
 
     public String getCustomerEmail() {
@@ -150,6 +139,7 @@ public class CartItem {
     public void setDescription(String description) {
         this.description = description;
     }
+
     public void setPart(ReplacementPart part) {
         this.part = part;
     }
