@@ -2,12 +2,12 @@ package com.backend.irevix.model;
 
 import java.time.LocalDateTime;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "messages")
@@ -16,6 +16,9 @@ public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "support_id")  // This is necessary for the relationship
+    private Long supportId;
 
     @Column(nullable = false)
     private String sender;
@@ -51,6 +54,14 @@ public class Message {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getSupportId() {
+        return supportId;
+    }
+
+    public void setSupportId(Long supportId) {
+        this.supportId = supportId;
     }
 
     public String getSender() {
