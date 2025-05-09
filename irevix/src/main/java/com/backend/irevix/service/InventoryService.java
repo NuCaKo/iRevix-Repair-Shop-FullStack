@@ -107,4 +107,42 @@ public class InventoryService {
     public void deleteInventoryItem(Long id) {
         inventoryRepository.deleteById(id);
     }
+    @Transactional
+    public Inventory decreaseStock(Long id, int amount) {
+        System.out.println("InventoryService.decreaseStock - Decreasing stock for item with ID: " + id +
+                ", amount: " + amount);
+
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        Optional<Inventory> inventoryOpt = inventoryRepository.findById(id);
+
+        if (inventoryOpt.isPresent()) {
+            Inventory inventory = inventoryOpt.get();
+            System.out.println("Found inventory item: " + inventory.getName() +
+                    ", current stock: " + inventory.getStockLevel());
+
+            if (inventory.getStockLevel() < amount) {
+                throw new IllegalStateException("Not enough stock. Available: " +
+                        inventory.getStockLevel() + ", Requested: " + amount);
+            }
+
+            // Update the stock level
+            int oldLevel = inventory.getStockLevel();
+            inventory.setStockLevel(oldLevel - amount);
+
+            System.out.println("Saving inventory with new stock level: " + inventory.getStockLevel());
+
+            // Save and immediately flush changes to the database
+            Inventory updatedInventory = inventoryRepository.saveAndFlush(inventory);
+
+            System.out.println("Stock updated successfully: " + oldLevel + " -> " + updatedInventory.getStockLevel());
+
+            return updatedInventory;
+        } else {
+            System.out.println("Inventory item not found with ID: " + id);
+            throw new RuntimeException("Inventory item not found with ID: " + id);
+        }
+    }
 }

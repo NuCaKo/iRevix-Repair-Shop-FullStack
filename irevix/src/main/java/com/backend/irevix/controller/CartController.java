@@ -1,7 +1,9 @@
 package com.backend.irevix.controller;
 
 import com.backend.irevix.model.Cart;
+import com.backend.irevix.model.CartItem;
 import com.backend.irevix.model.Inventory;
+import com.backend.irevix.model.InventoryUpdateRequest;
 import com.backend.irevix.service.CartService;
 import com.backend.irevix.service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -18,11 +22,14 @@ public class CartController {
 
     private final CartService cartService;
     private final InventoryService inventoryService;
+    private final InventoryController inventoryController;
 
     @Autowired
-    public CartController(CartService cartService, InventoryService inventoryService) {
+    public CartController(CartService cartService, InventoryService inventoryService,
+                          InventoryController inventoryController) {
         this.cartService = cartService;
         this.inventoryService = inventoryService;
+        this.inventoryController = inventoryController;
     }
 
     @GetMapping
@@ -86,7 +93,7 @@ public class CartController {
             // Add to cart using name and price (no part entity)
             Cart updatedCart = cartService.addItem(
                     userId,
-                    null,
+                    inventoryId, // Use the inventory ID directly
                     quantity,
                     "part",
                     inventory.getName(),
@@ -100,6 +107,71 @@ public class CartController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(null);
+        }
+    }
+
+    /**
+     * Process checkout and update inventory for all items in the cart
+     */
+    @PostMapping("/checkout")
+    public ResponseEntity<?> processCheckout(@RequestParam String userId) {
+        try {
+            // Get the current cart
+            Cart cart = cartService.getCart(userId);
+
+            if (cart.getItems().isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Cart is empty");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            System.out.println("Processing checkout for user: " + userId);
+
+            // Update inventory for each item in the cart that has a part associated
+            for (CartItem item : cart.getItems()) {
+                Long partId = item.getPartId();
+
+                // Only update inventory for items with a valid part associated
+                if (partId != null && partId > 0) {
+                    try {
+                        System.out.println("Updating inventory for part: " + partId);
+
+                        // Create inventory update request
+                        InventoryUpdateRequest updateRequest = new InventoryUpdateRequest();
+                        updateRequest.setPartId(partId);
+                        updateRequest.setDecreaseAmount(item.getQuantity());
+
+                        // Call the inventory update endpoint directly
+                        inventoryController.updateInventory(updateRequest);
+
+                        System.out.println("Successfully updated inventory for part: " + partId);
+                    } catch (Exception e) {
+                        System.err.println("Error updating inventory for part " + partId + ": " + e.getMessage());
+                        // Continue with checkout even if inventory update fails
+                    }
+                } else {
+                    System.out.println("Skipping inventory update for item without part: " + item.getName());
+                }
+            }
+
+            // Clear the cart
+            cartService.clearCart(userId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Checkout completed successfully");
+            response.put("orderId", "ORD-" + System.currentTimeMillis());
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Error processing checkout: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error processing checkout: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

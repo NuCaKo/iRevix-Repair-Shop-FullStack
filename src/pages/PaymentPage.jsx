@@ -87,9 +87,11 @@ function PaymentPage() {
 
             setPaymentSuccess(true);
 
+            // Redirect to home page quickly (250ms) after successful payment
             setTimeout(() => {
-                navigate('/orders');
-            }, 2000);
+                // Use window.location.href for a full page refresh
+                window.location.href = '/';
+            }, 250);
         } catch (err) {
             console.error(err);
             alert("An error occurred while processing your payment.");
@@ -106,7 +108,7 @@ function PaymentPage() {
                 <Navbar />
                 <div className="payment-header">
                     <h1 style={{ color: '#2ecc71' }}>✅ Payment Successful</h1>
-                    <p>Your order has been placed. Redirecting to your orders...</p>
+                    <p>Your order has been placed. Redirecting to home page...</p>
                 </div>
             </div>
         );

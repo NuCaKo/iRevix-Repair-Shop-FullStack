@@ -1,6 +1,7 @@
 package com.backend.irevix.controller;
 
 import com.backend.irevix.model.Inventory;
+import com.backend.irevix.model.InventoryUpdateRequest;
 import com.backend.irevix.model.ReplacementPart;
 import com.backend.irevix.repository.ReplacementPartRepository;
 import com.backend.irevix.service.InventoryService;
@@ -9,7 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -19,13 +22,13 @@ import java.util.stream.Collectors;
 public class InventoryController {
 
     private final InventoryService inventoryService;
-    private final ReplacementPartRepository replacementPartRepository; // Added this
+    private final ReplacementPartRepository replacementPartRepository;
 
     @Autowired
     public InventoryController(InventoryService inventoryService,
-                               ReplacementPartRepository replacementPartRepository) { // Added parameter
+                               ReplacementPartRepository replacementPartRepository) {
         this.inventoryService = inventoryService;
-        this.replacementPartRepository = replacementPartRepository; // Set the field
+        this.replacementPartRepository = replacementPartRepository;
     }
 
     @GetMapping
@@ -150,7 +153,6 @@ public class InventoryController {
         return ResponseEntity.noContent().build();
     }
 
-    // Change from @PostMapping to @GetMapping
     @GetMapping("/to-replacement-part")
     public ResponseEntity<?> convertToReplacementPart(@RequestParam Long inventoryId) {
         try {
@@ -182,6 +184,112 @@ public class InventoryController {
             e.printStackTrace(); // Important: Log the full stack trace
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error converting to replacement part: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Update inventory stock level when items are added to cart
+     */
+    /**
+     * Update inventory stock level when items are added to cart
+     */
+    @PostMapping("/update")
+    public ResponseEntity<?> updateInventory(@RequestBody InventoryUpdateRequest request) {
+        try {
+            System.out.println("InventoryController.updateInventory - Request received: " + request);
+
+            // Validate the request
+            if (request.getPartId() == null || request.getDecreaseAmount() <= 0) {
+                System.out.println("Invalid request parameters: partId=" + request.getPartId() +
+                        ", decreaseAmount=" + request.getDecreaseAmount());
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Invalid request parameters");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            try {
+                // Use the dedicated decreaseStock method that ensures immediate persistence
+                Inventory updatedInventory = inventoryService.decreaseStock(
+                        request.getPartId(),
+                        request.getDecreaseAmount()
+                );
+
+                System.out.println("Inventory updated successfully through dedicated method: " +
+                        updatedInventory.getName() + ", new stock level: " + updatedInventory.getStockLevel());
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Inventory updated successfully");
+                response.put("newStockLevel", updatedInventory.getStockLevel());
+                response.put("itemName", updatedInventory.getName());
+
+                return ResponseEntity.ok(response);
+            } catch (RuntimeException e) {
+                // If the item is not found or there's not enough stock, handle it
+                if (e.getMessage().contains("not found")) {
+                    System.out.println("Inventory item not found, checking if it's a replacement part...");
+                } else if (e.getMessage().contains("Not enough stock")) {
+                    System.out.println("Not enough inventory stock: " + e.getMessage());
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", e.getMessage());
+                    return ResponseEntity.badRequest().body(response);
+                } else {
+                    // For other errors, throw through
+                    throw e;
+                }
+            }
+
+            // If inventory update failed due to not found, try ReplacementPart
+            Optional<ReplacementPart> partOptional = replacementPartRepository.findById(request.getPartId());
+
+            if (partOptional.isEmpty()) {
+                System.out.println("Part not found in either Inventory or ReplacementPart: ID=" + request.getPartId());
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Part not found in inventory or replacement parts");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            ReplacementPart part = partOptional.get();
+            System.out.println("Found replacement part: " + part.getName() +
+                    ", current stock: " + part.getStockQuantity());
+
+            // Check if there's enough stock
+            if (part.getStockQuantity() < request.getDecreaseAmount()) {
+                System.out.println("Not enough stock available. Requested: " + request.getDecreaseAmount() +
+                        ", Available: " + part.getStockQuantity());
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", String.format("Not enough stock. Only %d units available.", part.getStockQuantity()));
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Update the stock level
+            int oldStock = part.getStockQuantity();
+            part.setStockQuantity(oldStock - request.getDecreaseAmount());
+            ReplacementPart updatedPart = replacementPartRepository.saveAndFlush(part);
+
+            System.out.println("Replacement part updated successfully: " + updatedPart.getName() +
+                    ", new stock level: " + updatedPart.getStockQuantity() +
+                    " (was " + oldStock + ")");
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Replacement part inventory updated successfully");
+            response.put("oldStockLevel", oldStock);
+            response.put("newStockLevel", updatedPart.getStockQuantity());
+            response.put("itemName", updatedPart.getName());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Error updating inventory: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error updating inventory: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

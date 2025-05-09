@@ -2061,6 +2061,40 @@ function AdminPanel() {
             );
         };
 
+        // Get all filtered orders
+        const allOrders = getFilteredOrders();
+
+        // Better separation of repair services and part orders
+        const repairServices = allOrders.filter(order => {
+            // Check if the order is explicitly marked as a service
+            if (order.type === 'service') return true;
+
+            // Check if the description/problem contains repair-related keywords
+            const problem = (order.problem || '').toLowerCase();
+            if (problem.includes('repair') ||
+                problem.includes('service') ||
+                problem.includes('screen') ||
+                problem.includes('battery') ||
+                problem.includes('camera repair') ||
+                problem.includes('speaker repair')) {
+                return true;
+            }
+
+            // Check if the device field contains "repair"
+            const device = (order.device || '').toLowerCase();
+            if (device.includes('repair')) return true;
+
+            // If any item is labeled as a service, consider it a repair service
+            if (order.orderItems && Array.isArray(order.orderItems)) {
+                return order.orderItems.some(item => item.type === 'service');
+            }
+
+            return false;
+        });
+
+        // Parts orders are all others
+        const partOrders = allOrders.filter(order => !repairServices.includes(order));
+
         return (
             <div className="orders-container">
                 <div className="orders-header">
@@ -2080,42 +2114,100 @@ function AdminPanel() {
                     </div>
                 </div>
 
-                <div className="orders-list">
-                    <table className="orders-table">
-                        <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Device</th>
-                            <th>Problem</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {getFilteredOrders().map(order => (
-                            <tr key={order.id}>
-                                <td>{order.id}</td>
-                                <td>{order.customer}</td>
-                                <td>{order.device}</td>
-                                <td>{order.problem}</td>
-                                <td>
-                                <span className="status-badge" style={{ backgroundColor: getStatusColor(order.status) }}>
-                                {order.status}
-                                </span>
-                                </td>
-                                <td>{order.date}</td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button className="action-btn view-btn" onClick={() => handleViewOrder(order)}>View</button>
-                                        <button className="action-btn edit-btn" onClick={() => handleEditOrder(order)}>Edit</button>
-                                    </div>
-                                </td>
+                {/* Repair Services Table */}
+                <div className="order-section">
+                    <h3>Repair Services</h3>
+                    <div className="orders-list">
+                        <table className="orders-table">
+                            <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Device</th>
+                                <th>Service Details</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
                             </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            {repairServices.length > 0 ? (
+                                repairServices.map(order => (
+                                    <tr key={order.id}>
+                                        <td>{order.id}</td>
+                                        <td>{order.customer}</td>
+                                        <td>{order.device}</td>
+                                        <td>{order.problem}</td>
+                                        <td>
+                                        <span className="status-badge" style={{ backgroundColor: getStatusColor(order.status) }}>
+                                            {order.status}
+                                        </span>
+                                        </td>
+                                        <td>{order.date}</td>
+                                        <td>
+                                            <div className="action-buttons">
+                                                <button className="action-btn view-btn" onClick={() => handleViewOrder(order)}>View</button>
+                                                <button className="action-btn edit-btn" onClick={() => handleEditOrder(order)}>Edit</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="7" className="no-orders">No repair services found</td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Part Orders Table */}
+                <div className="order-section">
+                    <h3>Part Orders</h3>
+                    <div className="orders-list">
+                        <table className="orders-table">
+                            <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Device</th>
+                                <th>Parts</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {partOrders.length > 0 ? (
+                                partOrders.map(order => (
+                                    <tr key={order.id}>
+                                        <td>{order.id}</td>
+                                        <td>{order.customer}</td>
+                                        <td>{order.device}</td>
+                                        <td>{order.problem}</td>
+                                        <td>
+                                        <span className="status-badge" style={{ backgroundColor: getStatusColor(order.status) }}>
+                                            {order.status}
+                                        </span>
+                                        </td>
+                                        <td>{order.date}</td>
+                                        <td>
+                                            <div className="action-buttons">
+                                                <button className="action-btn view-btn" onClick={() => handleViewOrder(order)}>View</button>
+                                                <button className="action-btn edit-btn" onClick={() => handleEditOrder(order)}>Edit</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="7" className="no-orders">No part orders found</td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 {/* View Order Modal */}
@@ -2123,7 +2215,7 @@ function AdminPanel() {
                     <div className="modal-overlay">
                         <div className="modal-container">
                             <div className="modal-header">
-                                <h2>Repair Order Details</h2>
+                                <h2>Order Details</h2>
                                 <button className="close-button" onClick={() => setIsViewModalOpen(false)}>×</button>
                             </div>
                             <div className="modal-content">
@@ -2141,7 +2233,7 @@ function AdminPanel() {
                                         <span className="detail-value">{selectedOrder.device}</span>
                                     </div>
                                     <div className="detail-item">
-                                        <span className="detail-label">Problem:</span>
+                                        <span className="detail-label">{repairServices.includes(selectedOrder) ? 'Service Details:' : 'Parts:'}</span>
                                         <span className="detail-value">{selectedOrder.problem}</span>
                                     </div>
                                     <div className="detail-item">
@@ -2158,8 +2250,13 @@ function AdminPanel() {
 
                                 <div className="additional-info">
                                     <h3>Additional Information</h3>
-                                    <p>This repair order was created on {selectedOrder.date}. The customer has reported the following issue: {selectedOrder.problem}.</p>
-                                    <p>The device is a {selectedOrder.device} and is currently marked as <strong>{selectedOrder.status}</strong>.</p>
+                                    <p>This order was created on {selectedOrder.date}.</p>
+                                    {repairServices.includes(selectedOrder) ? (
+                                        <p>The customer has requested a repair service for their {selectedOrder.device}. The service details are: {selectedOrder.problem}.</p>
+                                    ) : (
+                                        <p>The customer has ordered parts for their {selectedOrder.device}: {selectedOrder.problem}.</p>
+                                    )}
+                                    <p>The current status is <strong>{selectedOrder.status}</strong>.</p>
                                 </div>
 
                                 <div className="modal-footer">
@@ -2179,7 +2276,7 @@ function AdminPanel() {
                     <div className="modal-overlay">
                         <div className="modal-container">
                             <div className="modal-header">
-                                <h2>Edit Repair Order</h2>
+                                <h2>Edit Order</h2>
                                 <button className="close-button" onClick={() => setIsEditModalOpen(false)}>×</button>
                             </div>
                             <div className="modal-content">
@@ -2209,7 +2306,7 @@ function AdminPanel() {
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label>Problem</label>
+                                        <label>{repairServices.some(s => s.id === editOrderData.id) ? 'Service Details' : 'Parts'}</label>
                                         <textarea
                                             name="problem"
                                             value={editOrderData.problem}

@@ -513,6 +513,8 @@ function RepairServicesPage() {
         setHasCalculatedPrice(true);
     };
 
+
+// Replace the handleProceedWithRepair function with this:
     const handleProceedWithRepair = () => {
         if (selectedProblems.length === 0) {
             // Use notification instead of alert
@@ -554,7 +556,17 @@ function RepairServicesPage() {
 
         addToCart(repairItem);
 
-    };
+        // Show success notification instead of redirecting
+        window.showNotification('success', "Repair service added to cart successfully!");
+
+        // Reset the form for a new repair quote
+        setSelectedProblems([]);
+        setSubProblems({});
+        setIssueDescription('');
+        setEstimatedPrice(null);
+        setNumericPrice(0);
+        setHasCalculatedPrice(false);
+    }
 
     const getIconColor = (device) => {
         return selectedDevice === device ? "#28a745" : "currentColor"; // Green if selected

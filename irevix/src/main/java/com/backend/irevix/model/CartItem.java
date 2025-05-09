@@ -8,7 +8,6 @@ import jakarta.persistence.*;
 @Entity
 public class CartItem {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -98,11 +97,26 @@ public class CartItem {
     public void setPart(ReplacementPart part) {
         this.part = part;
     }
+
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    /**
+     * Get the part ID for this cart item.
+     * Required for inventory management.
+     * @return The part ID from the associated part, or null if no part is associated
+     */
+    public Long getPartId() {
+        // If we have a part object, return its ID
+        if (part != null) {
+            return part.getId();
+        }
+        // Otherwise, return null
+        return null;
     }
 }

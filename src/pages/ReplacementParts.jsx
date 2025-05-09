@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import ScrollToTop from '../components/ScrollToTop';
+import QuantitySelector from '../components/QuantitySelector';
 import '../css/replacementParts.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useCart } from '../CartContext';
@@ -17,7 +18,7 @@ import {
     faMicrochip,
     faBatteryFull,
     faCamera,
-    faVolumeUp
+    faVolumeUp,faSync
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { getDevicesAndModels, getInventoryParts } from '../services/api';
@@ -29,6 +30,8 @@ function ReplacementParts() {
     const [devices, setDevices] = useState([]);
     const [deviceModels, setDeviceModels] = useState({});
     const [isLoading, setIsLoading] = useState(true);
+    const [partQuantities, setPartQuantities] = useState({});
+    const [reloadKey, setReloadKey] = useState(0);
     const { addToCart, refreshCart } = useCart();
     const location = useLocation();
 
@@ -81,6 +84,60 @@ function ReplacementParts() {
 
         fetchDevicesAndModels();
     }, []);
+    useEffect(() => {
+        // Only refetch if device and model are selected
+        if (selectedDevice && selectedModel) {
+            const fetchParts = async () => {
+                try {
+                    setIsLoading(true);
+                    console.log(`Refreshing parts data for ${selectedDevice} ${selectedModel}`);
+
+                    // Get the device name from the selected device id
+                    const deviceObject = devices.find(d => d.id === selectedDevice);
+                    const deviceName = deviceObject ? deviceObject.name : selectedDevice;
+
+                    // Fetch parts from backend using the device name and selected model
+                    const parts = await getInventoryParts(deviceName, selectedModel);
+
+                    console.log('Refreshed parts data:', parts);
+
+                    // Format parts data with icons based on categories
+                    const formattedParts = parts.map(part => {
+                        // Determine icon based on part category or name
+                        let icon = faScrewdriver; // Default icon
+
+                        // Try to match part name with category
+                        for (const [category, categoryIcon] of Object.entries(categoryToIcon)) {
+                            if (part.name.toLowerCase().includes(category.toLowerCase())) {
+                                icon = categoryIcon;
+                                break;
+                            }
+                        }
+
+                        return {
+                            id: part.id,
+                            name: part.name,
+                            price: part.price,
+                            icon: icon,
+                            description: part.description || `Genuine replacement part for your ${selectedModel}. Original quality with warranty.`,
+                            compatibility: [selectedModel],
+                            partNumber: part.partNumber,
+                            stockLevel: part.stockLevel,
+                            image: part.imageUrl || `https://source.unsplash.com/random/100x100/?${part.name}`
+                        };
+                    });
+
+                    setPartsData(formattedParts);
+                    setIsLoading(false);
+                } catch (error) {
+                    console.error('Error fetching parts:', error);
+                    setIsLoading(false);
+                }
+            };
+
+            fetchParts();
+        }
+    }, [selectedDevice, selectedModel, devices, reloadKey]);
 
     // Fetch parts data when device and model are selected
     useEffect(() => {
@@ -98,6 +155,13 @@ function ReplacementParts() {
                     const parts = await getInventoryParts(deviceName, selectedModel);
 
                     console.log('Fetched parts:', parts);
+
+                    // Initialize quantities for all parts
+                    const initialQuantities = {};
+                    parts.forEach(part => {
+                        initialQuantities[part.id] = 1;
+                    });
+                    setPartQuantities(initialQuantities);
 
                     // Format parts data with icons based on categories
                     const formattedParts = parts.map(part => {
@@ -149,6 +213,13 @@ function ReplacementParts() {
         setSelectedModel(model);
     };
 
+    const handleQuantityChange = (partId, quantity) => {
+        setPartQuantities(prev => ({
+            ...prev,
+            [partId]: quantity
+        }));
+    };
+
     const handleAddToCart = async (item) => {
         try {
             // Check if user is logged in
@@ -158,22 +229,64 @@ function ReplacementParts() {
                 return;
             }
 
+            // Get the selected quantity
+            const quantity = partQuantities[item.id] || 1;
+
+            // Check if item is in stock and quantity is valid
+            if (item.stockLevel <= 0) {
+                window.showNotification('error', "This item is out of stock");
+                return;
+            }
+
+            // Check if requested quantity exceeds available stock
+            if (quantity > item.stockLevel) {
+                window.showNotification('warning', `Only ${item.stockLevel} units available. You cannot add more.`);
+                return;
+            }
+
             const user = JSON.parse(currentUser);
 
-            // Use the existing cart/add endpoint
+            console.log(`Adding to cart: partId=${item.id}, quantity=${quantity}, name=${item.name}`);
+
+            // 1. First update the inventory to reserve the items
+            const inventoryData = {
+                partId: item.id,
+                decreaseAmount: quantity
+            };
+
+            console.log("Updating inventory with data:", inventoryData);
+
+            const inventoryResponse = await fetch('http://localhost:8080/api/inventory/update', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(inventoryData)
+            });
+
+            console.log("Inventory update response status:", inventoryResponse.status);
+
+            if (!inventoryResponse.ok) {
+                const errorData = await inventoryResponse.json();
+                console.error("Inventory update failed:", errorData);
+                throw new Error(errorData.message || "Failed to update inventory");
+            }
+
+            const inventoryResult = await inventoryResponse.json();
+            console.log("Inventory update result:", inventoryResult);
+
+            // 2. Now add to cart
             const formData = new URLSearchParams({
                 'userId': user.id,
-                'partId': '-1',  // Use -1 or any negative number as a signal
-                'quantity': '1',
+                'partId': String(item.id),
+                'quantity': String(quantity),
                 'type': 'part',
                 'name': item.name,
-                'price': item.price,
+                'price': String(item.price),
                 'description': item.description || ''
             });
 
-            console.log("Adding to cart:", Object.fromEntries(formData));
-
-            const response = await fetch('http://localhost:8080/api/cart/add', {
+            const cartResponse = await fetch('http://localhost:8080/api/cart/add', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded"
@@ -181,19 +294,50 @@ function ReplacementParts() {
                 body: formData
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Cart add response:", response.status, errorText);
+            if (!cartResponse.ok) {
+                const errorText = await cartResponse.text();
+                console.error("Cart add response:", cartResponse.status, errorText);
                 throw new Error(`Failed to add to cart: ${errorText}`);
             }
 
-            // Successfully added to cart
+            console.log("Successfully added to cart");
+
+            // Reset quantity back to 1
+            setPartQuantities(prev => ({
+                ...prev,
+                [item.id]: 1
+            }));
+
+            // Update the UI to reflect the new stock level from the response
+            if (inventoryResult.success) {
+                setPartsData(prevParts => {
+                    return prevParts.map(part => {
+                        if (part.id === item.id) {
+                            console.log(`Updating stock level for part ${part.name} from ${part.stockLevel} to ${inventoryResult.newStockLevel}`);
+                            return {
+                                ...part,
+                                stockLevel: inventoryResult.newStockLevel
+                            };
+                        }
+                        return part;
+                    });
+                });
+            }
+
+            // Refresh cart
             refreshCart();
-            alert(`Added ${item.name} to cart!`);
+
+            // Show success notification
+            window.showNotification('success', `Added ${item.name} to cart!`);
+
         } catch (error) {
             console.error('Error adding to cart:', error);
             window.showNotification('error', error.message || 'Failed to add item to cart');
         }
+    };
+    const refreshPartsData = () => {
+        setReloadKey(prevKey => prevKey + 1);
+        setIsLoading(true);
     };
 
     const fadeIn = {
@@ -299,14 +443,30 @@ function ReplacementParts() {
                                                     </div>
                                                     <div className="part-price-row">
                                                         <span className="part-price">${part.price.toFixed(2)}</span>
-                                                        <button
-                                                            className="add-to-cart-btn"
-                                                            onClick={() => handleAddToCart(part)}
-                                                            disabled={part.stockLevel <= 0}
-                                                        >
-                                                            <FontAwesomeIcon icon={faShoppingCart} />
-                                                            {part.stockLevel > 0 ? 'Add to Cart' : 'Out of Stock'}
-                                                        </button>
+                                                        {part.stockLevel > 0 ? (
+                                                            <div className="cart-controls">
+                                                                <QuantitySelector
+                                                                    maxQuantity={part.stockLevel}
+                                                                    onQuantityChange={(quantity) => handleQuantityChange(part.id, quantity)}
+                                                                    initialQuantity={partQuantities[part.id] || 1}
+                                                                />
+                                                                <button
+                                                                    className="add-to-cart-btn"
+                                                                    onClick={() => handleAddToCart(part)}
+                                                                >
+                                                                    <FontAwesomeIcon icon={faShoppingCart} />
+                                                                    Add to Cart
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                className="add-to-cart-btn disabled"
+                                                                disabled
+                                                            >
+                                                                <FontAwesomeIcon icon={faShoppingCart} />
+                                                                Out of Stock
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
