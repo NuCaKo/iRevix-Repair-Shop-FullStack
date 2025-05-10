@@ -173,11 +173,9 @@ const ServiceReport = ({ selectedRepair, reportRef, generatePDF }) => {
 
                     <div className="pdf-actions">
                         <button onClick={generatePDF}>
-                            <FaDownload /> Download PDF
+                            <FaDownload /> Save PDF
                         </button>
-                        <button onClick={generatePDF}>
-                            <FaEye /> View PDF
-                        </button>
+
                     </div>
                 </div>
             )}
